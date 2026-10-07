@@ -58,7 +58,7 @@ En la hoja nueva:
 
 Positivo en una caja = la contraparte nos entregó valor (por ejemplo, el inversor depositó: lo
 debemos). Negativo = le entregamos valor (nos debe: préstamos, gastos de Carbox, transferencias de
-USDT General sin USDT confirmado). Se dedujo de ejemplos como Dardo Fava (préstamos +, retiros "España" −).
+USDT General sin USDT confirmado). Se dedujo de las cuentas de inversores (aportes +, retiros −).
 
 **Pregunta abierta importante:** si los pendientes positivos son deudas con terceros, el patrimonio
 propio es la **caja real** (sin pendientes) más lo que nos deben, menos lo que debemos. Hay que
@@ -68,16 +68,16 @@ confirmar cómo lo calcula el archivo de patrimonio.
 
 - **CQ, Donato – Poligono, CQ – Rossi, CQ – Hipoteca:** cartera de cheques (cobrado/colocado,
   vencimiento, tasa mensual ~8%, débitos y créditos 1,2%, comisión, destino).
-- **Inversores:** capital por inversor, destino (Bankz, Donato, Polígono, Caja CG), tasa mensual.
-- **Lorena, Marco, Marchi, Brandon, Dardo, Pato, Rossi – 15k:** cuentas de inversores con interés compuesto.
+- **Inversores:** capital por inversor, destino de los fondos, tasa mensual.
+- **Una hoja por inversor** (con su nombre): cuenta con interés compuesto, aportes, retiros y cortes mensuales.
 - **Datos:** listas de los desplegables.
 
 ## Problemas conocidos de los datos (ver chequeo general)
 
 - Algunos `Cierre` quedaron vacíos o con rangos cortos (por ejemplo, la semana actual al 02/10).
 - La `Apertura Pendientes` de PESOS no coincidió con la suma de pendientes en 6 semanas (−200.000
-  recurrente; coincide con una pendiente de Ana Victoria Brazzola).
+  recurrente; coincide con una pendiente de un cliente).
 - Imputaciones que no coinciden con Debe/Haber, filas canceladas con imputación y signos invertidos.
 - 41 pendientes de `USDT General` con "?" (transferencias sin USDT confirmado) de más de 4 semanas.
-- La hoja `Brandon` está copiada de `Lorena`. Hay fechas mal cargadas.
+- Una hoja de inversor está copiada de otra sin limpiar. Hay fechas mal cargadas.
 - Los `Cierre` diarios no siempre tienen fecha: el día de cada operación es aproximado.

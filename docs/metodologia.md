@@ -17,7 +17,7 @@ correr `correr.py`.
     la del USD billete. Ronda 1,02–1,05: el USDT vale más que el billete.
   - EUR 1,23 USD (mediana operada; mercado ~1,17). BRL 4,8. USD exterior 1:1.
 - **Clientes:** se agrupan quitando lo que va entre paréntesis y normalizando acentos
-  ("Bankz (Budines)" → "Bankz").
+  ("Cliente (detalle)" → "Cliente").
 
 ## Por análisis
 
