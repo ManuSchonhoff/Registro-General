@@ -17,9 +17,11 @@ T = Font(name=F, bold=True, size=14)
 
 def _fmt(col):
     c = str(col).lower()
-    if "%" in c or "pct" in c or "margen" in c or "cobertura" in c:
+    if "pactado" in c or c.endswith("_pct"):
+        return '0.00"%"'  # ya viene expresado en % (2,5 = 2,5%)
+    if "%" in c or "pct" in c or "margen" in c or "cobertura" in c or "tasa" in c:
         return "0.0%"
-    if "cot" in c or "spread_pesos" in c or "tasa" in c:
+    if "cot" in c or "spread_pesos" in c:
         return "#,##0.00"
     if any(k in c for k in ("usd", "monto", "ars", "debe", "haber", "volumen", "ganancia", "comision", "saldo", "gasto",
                             "interes", "total", "neto", "efecto")):
@@ -98,7 +100,9 @@ def md_tabla(df, max_filas=15):
         celdas = []
         for c, v in zip(cols, row):
             if isinstance(v, (float, np.floating)) and not math.isnan(v):
-                celdas.append(f"{v:.1%}" if ("%" in c or "pct" in c or "margen" in c) and abs(v) < 5 else _num(float(v)))
+                ya_en_pct = "pactado" in c or c.endswith("_pct")
+                es_frac = ("%" in c or "pct" in c or "margen" in c or "tasa" in c) and not ya_en_pct and abs(v) < 5
+                celdas.append(f"{v:.1%}" if es_frac else (f"{v:.2f}%" if ya_en_pct else _num(float(v))))
             else:
                 celdas.append("" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v))
         out.append("| " + " | ".join(celdas) + " |")
