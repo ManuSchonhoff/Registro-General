@@ -1,0 +1,32 @@
+{
+  "_nota": "Parámetros del análisis. Editá acá las cotizaciones y criterios; todo el pipeline los lee de este archivo.",
+  "anio": 2026,
+  "cotizaciones": {
+    "_nota": "ARS: pesos por USD. Si 'ars_unica' tiene valor, se usa para todas las semanas; si es null, se usa 'ars_por_semana' y, para las semanas que falten, la mediana de las operaciones USD/Pesos de esa semana.",
+    "ars_unica": null,
+    "ars_por_semana": {},
+    "usdt_en_usd": null,
+    "_nota_usdt": "USD billete por cada USDT. null = paridad semanal observada (cotización USDT General / cotización USD billete, ~1,02-1,05).",
+    "usd_exterior_en_usd": 1.0,
+    "eur_en_usd": 1.23,
+    "brl_por_usd": 4.8,
+    "gbp_en_usd": 1.33
+  },
+  "moneda_por_caja": {
+    "USD": "USD", "CAMBIO": "USD", "CARA CHICA": "USD", "MALOS": "USD", "USD BSAS": "USD",
+    "LLC": "USD Exterior", "GRABIFI": "USD Exterior", "GRABRFY MANUEL": "USD Exterior", "GRABIFY": "USD Exterior",
+    "GRABIFY JOSE": "USD Exterior", "WISE US": "USD Exterior", "PAYONEER": "USD Exterior", "PAYPAL RUSO": "USD Exterior",
+    "CITY BANK": "USD Exterior", "USD EXT": "USD Exterior",
+    "USDT": "USDT",
+    "PESOS": "ARS", "TRANSFER": "ARS", "TRANSFERENCIA": "ARS", "CHEQUES": "ARS", "CHEQUE": "ARS", "RECAUDACION BX": "ARS",
+    "EUROS": "EUR", "WISE": "EUR", "REALES": "BRL", "LIBRAS": "GBP"
+  },
+  "detalles_que_son_volumen": ["Cajas", "Recaudadora"],
+  "excluir_clientes_de_volumen": ["USDT General", "Cambio General"],
+  "operadores_principales": ["Manuel", "Francisco", "Jose", "Dante", "Coco", "Vago"],
+  "columnas_pyg": ["GASTOS", "COMISIONES", "INVERSION", "INTERESES", "ALQUILERES", "FIJOS"],
+  "columnas_inversiones_garantias": ["MILLAMAPU", "JEEP", "GOL TREND", "CHARCAS", "PROMAR", "ALMAFUERTE", "POLIGONO 20+13", "POLIGONO"],
+  "semanas_cliente_perdido": 4,
+  "rango_cotizacion_ars": [900, 2500],
+  "max_comision_pct": 15
+}

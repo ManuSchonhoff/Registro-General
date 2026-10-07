@@ -1,0 +1,11 @@
+# Datos del negocio: no se versionan (nombres y montos de clientes)
+datos/
+salidas/
+*.xlsx
+*.xls
+*.csv
+*.pkl
+
+__pycache__/
+*.pyc
+.DS_Store
