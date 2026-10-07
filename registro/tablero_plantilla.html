@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tablero Financiera</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10); --accent: #2a78d6; --wash: rgba(42,120,214,0.08);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #898781;
+  --good: #006300; --crit: #d03b3b; --warn-bg: #fff4dc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --accent: #3987e5; --wash: rgba(57,135,229,0.14);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #898781;
+    --good: #0ca30c; --crit: #e66767; --warn-bg: #3a2e12;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --accent: #3987e5; --wash: rgba(57,135,229,0.14);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #898781;
+  --good: #0ca30c; --crit: #e66767; --warn-bg: #3a2e12;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+.hidden { display: none !important; }
+/* candado */
+#lock { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.lockbox { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 28px 24px; }
+.lockbox h1 { font-size: 20px; margin: 0 0 4px; }
+.lockbox p { margin: 0 0 18px; color: var(--ink2); font-size: 14px; }
+.lockbox input { width: 100%; padding: 10px 12px; border: 1px solid var(--axis); border-radius: 8px; background: var(--page); }
+.lockbox button { width: 100%; margin-top: 12px; padding: 10px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+.lockbox .err { color: var(--crit); font-size: 13px; min-height: 20px; margin-top: 8px; }
+.lockbox .fine { color: var(--muted); font-size: 12px; margin-top: 14px; }
+/* app */
+header.top { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--ring); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0 6px; flex-wrap: wrap; }
+.toprow h1 { font-size: 18px; margin: 0; }
+.toprow .sub { color: var(--muted); font-size: 13px; }
+.ctrls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink2); }
+.ctrls select { padding: 5px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--page); max-width: 170px; }
+.btn { padding: 5px 10px; border: 1px solid var(--axis); border-radius: 6px; background: var(--page); cursor: pointer; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs button { border: 0; background: none; padding: 8px 12px; border-bottom: 2px solid transparent; cursor: pointer; color: var(--ink2); white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+main { padding: 18px 0 60px; }
+section.tab > h2 { font-size: 17px; margin: 22px 0 6px; }
+section.tab > h2:first-child { margin-top: 4px; }
+.note { color: var(--ink2); font-size: 13px; margin: 0 0 10px; max-width: 900px; }
+.banner { background: var(--warn-bg); border: 1px solid var(--ring); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin: 0 0 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 8px 0 16px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+.tile .k { color: var(--ink2); font-size: 12px; }
+.tile .v { font-size: 21px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
+.tile .d { color: var(--muted); font-size: 12px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px; margin: 0 0 14px; }
+.card h3 { font-size: 14px; margin: 0 0 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink2); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 160px; z-index: 3; }
+.tip b { display: block; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 14px; }
+.tip .r span:last-child { font-variant-numeric: tabular-nums; }
+.hb { display: grid; grid-template-columns: minmax(90px, 160px) 1fr auto; gap: 6px 10px; align-items: center; font-size: 13px; }
+.hb .bar { height: 12px; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+.hb .val { color: var(--ink2); font-variant-numeric: tabular-nums; text-align: right; }
+.tbl-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.tbl-tools select { padding: 5px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--page); }
+.tbl-tools input { padding: 5px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--page); min-width: 200px; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--ring); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--grid); text-align: left; white-space: nowrap; }
+th { background: var(--page); color: var(--ink2); font-weight: 600; cursor: pointer; user-select: none; position: sticky; top: 0; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr:hover td { background: var(--wash); }
+.neg { color: var(--crit); }
+.more { margin-top: 6px; }
+ul.list { margin: 6px 0 0 18px; padding: 0; } ul.list li { margin: 3px 0; }
+.pill { display: inline-block; padding: 0 7px; border-radius: 99px; font-size: 11px; border: 1px solid var(--ring); }
+@media (max-width: 600px) { .tile .v { font-size: 19px; } .hb { grid-template-columns: 90px 1fr auto; } }
+</style>
+</head>
+<body>
+<div id="lock">
+  <form class="lockbox" id="lockform" autocomplete="off">
+    <h1>Tablero de la financiera</h1>
+    <p>Contenido cifrado. Ingresá la contraseña para verlo.</p>
+    <input id="pw" type="password" placeholder="Contraseña" autofocus aria-label="Contraseña">
+    <button type="submit" id="go">Abrir</button>
+    <div class="err" id="err" role="alert"></div>
+    <div class="fine">Los datos se descifran solo en este dispositivo (AES‑256). El archivo no se conecta a internet y no guarda nada.</div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="toprow">
+        <div><h1>Registro General · Tablero</h1><div class="sub" id="sub"></div></div>
+        <div class="ctrls">
+          <label>Desde <select id="wDesde"></select></label>
+          <label>Hasta <select id="wHasta"></select></label>
+          <button class="btn" id="tema" type="button" title="Cambiar tema">◐</button>
+          <button class="btn" id="lockbtn" type="button">Bloquear</button>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs" role="tablist"></nav>
+    </div>
+  </header>
+  <main class="wrap" id="main"></main>
+</div>
+
+<script>
+"use strict";
+const PAQUETE = /*__PAQUETE__*/null;
+let D = null;
+const $ = (s, el = document) => el.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "html") e.innerHTML = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(k));
+  return e;
+};
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function abrir(clave) {
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey("raw", enc.encode(clave), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(PAQUETE.s), iterations: PAQUETE.it, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(PAQUETE.iv) }, key, b64(PAQUETE.ct));
+  return JSON.parse(new TextDecoder().decode(plano));
+}
+$("#lockform").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("#err"), go = $("#go");
+  if (!window.crypto || !crypto.subtle) { err.textContent = "Este navegador no permite descifrar. Abrilo con Chrome, Edge, Safari o Firefox."; return; }
+  go.disabled = true; go.textContent = "Abriendo…"; err.textContent = "";
+  try {
+    D = await abrir($("#pw").value);
+    $("#pw").value = "";
+    $("#lock").classList.add("hidden"); $("#app").classList.remove("hidden");
+    iniciar();
+  } catch (e) {
+    err.textContent = "Contraseña incorrecta.";
+  } finally { go.disabled = false; go.textContent = "Abrir"; }
+});
+$("#lockbtn").addEventListener("click", () => location.reload());
+let rz; window.addEventListener("resize", () => { if (!D) return; clearTimeout(rz); rz = setTimeout(render, 250); });
+$("#tema").addEventListener("click", () => {
+  const r = document.documentElement, oscuro = getComputedStyle(r).colorScheme === "dark";
+  r.setAttribute("data-theme", oscuro ? "light" : "dark");
+  render();
+});
+
+/* ---------- formato ---------- */
+const NF0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+const NF2 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+const NF1 = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function fmt(v, f) {
+  if (v == null || v === "") return "";
+  switch (f) {
+    case "usd": return "USD " + NF0.format(v);
+    case "usdk": return Math.abs(v) >= 1e6 ? "USD " + NF2.format(v / 1e6) + " M" : Math.abs(v) >= 1e3 ? "USD " + NF0.format(v / 1e3) + " k" : "USD " + NF0.format(v);
+    case "ars": return "$ " + NF0.format(v);
+    case "pct": return NF1.format(v * 100) + "%";
+    case "pct100": return NF2.format(v) + "%";
+    case "num": return NF2.format(v);
+    case "int": return NF0.format(v);
+    case "fecha": { const [y, m, d] = String(v).split("-"); return d ? `${d}/${m}/${y}` : v; }
+    default: return typeof v === "boolean" ? (v ? "Sí" : "No") : String(v);
+  }
+}
+const numerico = f => ["usd", "usdk", "ars", "pct", "pct100", "num", "int"].includes(f);
+
+/* ---------- tabla ---------- */
+function tabla(t, opt = {}) {
+  const cont = h("div");
+  if (!t || !t.cols || !t.cols.length) { cont.append(h("p", { class: "note" }, "Sin datos.")); return cont; }
+  let filas = t.rows.slice(), orden = null, asc = false, filtro = "", limite = opt.max || 25;
+  const tools = h("div", { class: "tbl-tools" });
+  if (opt.buscar) tools.append(h("input", { type: "search", placeholder: "Buscar…", "aria-label": "Buscar", oninput: e => { filtro = e.target.value.toLowerCase(); limite = opt.max || 25; dibujar(); } }));
+  const cuenta = h("span", { class: "note", style: "margin:0" });
+  tools.append(cuenta);
+  const wrap = h("div", { class: "tbl-wrap" }), mas = h("button", { class: "btn more", type: "button", onclick: () => { limite += 50; dibujar(); } }, "Mostrar más");
+  cont.append(tools, wrap, mas);
+  function dibujar() {
+    let fs = filas;
+    if (filtro) fs = fs.filter(r => r.some(x => x != null && String(x).toLowerCase().includes(filtro)));
+    if (orden != null) fs = fs.slice().sort((a, b) => { const x = a[orden], y = b[orden]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * (asc ? 1 : -1); });
+    const tb = h("table");
+    const tr = h("tr");
+    t.cols.forEach((c, i) => tr.append(h("th", { class: numerico(c.f) ? "n" : "", onclick: () => { asc = orden === i ? !asc : !numerico(c.f); orden = i; dibujar(); } }, c.t + (orden === i ? (asc ? " ▲" : " ▼") : ""))));
+    tb.append(h("thead", {}, tr));
+    const body = h("tbody");
+    fs.slice(0, limite).forEach(r => {
+      const row = h("tr");
+      r.forEach((x, i) => { const f = t.cols[i].f; row.append(h("td", { class: (numerico(f) ? "n" : "") + (numerico(f) && x < 0 ? " neg" : "") }, fmt(x, f))); });
+      body.append(row);
+    });
+    tb.append(body);
+    wrap.replaceChildren(tb);
+    cuenta.textContent = `${fs.length} fila${fs.length === 1 ? "" : "s"}`;
+    mas.classList.toggle("hidden", fs.length <= limite);
+  }
+  dibujar();
+  return cont;
+}
+
+/* ---------- gráficos ---------- */
+const ANCHO = () => Math.max(300, Math.min(900, (document.getElementById("main").clientWidth || window.innerWidth) - 30));
+const SER = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)", "var(--s5)", "var(--s6)", "var(--s7)", "var(--s8)"];
+const NS = "http://www.w3.org/2000/svg";
+const sv = (tag, a = {}) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(a)) e.setAttribute(k, v); return e; };
+function escala(max, min = 0) {
+  const span = max - min || 1, paso0 = span / 4, p = Math.pow(10, Math.floor(Math.log10(paso0))), m = paso0 / p;
+  const paso = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+  const lo = Math.floor(min / paso) * paso, hi = Math.ceil(max / paso) * paso, ticks = [];
+  for (let v = lo; v <= hi + paso / 2; v += paso) ticks.push(v);
+  return { lo, hi, ticks };
+}
+function leyenda(series) {
+  if (series.length < 2) return null;
+  return h("div", { class: "legend" }, series.map(s => h("span", {}, h("i", { style: `background:${s.color}` }), s.name)));
+}
+function tooltip(cont) { const t = h("div", { class: "tip hidden" }); cont.append(t); return t; }
+function ubicar(tip, cont, x, y) {
+  tip.classList.remove("hidden");
+  const w = cont.clientWidth, tw = tip.offsetWidth;
+  tip.style.left = Math.min(Math.max(0, x + 14), w - tw) + "px";
+  tip.style.top = Math.max(0, y - 10) + "px";
+}
+function barrasApiladas(labels, series, opt = {}) {
+  const f = opt.f || "usdk", W = ANCHO(), H = Math.round((opt.alto || 260) * (W < 600 ? 0.85 : 1)), ml = W < 600 ? 48 : 64, mr = 8, mt = 8, mb = 34;
+  const cont = h("div", { class: "chart" });
+  const tot = labels.map((_, i) => series.reduce((a, s) => a + Math.max(0, s.vals[i] || 0), 0));
+  const sc = escala(Math.max(...tot, 1));
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opt.titulo || "Gráfico de barras" });
+  const y = v => mt + (H - mt - mb) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  sc.ticks.forEach(t => { svg.append(sv("line", { x1: ml, x2: W - mr, y1: y(t), y2: y(t), stroke: "var(--grid)" })); const tx = sv("text", { x: ml - 6, y: y(t) + 4, "text-anchor": "end" }); tx.textContent = fmt(t, "usdk").replace("USD ", ""); svg.append(tx); });
+  const n = labels.length, bw = (W - ml - mr) / n, gap = Math.min(6, bw * 0.25);
+  const cada = Math.ceil(n / Math.max(3, Math.floor((W - ml) / 64)));
+  labels.forEach((l, i) => {
+    const x0 = ml + i * bw + gap / 2, w = bw - gap;
+    let acc = 0;
+    series.forEach(s => {
+      const v = Math.max(0, s.vals[i] || 0); if (!v) return;
+      const y1 = y(acc + v), y0 = y(acc), hgt = Math.max(0, y0 - y1 - 2);
+      svg.append(sv("rect", { x: x0, y: y1, width: Math.max(1, w), height: hgt, rx: 2, fill: s.color }));
+      acc += v;
+    });
+    if (i % cada === 0) { const tx = sv("text", { x: x0 + w / 2, y: H - mb + 16, "text-anchor": "middle" }); tx.textContent = opt.corto ? opt.corto(l) : l; svg.append(tx); }
+    const hit = sv("rect", { x: ml + i * bw, y: mt, width: bw, height: H - mt - mb, fill: "transparent" });
+    hit.addEventListener("mousemove", ev => {
+      const r = cont.getBoundingClientRect();
+      tip.replaceChildren(h("b", {}, l), ...series.filter(s => s.vals[i]).map(s => h("div", { class: "r" }, h("span", {}, h("i", { style: `display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:${s.color}` }), s.name), h("span", {}, fmt(s.vals[i], f)))),
+        series.length > 1 ? h("div", { class: "r", style: "border-top:1px solid var(--grid);margin-top:3px;padding-top:3px" }, h("span", {}, "Total"), h("span", {}, fmt(tot[i], f))) : null);
+      ubicar(tip, cont, ev.clientX - r.left, ev.clientY - r.top);
+    });
+    hit.addEventListener("mouseleave", () => tip.classList.add("hidden"));
+    svg.append(hit);
+  });
+  svg.append(sv("line", { x1: ml, x2: W - mr, y1: y(0), y2: y(0), stroke: "var(--axis)" }));
+  const tip = tooltip(cont);
+  cont.prepend(svg); if (series.length > 1) cont.prepend(leyenda(series));
+  return cont;
+}
+function lineas(labels, series, opt = {}) {
+  const f = opt.f || "usdk", W = ANCHO(), H = Math.round((opt.alto || 240) * (W < 600 ? 0.85 : 1)), ml = W < 600 ? 48 : 64, mr = 10, mt = 10, mb = 30;
+  const cont = h("div", { class: "chart" });
+  const todos = series.flatMap(s => s.vals.filter(v => v != null));
+  const sc = escala(Math.max(...todos), opt.desdeCero === false ? Math.min(...todos) : Math.min(0, ...todos));
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opt.titulo || "Gráfico de líneas" });
+  const n = labels.length, x = i => ml + (n === 1 ? 0 : i * (W - ml - mr) / (n - 1));
+  const y = v => mt + (H - mt - mb) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  sc.ticks.forEach(t => { svg.append(sv("line", { x1: ml, x2: W - mr, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--grid)" })); const tx = sv("text", { x: ml - 6, y: y(t) + 4, "text-anchor": "end" }); tx.textContent = opt.fEje ? opt.fEje(t) : fmt(t, "usdk").replace("USD ", ""); svg.append(tx); });
+  const cada = Math.ceil(n / Math.max(3, Math.floor((W - ml) / 70)));
+  labels.forEach((l, i) => { if (i % cada === 0) { const tx = sv("text", { x: x(i), y: H - 8, "text-anchor": "middle" }); tx.textContent = opt.corto ? opt.corto(l) : l; svg.append(tx); } });
+  series.forEach(s => {
+    let d = "", pen = false;
+    s.vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); pen = true; });
+    svg.append(sv("path", { d, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  });
+  const guia = sv("line", { y1: mt, y2: H - mb, stroke: "var(--axis)", visibility: "hidden" });
+  svg.append(guia);
+  const puntos = series.map(s => { const c = sv("circle", { r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }); svg.append(c); return c; });
+  const hit = sv("rect", { x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, fill: "transparent" });
+  const tip = tooltip(cont);
+  hit.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - ml) / ((W - ml - mr) / Math.max(1, n - 1)))));
+    guia.setAttribute("x1", x(i)); guia.setAttribute("x2", x(i)); guia.setAttribute("visibility", "visible");
+    series.forEach((s, k) => { const v = s.vals[i]; if (v == null) { puntos[k].setAttribute("visibility", "hidden"); return; } puntos[k].setAttribute("cx", x(i)); puntos[k].setAttribute("cy", y(v)); puntos[k].setAttribute("visibility", "visible"); });
+    tip.replaceChildren(h("b", {}, opt.etiqueta ? opt.etiqueta(labels[i]) : labels[i]), ...series.map(s => h("div", { class: "r" }, h("span", {}, h("i", { style: `display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:${s.color}` }), s.name), h("span", {}, fmt(s.vals[i], f)))));
+    const rc = cont.getBoundingClientRect(); ubicar(tip, cont, ev.clientX - rc.left, ev.clientY - rc.top);
+  });
+  hit.addEventListener("mouseleave", () => { tip.classList.add("hidden"); guia.setAttribute("visibility", "hidden"); puntos.forEach(p => p.setAttribute("visibility", "hidden")); });
+  svg.append(hit);
+  cont.prepend(svg); if (series.length > 1) cont.prepend(leyenda(series));
+  return cont;
+}
+function barrasH(items, f = "usdk", color = "var(--s1)") {
+  const max = Math.max(...items.map(i => Math.abs(i.v)), 1);
+  return h("div", { class: "hb" }, items.flatMap(i => [
+    h("div", { title: i.l, style: "overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, i.l),
+    h("div", {}, h("div", { class: "bar", style: `width:${(Math.abs(i.v) / max * 100).toFixed(1)}%;background:${i.c || color}` })),
+    h("div", { class: "val" }, fmt(i.v, f) + (i.extra ? " · " + i.extra : ""))]));
+}
+const tile = (k, v, d) => h("div", { class: "tile" }, h("div", { class: "k" }, k), h("div", { class: "v" }, v), d ? h("div", { class: "d" }, d) : null);
+const card = (titulo, ...kids) => h("div", { class: "card" }, titulo ? h("h3", {}, titulo) : null, ...kids);
+
+/* ---------- datos derivados ---------- */
+const rango = () => [+$("#wDesde").value, +$("#wHasta").value].sort((a, b) => a - b);
+const nombreSemana = n => (D.semanas.find(s => s.n === n) || {}).nombre || n;
+const corto = s => String(s).split(" - ")[0].replace(/^(\d\d)(\d\d)$/, "$1/$2");
+function volumenPorOperador(a, b) {
+  const o = {}; D.operadores.forEach(x => o[x] = { ops: 0, d: 0, hb: 0 });
+  D.volOps.forEach(([w, op, , n, d, hb]) => { if (w < a || w > b) return; const r = o[op] || (o[op] = { ops: 0, d: 0, hb: 0 }); r.ops += n; r.d += d || 0; r.hb += hb || 0; });
+  return o;
+}
+function clientes(a, b, opFiltro) {
+  const m = new Map();
+  D.volCli.forEach(([w, c, op, n, u]) => {
+    if (w < a || w > b) return; if (opFiltro && op !== opFiltro) return;
+    let r = m.get(c); if (!r) { r = { c, n: 0, u: 0, ops: {}, w0: w, w1: w }; m.set(c, r); }
+    r.n += n; r.u += u || 0; r.ops[op] = (r.ops[op] || 0) + (u || 0); r.w0 = Math.min(r.w0, w); r.w1 = Math.max(r.w1, w);
+  });
+  const arr = [...m.values()].sort((x, y) => y.u - x.u), tot = arr.reduce((s, r) => s + r.u, 0);
+  let acc = 0;
+  return { tot, rows: arr.map((r, i) => { acc += r.u; const top = Object.entries(r.ops).sort((x, y) => y[1] - x[1])[0][0]; return [i + 1, r.c, r.n, r.u, tot ? r.u / tot : 0, tot ? acc / tot : 0, top, Object.keys(r.ops).length, nombreSemana(r.w0), nombreSemana(r.w1)]; }) };
+}
+
+/* ---------- pestañas ---------- */
+const TABS = [["resumen", "Resumen"], ["volumen", "Volumen"], ["clientes", "Clientes"], ["precios", "Precios y comisiones"],
+  ["posicion", "Posición y pendientes"], ["cheques", "Cheques e inversores"], ["operacion", "Operación y gastos"],
+  ["control", "Control de datos"], ["metodo", "Cómo se calculó"]];
+let tabActual = "resumen";
+function iniciar() {
+  $("#sub").textContent = `Corte ${fmt(D.fecha, "fecha")} · ${D.semanas.length} semanas · semana ${nombreSemana(D.actual)} incompleta`;
+  for (const id of ["#wDesde", "#wHasta"]) {
+    const s = $(id); s.replaceChildren(...D.semanas.map(w => h("option", { value: w.n }, w.nombre + (w.n === D.actual ? " (incompleta)" : ""))));
+    s.addEventListener("change", render);
+  }
+  $("#wDesde").value = 1; $("#wHasta").value = D.actual;
+  $("#tabs").replaceChildren(...TABS.map(([id, t]) => h("button", { role: "tab", type: "button", "aria-selected": id === tabActual, onclick: () => { tabActual = id; render(); } }, t)));
+  render();
+}
+function render() {
+  [...$("#tabs").children].forEach((b, i) => b.setAttribute("aria-selected", TABS[i][0] === tabActual));
+  const sec = h("section", { class: "tab" });
+  ({ resumen, volumen, clientes: tabClientes, precios, posicion, cheques, operacion, control, metodo })[tabActual](sec);
+  $("#main").replaceChildren(sec);
+}
+const colorOp = op => SER[Math.max(0, D.operadores.indexOf(op))] || SER[7];
+
+function resumen(s) {
+  const [a, b] = rango(), o = volumenPorOperador(a, b);
+  const tot = Object.values(o).reduce((x, r) => x + (r.d + r.hb) / 2, 0), ops = Object.values(o).reduce((x, r) => x + r.ops, 0);
+  const cl = clientes(a, b), nsem = b - a + 1;
+  s.append(h("div", { class: "banner" }, "Este tablero reúne datos y métricas del Registro General. A propósito no incluye estimaciones de ganancia ni de resultado: esa evaluación la hacen los socios."));
+  s.append(h("div", { class: "tiles" },
+    tile("Volumen operado (promedio neto)", fmt(tot, "usdk"), `${nombreSemana(a)} a ${nombreSemana(b)}`),
+    tile("Volumen promedio por semana", fmt(tot / nsem, "usdk"), `${nsem} semanas`),
+    tile("Operaciones", fmt(ops, "int"), "finalizadas, sin USDT General"),
+    tile("Clientes activos", fmt(cl.rows.length, "int"), cl.rows.length ? `Top 10 = ${fmt(cl.rows.slice(0, 10).reduce((x, r) => x + r[4], 0), "pct")}` : ""),
+    tile("Pendientes: nos deben", fmt(D.pendKpi.nos_deben_usd, "usdk"), "al inicio de la semana actual"),
+    tile("Pendientes: les debemos", fmt(D.pendKpi.les_debemos_usd, "usdk"), "al inicio de la semana actual")));
+  const sem = D.semanas.filter(w => w.n >= a && w.n <= b);
+  const series = D.operadores.map(op => ({ name: op, color: colorOp(op), vals: sem.map(w => D.volOps.filter(r => r[0] === w.n && r[1] === op).reduce((x, r) => x + ((r[4] || 0) + (r[5] || 0)) / 2, 0)) }));
+  s.append(card("Volumen semanal por operador (USD, promedio neto)", barrasApiladas(sem.map(w => w.nombre), series, { corto, titulo: "Volumen semanal por operador" })));
+  s.append(card("Participación por operador en el período", barrasH(D.operadores.map(op => ({ l: op, v: (o[op].d + o[op].hb) / 2, c: colorOp(op), extra: tot ? fmt((o[op].d + o[op].hb) / 2 / tot, "pct") : "" })).sort((x, y) => y.v - x.v))));
+}
+
+function volumen(s) {
+  const [a, b] = rango(), o = volumenPorOperador(a, b), nsem = b - a + 1;
+  const tot = Object.values(o).reduce((x, r) => x + (r.d + r.hb) / 2, 0);
+  s.append(h("h2", {}, "Por operador"), h("p", { class: "note" }, "Promedio neto = (Debe + Haber) / 2, pasado a USD. Usa el rango de semanas elegido arriba."));
+  s.append(tabla({ cols: [{ t: "Operador", f: "txt" }, { t: "Operaciones", f: "int" }, { t: "Debe USD", f: "usd" }, { t: "Haber USD", f: "usd" }, { t: "Promedio neto USD", f: "usd" }, { t: "% del total", f: "pct" }, { t: "Promedio por semana USD", f: "usd" }, { t: "Ticket promedio USD", f: "usd" }],
+    rows: D.operadores.map(op => { const r = o[op], p = (r.d + r.hb) / 2; return [op, r.ops, r.d, r.hb, p, tot ? p / tot : 0, p / nsem, r.ops ? p / r.ops : 0]; }) }, { max: 10 }));
+  // por producto
+  const prodOps = {}; D.volOps.forEach(([w, op, pr, n, d, hb]) => { if (w < a || w > b) return; const r = prodOps[pr] || (prodOps[pr] = { n: 0, u: 0 }); r.n += n; r.u += ((d || 0) + (hb || 0)) / 2; });
+  const prods = D.productos.filter(p => prodOps[p]);
+  s.append(h("h2", {}, "Por producto"));
+  const selOp = h("select", { "aria-label": "Operador" }, h("option", { value: "" }, "Todos los operadores"), ...D.operadores.map(op => h("option", { value: op }, op)));
+  const box = h("div");
+  const dibujarProd = () => {
+    const op = selOp.value, sem = D.semanas.filter(w => w.n >= a && w.n <= b);
+    const top = prods.slice(0, 6), resto = prods.slice(6);
+    const val = (w, ps) => D.volOps.filter(r => r[0] === w && ps.includes(r[2]) && (!op || r[1] === op)).reduce((x, r) => x + ((r[4] || 0) + (r[5] || 0)) / 2, 0);
+    const series = top.map((p, i) => ({ name: p, color: SER[i], vals: sem.map(w => val(w.n, [p])) }));
+    if (resto.length) series.push({ name: "Otros productos", color: SER[7], vals: sem.map(w => val(w.n, resto)) });
+    box.replaceChildren(barrasApiladas(sem.map(w => w.nombre), series, { corto, titulo: "Volumen semanal por producto" }));
+  };
+  selOp.addEventListener("change", dibujarProd); dibujarProd();
+  s.append(card("Volumen semanal por producto", h("div", { class: "tbl-tools" }, selOp), box));
+  const ptot = prods.reduce((x, p) => x + prodOps[p].u, 0);
+  s.append(tabla({ cols: [{ t: "Producto", f: "txt" }, { t: "Operaciones", f: "int" }, { t: "Volumen USD", f: "usd" }, { t: "% del total", f: "pct" }],
+    rows: prods.map(p => [p, prodOps[p].n, prodOps[p].u, ptot ? prodOps[p].u / ptot : 0]) }, { max: 12 }));
+}
+
+function tabClientes(s) {
+  const [a, b] = rango();
+  const selOp = h("select", { "aria-label": "Operador" }, h("option", { value: "" }, "Todos los operadores"), ...D.operadores.map(op => h("option", { value: op }, op)));
+  const box = h("div");
+  const dibujar = () => {
+    const cl = clientes(a, b, selOp.value || null), r = cl.rows;
+    const top1 = r[0] ? r[0][4] : 0, top10 = r.slice(0, 10).reduce((x, y) => x + y[4], 0), p80 = r.findIndex(x => x[5] >= 0.8) + 1;
+    const hhi = r.reduce((x, y) => x + Math.pow(y[4] * 100, 2), 0);
+    box.replaceChildren(
+      h("div", { class: "tiles" }, tile("Clientes", fmt(r.length, "int")), tile("Mayor cliente", fmt(top1, "pct"), r[0] ? r[0][1] : ""),
+        tile("Top 10", fmt(top10, "pct"), "del volumen"), tile("Clientes para el 80%", fmt(p80, "int")),
+        tile("Índice de concentración (HHI)", fmt(hhi, "int"), "menos de 1.500 = baja · más de 2.500 = alta")),
+      card("Top 15 clientes del período", barrasH(r.slice(0, 15).map(x => ({ l: x[1], v: x[3], extra: fmt(x[4], "pct") })))),
+      tabla({ cols: [{ t: "#", f: "int" }, { t: "Cliente", f: "txt" }, { t: "Operaciones", f: "int" }, { t: "Volumen USD", f: "usd" }, { t: "% del total", f: "pct" }, { t: "% acumulado", f: "pct" }, { t: "Operador principal", f: "txt" }, { t: "Operadores", f: "int" }, { t: "Primera semana", f: "txt" }, { t: "Última semana", f: "txt" }], rows: r }, { buscar: true, max: 30 }));
+  };
+  selOp.addEventListener("change", dibujar);
+  s.append(h("h2", {}, "Ranking de clientes"), h("p", { class: "note" }, "Clientes agrupados sin lo que va entre paréntesis (\"Cliente (detalle)\" → \"Cliente\"). Usa el rango de semanas de arriba."), h("div", { class: "tbl-tools" }, selOp), box);
+  dibujar();
+  s.append(h("h2", {}, "Altas y clientes activos por mes"), tabla(D.altas, { max: 12 }));
+  s.append(h("h2", {}, "Clientes que dejaron de operar"), h("p", { class: "note" }, "Clientes con 3 o más operaciones que no operan hace más de 4 semanas completas."), tabla(D.perdidos, { buscar: true, max: 20 }));
+}
+
+function precios(s) {
+  s.append(h("h2", {}, "Cotizaciones del USD billete contra pesos billete"), h("p", { class: "note" }, "Promedio ponderado diario de las cotizaciones de compra y venta (operaciones USD ↔ Pesos billete)."));
+  const sd = D.spreadDiario;
+  s.append(card(null, lineas(sd.map(r => r[0]), [{ name: "Compra", color: "var(--s1)", vals: sd.map(r => r[1]) }, { name: "Venta", color: "var(--s2)", vals: sd.map(r => r[2]) }],
+    { f: "num", desdeCero: false, fEje: v => NF0.format(v), corto: x => fmt(x, "fecha").slice(0, 5), etiqueta: x => fmt(x, "fecha"), titulo: "Cotización compra y venta" })));
+  s.append(h("h2", {}, "Spread por mes y canal"), tabla(D.spreadMes, { max: 30 }));
+  s.append(h("h2", {}, "Cotización media por operador"), h("p", { class: "note" }, "Compra = el cliente entrega USD. Venta = el cliente recibe USD. Año completo."), tabla(D.spreadOp, { max: 20 }));
+  s.append(h("h2", {}, "Comisiones por tipo de operación"), h("p", { class: "note" }, "Operaciones cuya cotización está expresada en %. \"% efectivo\" = (valor que entra − valor que sale) / volumen, con las cotizaciones de referencia."), tabla(D.comisiones));
+  s.append(h("h2", {}, "Circuito Transferencia → USDT"), h("p", { class: "note" }, "Pares cliente + USDT General con la misma transferencia. El margen depende de cómo se valúe el USDT frente al billete (acá, a la paridad semanal observada, de 1,02 a 1,05)."), tabla(D.circuito, { max: 12 }));
+}
+
+function posicion(s) {
+  const p = D.posicion;
+  s.append(h("h2", {}, "Saldos al inicio de cada semana (en USD)"), h("p", { class: "note" }, "Saldo real = caja + pendientes (fila Balance). Caja real = Balance + Apertura Pendientes. Sin columnas de inversiones/garantías ni de gastos. Desde el 11/05 (formato actual de la hoja)."));
+  s.append(card(null, lineas(p.semanas, [{ name: "Saldo real", color: "var(--s1)", vals: p.total }, { name: "Caja real", color: "var(--s2)", vals: p.caja_real }, { name: "Pendientes netos", color: "var(--s3)", vals: p.pendientes }], { corto, titulo: "Saldo real, caja real y pendientes" })));
+  s.append(card("Saldo real por moneda (USD)", lineas(p.semanas, p.monedas.filter(m => Math.max(...p.valores[m].map(v => Math.abs(v || 0))) >= 1000).map((m, i) => ({ name: m, color: SER[i], vals: p.valores[m] })), { corto, titulo: "Saldo real por moneda" })));
+  s.append(tabla({ cols: [{ t: "Semana", f: "txt" }, ...p.monedas.map(m => ({ t: m, f: "usd" })), { t: "Total", f: "usd" }, { t: "Caja real", f: "usd" }, { t: "Pendientes netos", f: "usd" }],
+    rows: p.semanas.map((w, i) => [w, ...p.monedas.map(m => p.valores[m][i]), p.total[i], p.caja_real[i], p.pendientes[i]]) }, { max: 30 }));
+  s.append(h("h2", {}, "Inversiones y garantías (unidad original)"), h("p", { class: "note" }, "Columnas de inversiones y garantías. POLÍGONO está en USD; las demás se muestran en la unidad que tiene la planilla (confirmar)."), tabla(D.invGar, { max: 30 }));
+  const k = D.pendKpi, q = D.usdtQ;
+  s.append(h("h2", {}, "Pendientes y cuentas corrientes (semana actual)"),
+    h("p", { class: "note" }, "Signo: + = la contraparte nos entregó valor (lo debemos) · − = le entregamos valor (nos debe). Convención deducida de la planilla: a confirmar."),
+    h("div", { class: "tiles" }, tile("Ítems", fmt(k.items, "int")), tile("Nos deben", fmt(k.nos_deben_usd, "usdk")), tile("Les debemos", fmt(k.les_debemos_usd, "usdk")),
+      tile("Abiertos hace más de 4 semanas", fmt(k.items_mas_de_4_semanas, "int")), tile("USDT General con \"?\"", fmt(q.items, "int"), `${fmt(q.mas_de_4_semanas, "int")} con más de 4 semanas · ${fmt(q.usd, "usdk")}`)));
+  s.append(card("Antigüedad", tabla(D.pendAnt)));
+  s.append(h("h2", {}, "Por cliente"), tabla(D.pendCli, { buscar: true, max: 25 }));
+  s.append(h("h2", {}, "Detalle"), tabla(D.pendDet, { buscar: true, max: 25 }));
+}
+
+function cheques(s) {
+  const k = D.chequesKpi;
+  s.append(h("h2", {}, "Cartera de cheques"), h("p", { class: "note" }, "Hojas de cheques de la planilla, sin duplicados. \"En cartera\" = ni cobrado ni colocado según las tildes de la hoja: si figuran vencidos, verificar si se cobraron o rebotaron."),
+    h("div", { class: "tiles" }, tile("Cheques listados", fmt(k.cheques_listados, "int"), fmt(k.monto_total_ars, "ars")), tile("En cartera", fmt(k.en_cartera_ars, "ars")),
+      tile("En cartera y vencidos", fmt(k.en_cartera_vencidos_ars, "ars")), tile("Tasa mensual (mediana)", fmt(k.tasa_mensual_mediana, "pct")),
+      tile("Plazo (mediana)", fmt(k.dias_mediano, "int") + " días"), tile("Top 3 titulares", fmt(k.top3_titulares_pct, "pct"), "del monto total")));
+  s.append(h("h2", {}, "Por titular"), tabla(D.chequesTit, { buscar: true, max: 20 }));
+  s.append(h("h2", {}, "En cartera por mes de vencimiento"), tabla(D.chequesVenc));
+  s.append(h("h2", {}, "Inversores"), h("p", { class: "note" }, "Según la hoja Inversores."), tabla(D.inversores, { max: 20 }));
+}
+
+function operacion(s) {
+  s.append(h("h2", {}, "Día de la semana"), h("p", { class: "note" }, "La fecha de cada operación se infiere de los Cierre diarios: es aproximada."));
+  const dr = D.dias.rows;
+  s.append(card("Volumen promedio por día (USD)", barrasH(dr.map(r => ({ l: r[0], v: r[2], extra: fmt(r[1], "num") + " ops" })))));
+  s.append(h("h2", {}, "Tamaño de las operaciones"), tabla(D.tamano), h("h2", {}, "Ticket por operador (año)"), tabla(D.ticket));
+  s.append(h("h2", {}, "Operaciones más grandes del año"), tabla(D.grandes, { buscar: true, max: 15 }));
+  const g = D.gastosSem;
+  s.append(h("h2", {}, "Gastos (Detalle = Gastos)"), h("p", { class: "note" }, "Solo filas con Detalle = Gastos. Sueldos, alquileres u otros cargados con otro Detalle no aparecen."));
+  s.append(card("Gastos por semana y categoría (USD)", barrasApiladas(g.semanas, g.categorias.map((c, i) => ({ name: c, color: SER[i % 8], vals: g.valores[c] })), { f: "usd", corto, titulo: "Gastos semanales" })));
+  s.append(h("div", { class: "grid2" }, card("Por categoría", tabla(D.gastosCat)), card("Conceptos principales", tabla(D.gastosConc, { buscar: true, max: 15 }))));
+}
+
+function control(s) {
+  const n = D.notas || {};
+  if (n.hallazgos && n.hallazgos.length) s.append(h("h2", {}, "Hallazgos del chequeo de la planilla"), card(null, h("ul", { class: "list" }, n.hallazgos.map(x => h("li", {}, x)))));
+  s.append(h("h2", {}, "Calidad de carga por operador"), h("p", { class: "note" }, "Diferencias entre lo imputado en las columnas de caja y lo que dicen Debe/Haber, canceladas con imputación y filas sin estado con imputación (semanas cerradas). Severidad por monto: Alta ≥ USD 100, Media ≥ USD 10."), tabla(D.calidad));
+  s.append(h("h2", {}, "Filas para revisar"), tabla(D.revisar, { buscar: true, max: 25 }));
+  if (n.preguntas && n.preguntas.length) s.append(h("h2", {}, "Preguntas abiertas"), card(null, h("ol", { class: "list" }, n.preguntas.map(x => h("li", {}, x)))));
+}
+
+function metodo(s) {
+  const n = D.notas || {};
+  s.append(h("h2", {}, "Cómo se calcularon los números"), card(null, h("ul", { class: "list" }, (n.metodologia || []).map(x => h("li", {}, x)))));
+  s.append(h("h2", {}, "Cotizaciones usadas"), h("p", { class: "note" }, `Pesos por USD: mediana semanal de lo operado${D.cotizaciones.ars_unica ? " (reemplazada por valor único " + D.cotizaciones.ars_unica + ")" : ""}. USDT: paridad semanal observada. EUR ${D.cotizaciones.eur} USD · BRL ${D.cotizaciones.brl} por USD.`),
+    tabla({ cols: [{ t: "N°", f: "int" }, { t: "Semana", f: "txt" }, { t: "Pesos por USD", f: "num" }, { t: "USD billete por USDT", f: "num" }], rows: D.semanas.map(w => [w.n, w.nombre, w.ars, w.usdt]) }, { max: 40 }));
+}
+</script>
+</body>
+</html>

@@ -21,7 +21,11 @@ description: Rutina semanal completa sobre el Registro General. Corre el pipelin
 5. **Correr el asesor.** Lanzá el agente `asesor-financiero` indicándole la carpeta
    `salidas/AAAA-MM-DD/`. Si la sesión no lo tiene registrado, usá un agente general con el
    contenido de `.claude/agents/asesor-financiero.md` como instrucciones.
-6. **Entregar** al usuario `informe_asesor.md` y `Analisis_Registro_General.xlsx`, con un resumen
+6. **Tablero para compartir (opcional):** si piden algo para mandarle a un socio, agregá
+   `--tablero --clave "<contraseña>"` a `correr.py`. Genera `Tablero_Financiera_<fecha>.html` cifrado.
+   La contraseña se comunica por un canal distinto al del archivo. El tablero no incluye estimaciones
+   de ganancia.
+7. **Entregar** al usuario `informe_asesor.md` y `Analisis_Registro_General.xlsx`, con un resumen
    corto. Las respuestas de los dueños a las "Preguntas" del informe se guardan en
    `docs/notas_duenos.md` para la próxima corrida.
 

@@ -24,11 +24,25 @@ from registro import exportar as X  # noqa: E402
 from registro.leer import Registro  # noqa: E402
 
 
+METODOLOGIA = [
+    "Operaciones consideradas: filas con Fin marcado dentro del bloque de operaciones de cada semana. Quedan afuera los pendientes y las cuentas corrientes.",
+    "Volumen: solo Detalle = Cajas y Recaudadora, sin las filas de USDT General (la cobertura de las transferencias; sumarlas duplicaría el volumen) ni Cambio General, y sin filas de garantías.",
+    "Promedio neto = (Debe + Haber) / 2, pasado a USD. Una operación de 1.000 USD contra pesos cuenta 1.000.",
+    "Pesos: cotización mediana de las operaciones USD/Pesos de cada semana. USDT: paridad semanal observada (cotización del USDT en pesos / cotización del billete). EUR y BRL: valores fijos de referencia.",
+    "Clientes: se agrupan quitando lo que va entre paréntesis y normalizando acentos.",
+    "La fecha de cada operación se infiere de los Cierre diarios (no todas las hojas tienen fecha): el análisis por día es aproximado.",
+    "Saldos: fila Balance (saldo real) y Balance + Apertura Pendientes (caja real) al inicio de cada semana, desde el 11/05.",
+    "Este tablero no incluye estimaciones de ganancia ni de resultado.",
+]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("excel")
     ap.add_argument("--salida")
     ap.add_argument("--fecha", help="fecha de corte (por defecto, la del archivo)")
+    ap.add_argument("--tablero", action="store_true", help="genera además el tablero HTML cifrado")
+    ap.add_argument("--clave", help="contraseña del tablero (si falta, usa CLAVE_TABLERO o genera una)")
     ap.add_argument("--config", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
     a = ap.parse_args()
     cfg = json.load(open(a.config, encoding="utf-8"))
@@ -120,6 +134,17 @@ def main():
     ch.to_csv(os.path.join(salida, "datos", "cheques.csv"), index=False)
     pd.DataFrame({"semana_n": list(cz), "ars_por_usd": list(cz.values()), "usd_por_usdt": [cz_usdt[k] for k in cz]}).to_csv(
         os.path.join(salida, "datos", "cotizaciones.csv"), index=False)
+    if a.tablero:
+        from registro import tablero as TB
+        notas_path = os.path.join(salida, "notas_tablero.json")
+        notas = json.load(open(notas_path, encoding="utf-8")) if os.path.exists(notas_path) else {}
+        notas.setdefault("metodologia", METODOLOGIA)
+        datos = TB.construir_datos(R, b, T, M, cz, cz_usdt, fecha, notas)
+        clave = a.clave or os.environ.get("CLAVE_TABLERO") or TB.clave_aleatoria()
+        ruta = TB.generar(datos, clave, os.path.join(salida, f"Tablero_Financiera_{fecha}.html"))
+        print("Tablero:", ruta)
+        if not (a.clave or os.environ.get("CLAVE_TABLERO")):
+            print("Contraseña generada (guardala, no se vuelve a mostrar):", clave)
     print("Listo:", salida)
 
 
