@@ -171,7 +171,8 @@ def cifrar(datos, clave):
 
 
 def generar(datos, clave, ruta, artifact=False):
-    paquete = cifrar(datos, clave)
+    # clave None = sin contraseña: los datos van en claro y la página abre directo
+    paquete = cifrar(datos, clave) if clave else {"plano": datos}
     html = open(PLANTILLA, encoding="utf-8").read()
     html = html.replace("/*__PAQUETE__*/null", json.dumps(paquete))
     if artifact:

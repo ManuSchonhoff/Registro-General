@@ -150,6 +150,11 @@ async function abrir(clave) {
   const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(PAQUETE.iv) }, key, b64(PAQUETE.ct));
   return JSON.parse(new TextDecoder().decode(plano));
 }
+if (PAQUETE && PAQUETE.plano) {
+  D = PAQUETE.plano;
+  $("#lock").classList.add("hidden"); $("#app").classList.remove("hidden"); $("#lockbtn").classList.add("hidden");
+  setTimeout(iniciar, 0);
+}
 $("#lockform").addEventListener("submit", async ev => {
   ev.preventDefault();
   const err = $("#err"), go = $("#go");

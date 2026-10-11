@@ -43,6 +43,7 @@ def main():
     ap.add_argument("--fecha", help="fecha de corte (por defecto, la del archivo)")
     ap.add_argument("--tablero", action="store_true", help="genera además el tablero HTML cifrado")
     ap.add_argument("--artifact", action="store_true", help="versión del tablero lista para publicar como Artifact")
+    ap.add_argument("--sin-clave", action="store_true", help="tablero sin contraseña (datos en claro)")
     ap.add_argument("--clave", help="contraseña del tablero (si falta, usa CLAVE_TABLERO o genera una)")
     ap.add_argument("--config", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
     a = ap.parse_args()
@@ -141,12 +142,12 @@ def main():
         notas = json.load(open(notas_path, encoding="utf-8")) if os.path.exists(notas_path) else {}
         notas.setdefault("metodologia", METODOLOGIA)
         datos = TB.construir_datos(R, b, T, M, cz, cz_usdt, fecha, notas)
-        clave = a.clave or os.environ.get("CLAVE_TABLERO") or TB.clave_aleatoria()
+        clave = None if a.sin_clave else (a.clave or os.environ.get("CLAVE_TABLERO") or TB.clave_aleatoria())
         ruta = TB.generar(datos, clave, os.path.join(salida, f"Tablero_Financiera_{fecha}.html"))
         if a.artifact:
             print("Artifact:", TB.generar(datos, clave, os.path.join(salida, f"tablero_artifact_{fecha}.html"), artifact=True))
         print("Tablero:", ruta)
-        if not (a.clave or os.environ.get("CLAVE_TABLERO")):
+        if clave and not (a.clave or os.environ.get("CLAVE_TABLERO")):
             print("Contraseña generada (guardala, no se vuelve a mostrar):", clave)
     print("Listo:", salida)
 
