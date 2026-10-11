@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Tablero Financiera</title>
+<title>Tablero Registro General</title>
 <style>
 :root {
   color-scheme: light;
@@ -14,7 +14,7 @@
   --good: #006300; --crit: #d03b3b; --warn-bg: #fff4dc;
 }
 @media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --accent: #3987e5; --wash: rgba(57,135,229,0.14);
@@ -35,7 +35,7 @@ body { background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -ap
 button, input, select { font: inherit; color: inherit; }
 .hidden { display: none !important; }
 /* candado */
-#lock { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+#lock { min-height: 80vh; display: grid; place-items: center; padding: 16px; }
 .lockbox { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 28px 24px; }
 .lockbox h1 { font-size: 20px; margin: 0 0 4px; }
 .lockbox p { margin: 0 0 18px; color: var(--ink2); font-size: 14px; }
@@ -44,7 +44,7 @@ button, input, select { font: inherit; color: inherit; }
 .lockbox .err { color: var(--crit); font-size: 13px; min-height: 20px; margin-top: 8px; }
 .lockbox .fine { color: var(--muted); font-size: 12px; margin-top: 14px; }
 /* app */
-header.top { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--ring); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--ring); }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
 .toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0 6px; flex-wrap: wrap; }
 .toprow h1 { font-size: 18px; margin: 0; }
@@ -164,7 +164,10 @@ $("#lockform").addEventListener("submit", async ev => {
     err.textContent = "Contraseña incorrecta.";
   } finally { go.disabled = false; go.textContent = "Abrir"; }
 });
-$("#lockbtn").addEventListener("click", () => location.reload());
+$("#lockbtn").addEventListener("click", () => {
+  D = null; $("#main").replaceChildren(); $("#tabs").replaceChildren();
+  $("#app").classList.add("hidden"); $("#lock").classList.remove("hidden"); $("#pw").focus();
+});
 let rz; window.addEventListener("resize", () => { if (!D) return; clearTimeout(rz); rz = setTimeout(render, 250); });
 $("#tema").addEventListener("click", () => {
   const r = document.documentElement, oscuro = getComputedStyle(r).colorScheme === "dark";

@@ -170,13 +170,25 @@ def cifrar(datos, clave):
                 ct=base64.b64encode(ct).decode())
 
 
-def generar(datos, clave, ruta):
+def generar(datos, clave, ruta, artifact=False):
     paquete = cifrar(datos, clave)
     html = open(PLANTILLA, encoding="utf-8").read()
     html = html.replace("/*__PAQUETE__*/null", json.dumps(paquete))
+    if artifact:
+        html = version_artifact(html)
     with open(ruta, "w", encoding="utf-8") as f:
         f.write(html)
     return ruta
+
+
+def version_artifact(html):
+    """Versión para publicar como Artifact de claude.ai: el visor agrega su propio esqueleto
+    (doctype, head, body), así que se quitan esas etiquetas y queda <title> + <style> + contenido."""
+    import re
+    for pat in (r"<!doctype html>\s*", r"<html[^>]*>\s*", r"</html>\s*", r"<head>\s*", r"</head>\s*",
+                r"<body>\s*", r"</body>\s*", r'<meta charset="utf-8">\s*', r'<meta name="viewport"[^>]*>\s*'):
+        html = re.sub(pat, "", html, flags=re.I)
+    return html
 
 
 def clave_aleatoria():
