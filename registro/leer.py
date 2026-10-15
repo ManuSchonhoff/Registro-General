@@ -4,6 +4,7 @@ Convierte las hojas semanales y auxiliares en tablas planas (pandas) que usan
 los análisis. No modifica el archivo original.
 """
 import datetime as dt
+import os
 import re
 import statistics
 import warnings
@@ -124,13 +125,29 @@ class Semana:
 
 
 class Registro:
-    def __init__(self, ruta, cfg):
+    def __init__(self, rutas, cfg):
+        """rutas: un Excel o una lista. El primero es el Registro completo (de ahí salen las hojas
+        auxiliares: cheques, inversores). Los siguientes son actualizaciones: sus hojas semanales
+        reemplazan a las del mismo nombre o se agregan. Se ignora el prefijo "Copia de "."""
         self.cfg = cfg
-        self.wf = openpyxl.load_workbook(ruta)
-        self.wv = openpyxl.load_workbook(ruta, data_only=True)
-        nombres = [ws.title for ws in self.wf.worksheets if SEMANA.match(ws.title)]
-        self.semanas = [Semana(n, self.wf[n], self.wv[n], cfg["anio"], i)
-                        for i, n in enumerate(nombres, 1)]
+        rutas = [rutas] if isinstance(rutas, str) else list(rutas)
+        hojas = {}
+        for i, ruta in enumerate(rutas):
+            wf = openpyxl.load_workbook(ruta)
+            wv = openpyxl.load_workbook(ruta, data_only=True)
+            if i == 0:
+                self.wf, self.wv = wf, wv
+            for ws in wf.worksheets:
+                nombre = re.sub(r"^(copia de\s+)+", "", ws.title.strip(), flags=re.I)
+                if SEMANA.match(nombre):
+                    hojas[nombre] = (wf[ws.title], wv[ws.title], os.path.basename(ruta))
+        self.origen = {n: o for n, (_, _, o) in hojas.items()}
+
+        def inicio(n):
+            m = SEMANA.match(n)
+            return (int(m.group(2)), int(m.group(1)))
+        nombres = sorted(hojas, key=inicio)
+        self.semanas = [Semana(n, hojas[n][0], hojas[n][1], cfg["anio"], i) for i, n in enumerate(nombres, 1)]
         self.actual = self.semanas[-1]
 
     # ------------------------------------------------------------------

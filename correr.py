@@ -38,7 +38,7 @@ METODOLOGIA = [
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("excel")
+    ap.add_argument("excel", nargs="+", help="Registro completo y, opcionalmente, archivos de actualización con hojas nuevas")
     ap.add_argument("--salida")
     ap.add_argument("--fecha", help="fecha de corte (por defecto, la del archivo)")
     ap.add_argument("--tablero", action="store_true", help="genera además el tablero HTML cifrado")
@@ -48,11 +48,11 @@ def main():
     ap.add_argument("--config", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
     a = ap.parse_args()
     cfg = json.load(open(a.config, encoding="utf-8"))
-    fecha = a.fecha or dt.date.fromtimestamp(os.path.getmtime(a.excel)).isoformat()
+    fecha = a.fecha or dt.date.fromtimestamp(os.path.getmtime(a.excel[-1])).isoformat()
     salida = a.salida or os.path.join("salidas", fecha)
     os.makedirs(os.path.join(salida, "datos"), exist_ok=True)
 
-    print("Leyendo", a.excel)
+    print("Leyendo", ", ".join(a.excel))
     R = Registro(a.excel, cfg)
     ops = R.operaciones()
     cz = R.cotizaciones(ops)
@@ -107,14 +107,14 @@ def main():
              "− gastos (Detalle=Gastos) − intereses comprometidos con inversores. No incluye resultados de inversiones "
              "(Polígono, Carbox, etc.), diferencias de cambio ni ajustes. Compararlo con la ganancia semanal del análisis de patrimonio.")
     M["contexto"] = dict(
-        archivo=os.path.basename(a.excel), fecha_corte=fecha, semanas=len(R.semanas),
+        archivo=" + ".join(os.path.basename(x) for x in a.excel), fecha_corte=fecha, semanas=len(R.semanas),
         primera_semana=R.semanas[0].nombre, semana_actual=R.actual.nombre + " (incompleta)",
         operaciones_finalizadas=int(ops.fin.sum()), operaciones_en_volumen=int(len(b.vol)),
         cotizacion_ars_actual=cz[act], paridad_usdt_actual=round(cz_usdt[act], 4),
         cotizaciones=cfg["cotizaciones"])
 
     notas = {
-        "Archivo": a.excel, "Fecha de corte": fecha,
+        "Archivo": " + ".join(a.excel), "Fecha de corte": fecha,
         "Volumen": "Promedio neto = (Debe + Haber)/2 en USD. Solo operaciones finalizadas de Cajas y Recaudadora, sin pendientes, "
                    "sin USDT General ni Cambio General, sin filas de garantías.",
         "Cotizaciones": f"ARS por semana (mediana operada o config.json). USDT: paridad semanal observada vs. billete "

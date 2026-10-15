@@ -31,6 +31,13 @@ pip install openpyxl pandas
 python3 correr.py datos/Registro_General_2026.xlsx --fecha 2026-10-02
 ```
 
+Si llega una actualización con hojas sueltas (por ejemplo "Copia de 0510 - 1110"), se pasa después del Registro
+completo: sus hojas semanales reemplazan a las del mismo nombre o se agregan (el prefijo "Copia de" se ignora).
+
+```bash
+python3 correr.py datos/Registro_General_2026.xlsx datos/Actualizacion_2026-10-15.xlsx --fecha 2026-10-15
+```
+
 Tablero interactivo cifrado para compartir (un solo HTML, se abre con contraseña en cualquier navegador):
 
 ```bash
