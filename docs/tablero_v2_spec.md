@@ -117,7 +117,9 @@ el dato. Las columnas son las del contrato (sección 4). Todo cliente se rotula 
 - **M1.2 Indicadores** · P0 (ver 3.1).
 - **M1.3 Volumen por semana** · P0
   - Pregunta: ¿fue una semana normal?
-  - Métrica: `u` de `sem.usd` en `Tend`, más una línea con el promedio móvil de 4 semanas (incluye la semana).
+  - Métrica: `u` de `sem.usd` en `Tend`, más una línea con el promedio móvil de 4 semanas (incluye la semana). Se rotula
+    "Tendencia: promedio móvil de 4 semanas (incluye la semana)" y en la tabla "Prom. móvil 4 sem.": "Promedio de 4
+    semanas" queda solo para `P4`, que no incluye la semana (son cifras distintas).
   - Visual: columnas en `--dato`; la del foco en `--dato-foco`. La semana en curso va con trama y el rótulo "en curso"; la doble lleva la marca "2 sem.".
   - Interacción: tocar, arrastrar o usar las flechas del teclado **solo lee**: actualiza una franja de lectura fija ("29 sep–5 oct · USD 700 k · 180 ops"). Cuando la semana leída no es el foco, la franja muestra el botón "Ver esta semana", que cambia el foco. Incluye "Ver como tabla". La lectura con el dedo y el mouse es P0; con las flechas, P1.
   - Ayuda: "Lo que se movió con clientes cada semana, en USD, contando cada operación una vez."
@@ -175,7 +177,7 @@ el dato. Las columnas son las del contrato (sección 4). Todo cliente se rotula 
   - Métrica: mediana de `comis.pct` por `tipo_com` en `R`, con la cantidad de operaciones y los USD.
   - Visual: barras. Si `comisiones_lista[dic.tipo_com[tipo_com]]` tiene valor, se dibuja una marca en el valor de lista y, cuando la mediana queda más de 0,1 puntos por debajo, el chip "debajo de la lista".
   - Ayuda: "El % pactado en la columna Cotización/Comisión."
-  - Sin dato: "Lista sin cargar en config.json".
+  - Sin dato: "Todavía no se cargó la comisión de lista de cada tipo. Cuando esté, se va a ver si se cobra por debajo."
 - **M3.6 Días de la semana foco** · P1
   - Visual: columnas por `dia.fecha`, con USD y cantidad de operaciones. Las fechas con `inferida = 1` llevan "aprox.".
 - **M3.7 Tamaño** · P1
@@ -188,8 +190,11 @@ el dato. Las columnas son las del contrato (sección 4). Todo cliente se rotula 
   - Tabla: moneda, en su unidad, ≈ USD y %. Orden de las filas: USD billete, USD exterior, USDT, Pesos, Euros, Reales, Libras. La última fila es "Total equivalente (referencia)", sin variación. La fila de USD billete se despliega por caja.
   - Debajo: múltiplos chicos, uno por moneda **en su unidad**, en `Tend`.
   - Leyenda fija: "Los cambios incluyen aportes, retiros y movimientos con clientes."
-  - Ayuda: "Caja al cierre de la semana. El v1 mostraba el saldo al inicio de la semana, por eso las cifras pueden no coincidir."
-  - Interacción: conmutador Caja | Caja + plata afuera (`caja_real` o `saldo_real`).
+  - Ayuda: "Caja propia al cierre de la semana. El tablero anterior mostraba el saldo al inicio de la semana, por eso las cifras pueden no coincidir."
+  - Interacción: conmutador Caja propia | Saldo de la planilla (Balance) (`caja_real` o `saldo_real`). La caja propia ya
+    descuenta la plata de terceros (inversores y clientes con operaciones abiertas) que está en la caja y puede dar
+    negativa: en ese caso, debajo de la tabla va "Negativo: en esa caja hay más plata de terceros que saldo" (más "Depende
+    del signo de los pendientes, que está a confirmar" mientras no esté confirmado).
   - Dato a revisar: si alguna caja de la moneda tiene `confiable = 0` en esa semana, el punto del múltiplo va hueco y la tabla dice "dato a revisar" (4.3). Con `null` se dibuja normal.
   - Sin dato: antes de la primera semana con `formato_actual = 1`, "El formato con saldos empieza el dd/mm", con la fecha de `ini` de esa semana (se deriva de `semanas`, no se escribe fija). La moneda "Otra" se muestra en Control.
 - **M4.2 Plata afuera** · P0
@@ -223,14 +228,16 @@ el dato. Las columnas son las del contrato (sección 4). Todo cliente se rotula 
   - Lista: `revisar` de `f`, con severidad, "Fila 120 · 12–18 oct" (más "Ope 15001" si tiene), operador, cliente, tipo, ≈ USD y el chip "Revisada dd/mm" (`revisada_fecha`). La `clave` no va a la vista: queda dentro del `<details>` de la fila.
   - Foco en la semana en curso: en lugar de una lista vacía, "Se revisa al cerrar la semana" (`revisar` y `calidad` solo cubren semanas completas).
   - Interacción: conmutador "Todas las no revisadas".
-  - Gráficos: barras de `(alta + media) / ops × 100` por semana (desde `calidad`) y una tabla por operador en `R`.
+  - Gráficos: barras de `(alta + media) / ops × 100` por semana (desde `calidad`), rotuladas "Diferencias de carga cada
+    100 filas" (`ops` cuenta las filas cargadas, con los movimientos internos: son más que las operaciones con clientes de
+    la portada), y una tabla por operador en `R` (Graves, Menores, Leves, Filas).
   - Ayuda: "Lo cargado en las columnas de caja no coincide con la operación, o hay filas canceladas o sin estado con importes."
 - **M5.3 Hojas al día** · P0: `frescura`, cada fecha con los días que pasaron.
 - **M5.4 Gastos registrados** · P1
   - Visual: columnas por mes y un ranking de categorías en `R`.
   - Nota fija: "Solo Detalle = Gastos; sueldos, alquileres o comisiones con otro detalle no están."
 - **M5.5 Notas** · P0: hallazgos y preguntas, las abiertas primero. Las resueltas van plegadas, con su fecha (`fecha_estado`).
-- **M5.6 Cómo se calculó** · P0: `metodo`, el glosario y las cotizaciones por semana (`semanas.ars` y `semanas.usdt`). `metodo` incluye la línea "El v1 mostraba el saldo al inicio de la semana; acá la caja es al cierre" y la primera semana con saldos, derivada de `semanas`.
+- **M5.6 Cómo se calculó** · P0: `metodo`, el glosario y las cotizaciones por semana (`semanas.ars` y `semanas.usdt`). `metodo` incluye la línea "El tablero anterior mostraba el saldo al inicio de la semana; acá la caja es al cierre", la definición de caja propia y la primera semana con saldos, derivada de `semanas`.
 
 ## 3. Portada "de un vistazo"
 
@@ -244,16 +251,20 @@ la línea del promedio móvil de 4 semanas.
 | 2 | Operaciones | `sem.n[f]` | "Operación típica: USD `ticket_med`" | `Δsem` y `Δp4` |
 | 3 | Clientes que operaron | `clientes` | "`nuevos` nuevos · `recuperados` regresaron" | `Δp4`, sin semanas con `k ≠ 1` |
 | 4 | Los 5 mayores clientes | `top5` | "El mayor: `top1`" | En puntos, contra la semana anterior y contra `P4` |
-| 5 | Dólar billete | Diferencia $ `venta − compra` | "Compra $ … · Venta $ …" | En $, contra la semana anterior |
-| 6 | Plata afuera | Dos líneas: "Nos deben USD …" y "Debemos USD …" | "`mas4` ítems con 4 semanas o más"; con `signo_pendientes_confirmado = false` se agrega "· signo a confirmar" | `Δsem` de nos deben |
-| 7 | Caja USD billete | `caja_real` del grupo USD, al cierre | "Pesos $ … (≈ USD …) · USDT …". Con `confiable = 0`, "dato a revisar" | En su unidad, con la leyenda de M4.1 |
-| 8 | Para revisar | Dos líneas: "`a` Altas" y "`m` Medias", sin revisar, **de `f`** | "y N de semanas anteriores · Ver lista" (N = Altas y Medias sin revisar de semanas anteriores; si es 0, solo "Ver lista") | — |
+| 5 | Dólar billete | Dos líneas: "Compra $ …" y "Venta $ …" | "Diferencia $ … por dólar" | La diferencia, en $, contra la semana anterior |
+| 6 | Plata afuera | Dos líneas: "Nos deben USD …" y "Debemos USD …" | "`mas4` abiertos hace 4 semanas o más"; con `signo_pendientes_confirmado = false` se agrega "· falta confirmar si nos deben y debemos están al revés" | `Δsem` de nos deben |
+| 7 | Caja propia USD billete | `caja_real` del grupo USD, al cierre | "En la planilla (Balance): USD …" (`saldo_real` del grupo USD) y "Pesos $ … (≈ USD …) · USDT …". Con `confiable = 0`, "dato a revisar" | En su unidad, con la leyenda de M4.1 |
+| 8 | Para revisar | Dos líneas: "`a` graves (≥ USD 100)" y "`m` menores (USD 10–100)", sin revisar, **de `f`** | "y N de semanas anteriores · Ver lista" (N = graves y menores sin revisar de semanas anteriores; si es 0, solo "Ver lista") | — |
 
 - **Formato de la comparación:** "▲ 24% vs prom. 4 sem.", en tinta neutra. Si `|x| < 0,5%`, va "=".
 - **Color:** solo se colorea el indicador 8 (`--crit` si hay alguna fila Alta de `f` sin revisar).
 - **Indicadores 6 y 8:** en lugar de la cifra de 24 px llevan dos líneas apiladas de 17 px, para que entren en los ~165 px de
   cada tarjeta a 390 px.
-- **Indicador 7:** su ayuda dice "Caja al cierre de la semana. El v1 mostraba el saldo al inicio de la semana."
+- **Indicador 7:** su ayuda explica que es la caja propia (sin la plata de terceros), que puede dar negativa y que el
+  tablero anterior mostraba el saldo al inicio de la semana.
+- **Palabras.** En la interfaz, las severidades de `revisar` se muestran como "grave" (Alta), "menor" (Media) y "leve"
+  (Baja), para no confundirlas con las altas de clientes; en el JSON siguen siendo `Alta`, `Media` y `Baja`. Nada de
+  jerga de diseño ("chip") ni de archivos ("config.json", "v1") en los textos visibles.
 - **Foco en la semana en curso:** sin % ni flechas, con el texto "en curso · N días; se compara al cerrar".
 - **Semana doble:** "valores por semana".
 - **Sin `P4`:** "Sin semanas para comparar".
@@ -274,8 +285,8 @@ la línea del promedio móvil de 4 semanas.
 | id | Regla (umbral en `tablero_v2.umbrales`) | Severidad | `clave` | Ancla |
 |---|---|---|---|---|
 | A01 | Filas Alta sin revisar. Es crítica si alguna es de `f`; si no, de atención | Crít. / Aten. | En `claves`, una por fila: `<ini>#<fila>#<ope>` (sin N° de Ope, `<ini>#<fila>`) | `#control-revisar` |
-| A02 | Retiro de un inversor de terceros en el mes del corte o en el siguiente. Es crítica si el total del mes es ≥ `retiro_critico_pct_caja` (0,5) × la caja en USD billete | Aten. / Crít. | `retiro:<inversor>:<AAAA-MM>` | `#saldos-inversores` |
-| A03 | Cheques en cartera vencidos. Se agrega el texto de hoja sin actualizar si pasaron más de `cheques_dias_sin_altas` (30) días sin altas | Aten. | `cheques:<vencidos_ars÷1000>:<ultima_alta>` | `#saldos-cheques` |
+| A02 | Retiro de un inversor de terceros en el mes del corte o en el siguiente. Es crítica si el total del mes es ≥ `retiro_critico_pct_caja` (0,5) × el saldo de la planilla (Balance, `saldo_real`) en USD billete: la caja propia ya descuenta el capital de los inversores y compararla con un retiro lo contaría dos veces. Texto (cifras inventadas): "{inversor} tiene previsto retirar USD 50 k en noviembre. En USD billete hay USD 80 k según la planilla (USD 20 k sin la plata de terceros)." (la segunda frase, solo si es crítica) | Aten. / Crít. | `retiro:<inversor>:<AAAA-MM>` | `#saldos-inversores` |
+| A03 | Cheques en cartera vencidos. Si pasaron más de `cheques_dias_sin_altas` (30) días sin altas, la frase **empieza** por eso: "La hoja de cheques no se actualiza desde el 02/03: figuran 3 cheques vencidos entre abril y junio por $ 10 M (≈ USD 6,7 k). Confirmar si se cobraron, se colocaron o rebotaron." (cifras inventadas) | Aten. | `cheques:<vencidos_ars÷1000>:<ultima_alta>` | `#saldos-cheques` |
 | A04 | Ítems de USDT General con "?" y `sem_abierto ≥ usdt_q_semanas` (4) | Aten. | `usdtq:<cantidad>` | `#saldos-usdt` |
 | A05 | Uno de los `top_alerta` (10) mayores de 12 semanas lleva `ausente_semanas` (2) sin operar: una alerta de atención por cliente. Si los ausentes son 5 o más de los `importantes.top` (30), en lugar de las alertas por cliente va **una sola** alerta resumen informativa ("7 de los 30 mayores no operaron en 2 semanas; 3 están entre los 10 mayores"), porque es algo general de la semana | Aten. / Info | Por cliente, `ausente:<cliente>:<ini última semana>`; la resumen, `ausentes:<ini f>` | `#clientes-novinieron` |
 | A06 | `|Δp4| ≥ volumen_var_pct` (0,25). Es de atención si baja e informativa si sube | Aten. / Info | `vol:<ini f>` | `#semana` |
@@ -287,6 +298,11 @@ la línea del promedio móvil de 4 semanas.
 
 - **A01** sale de la portada cuando todas sus filas están revisadas (queda atenuada en "Ver todas").
 - **Texto:** una frase con el número y sin jerga. Por ejemplo: "3 transferencias sin USDT confirmado hace 4 semanas o más (USD 12 k)."
+  En el celular cada alerta de la portada se corta a 3 líneas: lo esencial tiene que estar en los primeros ~90 caracteres.
+- **A11 con un solo chequeo pendiente:** el texto dice qué es ("Caja CAJA NUEVA sin moneda asignada: no se suma al total."); con
+  varios, "2 avisos del control de carga sin revisar: …" con una frase corta por chequeo.
+- **Revisadas en "Ver todas":** sin la palabra de severidad, con el ícono de OK y "Revisada dd/mm". En A01 y A11,
+  `revisada_fecha` es la fecha más reciente de sus claves.
 
 ## 4. Contrato de datos JSON (`"v": 2`)
 
@@ -422,7 +438,9 @@ front se usa el JSON sintético de 30 semanas o más (ver el comienzo del docume
 - `pasan_inactivos`: tienen 3 operaciones o más hasta `w`, y `w` es la primera semana en la que suman
   `semanas_cliente_perdido` (4) semanas de calendario sin operar, contando `w`. Es la definición del v1, pero en semanas de
   calendario: con índices, la semana posterior a la ventana que incluye la hoja "Dos Semanas" juntaba dos tandas (33 contra
-  unos 13 de una semana normal). Solo difiere del v1 alrededor de la doble.
+  unos 13 de una semana normal). Solo difiere del v1 alrededor de la doble. Dentro de la doble, la última semana de
+  calendario en que operó un cliente sale de la fecha de su última operación en esa hoja (así la tanda se reparte entre
+  las dos semanas siguientes en lugar de caer toda en una).
 - `pct_recurrente`: volumen de `w` de los clientes que operaron en las 4 semanas de calendario anteriores a `w`, dividido por
   el volumen de `w`.
 - `top*`: participación en `w`.
@@ -432,12 +450,16 @@ front se usa el JSON sintético de 30 semanas o más (ver el comienzo del docume
 - Compra: `caja_debe = USD` y `caja_haber` ∈ {PESOS, TRANSFER}; los USD son `debe`.
 - Venta: `caja_haber = USD` y `caja_debe` ∈ {PESOS, TRANSFER}; los USD son `haber`.
 - El canal es billete si la otra caja es PESOS.
-- `cot = Σ(cotizacion × usd) / Σ usd`, agrupado por `semana_n`, canal y lado.
+- `cot = Σ(cotizacion × usd) / Σ usd`, agrupado por `semana_n`, canal y lado. `n` cuenta solo las filas con USD > 0 (una
+  fila con el importe vacío no cambia ni el precio ni los USD).
 
 **`caja` y `pend_sem`**, solo en las hojas con `formato_actual`:
 - **Semana completa (`momento = 0`):**
   - El bloque de abajo va de `estructura()["ini_pend"] + 1` a la primera fila Balance con "cierre" en G que esté después de `ini_pend`. Si no hay ninguna, va hasta `fin_pend`. Es la rama "cerrada" de `R.pendientes_actuales`, generalizada a cualquier hoja.
-  - `cierre_final` = esa primera fila Balance con "cierre" después de `ini_pend`; si no hay ninguna, el último Cierre de la hoja.
+  - `cierre_final` = la fila del **Cierre Semanal** que viene después de `ini_pend` (la primera fila Balance con "cierre"
+    que tiene saldos; en la hoja real, la fila «Cierre Pendientes» que la precede está vacía y daría saldo 0); si no hay
+    ninguna, el último Cierre de la hoja. El código usa el Cierre Semanal y el resultado está verificado contra el Balance de
+    la semana siguiente (criterio 29): no "corregirlo" para tomar la fila vacía.
   - **Formato habitual** (`cierre_final > ini_pend`): `saldo_real[caja] = s.val(cierre_final, col)` y
     `caja_real = saldo_real − Σ` de las imputaciones del bloque de abajo en esa caja.
   - **Cierre antes del bloque** (`cierre_final < ini_pend`): pasa en la primera semana con saldos (hoja 1105–1705: el último
@@ -470,7 +492,8 @@ Todo lo que se filtra con `w ∈ R`:
 - sumas de `cubo` por cliente, operador y producto;
 - ranking y puesto anterior;
 - concentración y mezcla del período;
-- clientes distintos, y nuevos como `Σ sem.nuevos`;
+- clientes distintos, y nuevos como `Σ sem.nuevos`. Un cliente cuenta si tiene alguna fila en `cubo` (`n > 0`), aunque sume
+  USD 0, igual que `sem.clientes` y `sem.nuevos`: así la lista de nuevos, el ranking y las cifras coinciden;
 - mediana de `comis.pct`;
 - tramos en %;
 - gastos por mes y por categoría;
@@ -571,6 +594,8 @@ compactas; los indicadores 6 y 8 usan dos líneas de 17 px). Los rótulos de 11 
 - **Tarjeta:** fondo `--surface`, borde de 1 px `--hair`, radio de 12 px y padding de 12 px (16 en escritorio).
 - **Gráficos:** 180 px de alto en el celular y 220 en escritorio, ejes de 11 px en `--ink-3`, grilla `--hair` y barras con radio de 2 px.
 - **Tablas:** por debajo de 600 px se ocultan las columnas `.p3`. La columna clave nunca se oculta, no hay scroll horizontal y tocar una fila abre su detalle completo.
+  Las tablas anchas que en escritorio caen en un módulo angosto (mezcla de productos, altas por semana, diferencias por
+  operador) se compactan igual según el ancho del módulo (container query), así en escritorio tampoco hay desplazamiento lateral.
 - **Hojas inferiores:** `div` con `role="dialog"` y `aria-modal`, foco atrapado y cierre con Esc.
 - **Ayuda:** cada tarjeta y cada módulo tiene un botón "?" de 32 px o más que abre un `<details>` con **Qué es / Cómo se calcula / De dónde sale**. Esos textos y el glosario (caja, plata afuera, saldo con pendientes, paridad USDT, cara chica, malos, semana doble) son fijos en la constante `AYUDA` de la plantilla.
 
@@ -644,6 +669,11 @@ modo con clave del v2 es P1).
      desde el `notas_tablero.json` más reciente.
    - Se escribe `salidas/<fecha>/notas_tablero.json` (si no existe) para el v1, con los textos de los hallazgos y las
      preguntas en estado "abierta", como strings. Ese es el arrastre: lo resuelto no vuelve al v1.
+   - Si en esa carpeta ya hay un `notas_tablero.json` escrito a mano (sin la marca `_nota` de la copia), sus textos se
+     suman a las notas como abiertos **solo** si se escribió después del último guardado de `notas_manuales.json` (o si
+     `notas_manuales.json` no existía). Uno anterior (por ejemplo, el de una carpeta de antes del v2) no se suma: sus notas
+     ya pasaron por `notas_manuales.json` y pueden estar resueltas; se guarda una vez como `notas_tablero_original.json` y
+     se reemplaza por la copia. El script imprime los textos que suma.
 6. **Proceso** (P0). Llama a `pipeline(..., tablero=not sin_v1, tablero_v2=True, artifact=True, clave=args.clave, elegir,
    excluir, plan)` (`elegir` y `excluir` son P1; en P0 van con sus valores por defecto), con una sola lectura del Excel para
    el v1 y el v2.
@@ -656,13 +686,15 @@ modo con clave del v2 es P1).
 10. **`--sembrar-revisadas`** (P0, una sola vez). El 19/10 el dueño confirmó que los errores marcados eran errores de carga ya
     resueltos ("ya están cocinados"). Con esta opción:
     - se agregan a `revisadas` todas las filas Alta y Media hasta la última semana cerrada, con `fecha` 2026-10-19 (el día en
-      que se siembra) y `nota` "error de carga ya resuelto";
-    - todos los hallazgos que existen en ese momento (con `semana` ≤ la última semana cerrada, o `semana` nula) pasan a
+      que se siembra) y `nota` "error de carga ya resuelto". Nunca después de la semana que contiene
+      `tablero_v2.sembrar_revisadas_hasta` (2026-10-18, lo que el dueño confirmó): si se pierden las notas y se vuelve a
+      sembrar más adelante, no se dan por revisadas filas que nadie confirmó;
+    - todos los hallazgos que existen en ese momento (con `semana` ≤ ese mismo tope, o `semana` nula) pasan a
       `estado: "resuelta"`, con `fecha_estado` 2026-10-19;
     - las preguntas no se tocan.
 
-`correr.py --tablero-v2` corre las validaciones de C05 en adelante. Las del escaneo quedan como `no_evaluado` ("corré
-actualizar.py"). Lee `notas_manuales.json` si existe y, si no, `notas_tablero.json`.
+`correr.py --tablero-v2` corre las validaciones de C05 en adelante. Las del escaneo quedan como `no_evaluado` ("Chequeo
+todavía no disponible"). Lee `notas_manuales.json` si existe y, si no, `notas_tablero.json`.
 
 ### 7.2 Validaciones (`validaciones.json` y M5.1)
 
@@ -677,9 +709,9 @@ actualizar.py"). Lee `notas_manuales.json` si existe y, si no, `notas_tablero.js
 | C07 | Volumen de la semana foco cerrada por debajo de `volumen_min_vs_mediana8` × la mediana de las 8 anteriores | bloqueante | `<ini f>` | P0 |
 | C08 | `saldo_real(w)` (4.3) distinto de `Balance(w+1)` (sin PyG, tolerancia 1), en las últimas 3 transiciones | aviso | `<caja>:<diferencia>` | P0 |
 | C09 | `−Σ` bloque de abajo`(w)` distinto de `Apertura(w+1)` (tolerancia 1), en las últimas 3 transiciones | aviso | `<caja>:<diferencia>` | P0 |
-| C10 | Cierres diarios vacíos en la última hoja | aviso | `<ini>` | P0 |
-| C11 | Operaciones de la última hoja sin Fin, Pen ni Can | aviso | `<ini>:<n>` | P0 |
-| C12 | Columnas de caja con saldo ≠ 0 que no están en `moneda_por_caja`, PyG, inversiones ni `cajas_ignoradas` | aviso | `<caja>` | P0 |
+| C10 | Cierres diarios vacíos en la última semana **cerrada** (`foco`): a mitad de semana es normal que la hoja en curso los tenga, y se controla al cerrar | aviso | `<ini>` | P0 |
+| C11 | Operaciones de la última semana **cerrada** sin Fin, Pen ni Can (misma razón que C10) | aviso | `<ini>:<n>` | P0 |
+| C12 | Columnas de caja con saldo ≠ 0 que no están en `moneda_por_caja`, PyG, inversiones ni `cajas_ignoradas`. Texto: "La caja CAJA NUEVA tiene un saldo de 100 y no sabemos en qué moneda está, así que no se suma al total. Decile a Claude en qué moneda está, o que es una caja vieja, y deja de avisar." | aviso | `<caja>` | P0 |
 | C13 | Operadores fuera de `operadores_principales` en las últimas 4 semanas | info | `<operador>` | P0 |
 | C14 | Clientes nuevos parecidos a uno existente | info | `<cliente>` | P1 |
 | C15 | Semanas sin cotización observada (se usó la anterior) | aviso | `<ini>` | P0 |
@@ -829,3 +861,22 @@ scratchpad. Cada criterio lleva su prioridad. Los números no se corren: los agr
 - **Alcance:** P0 y P1 en cada módulo, paso y criterio; contrato completo y módulos ocultos si no están.
 - **Visual (6):** `--op-resto` y `--dato` claros corregidos con el validador de `dataviz`; encabezado de 52 px en todos lados;
   indicadores 6 y 8 en dos líneas de 17 px; HTML de menos de 800 KB.
+
+## 11. Cambios de la revisión del panel (19/10, después de la primera entrega)
+
+- **Caja propia (3.1, M4.1, A02, glosario):** el indicador 7 y M4.1 muestran `caja_real` como "Caja propia" y suman la cifra
+  que el dueño reconoce, "En la planilla (Balance)". El conmutador es Caja propia | Saldo de la planilla (Balance). Una caja
+  propia negativa lleva una nota que la explica. A02 compara el retiro contra el Balance (la caja propia ya descuenta el
+  capital del inversor) y dice las dos cifras.
+- **Textos de las alertas (3.2):** lo esencial en los primeros ~90 caracteres (A02, A03); A11 dice qué aviso es; las
+  revisadas van con OK y fecha.
+- **Promedios (M1.3, glosario):** la línea del gráfico es la "Tendencia: promedio móvil de 4 semanas (incluye la semana)";
+  "Promedio de 4 semanas" queda para `P4`.
+- **Severidades (indicador 8, M5.2, C17, A01):** "graves" y "menores" en lugar de "Altas" y "Medias".
+- **Clientes (4.4):** se cuentan por presencia en `cubo`, también los de USD 0, como en Python.
+- **Control (7.2):** C10 y C11 sobre la última semana cerrada; C12 en lenguaje llano; nada de `config.json` a la vista.
+- **Notas (7.1, 7.3):** `notas_tablero.json` viejos no reabren notas; el sembrado tiene tope; los campos que no son del
+  contrato se conservan.
+- **Visual (6):** espacio duro entre unidad, número y k/M; tablas sin desplazamiento lateral a 390 px (columnas `.p3` y,
+  en la mezcla de productos, una columna "Resto" cuando el módulo es angosto, también en escritorio); campos de búsqueda de 16 px; `--crit-ink` para el
+  texto crítico y nada de `opacity` en lo revisado (contraste AA); controles de 44 px.

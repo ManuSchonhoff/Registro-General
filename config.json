@@ -28,5 +28,27 @@
   "columnas_inversiones_garantias": ["MILLAMAPU", "JEEP", "GOL TREND", "CHARCAS", "PROMAR", "ALMAFUERTE", "POLIGONO 20+13", "POLIGONO"],
   "semanas_cliente_perdido": 4,
   "rango_cotizacion_ars": [900, 2500],
-  "max_comision_pct": 15
+  "max_comision_pct": 15,
+  "tablero_v2": {
+    "_nota": "Tablero v2 (docs/tablero_v2_spec.md, sección 5). historia_altas_desde_semana es un índice de semana en base 0. Los umbrales en fracción (0.25 = 25%); comisiones_lista en puntos porcentuales (2.5 = 2,5%); caja_minima en la unidad de cada moneda.",
+    "operadores_destacados": ["Francisco", "Manuel"],
+    "semanas_tendencia": {"movil": 12, "escritorio": 26},
+    "historia_altas_desde_semana": 9,
+    "importantes": {"top": 30, "ventana_semanas": 12, "ausente_semanas": 2, "top_alerta": 10},
+    "signo_pendientes_confirmado": false,
+    "cajas_ignoradas": [],
+    "umbrales": {"volumen_var_pct": 0.25, "top1_max": 0.25, "top5_max": 0.5, "usdt_q_semanas": 4,
+      "pend_semanas_viejo": 12, "cheques_dias_sin_altas": 30, "costos_fijos_dias": 35, "retiro_critico_pct_caja": 0.5,
+      "caja_minima": {"USD": null, "USDT": null}, "pesos_max_pct": null, "precios_min_ops": 5, "precios_min_usd": 10000,
+      "formulas_sin_valor_max": 0.05, "volumen_min_vs_mediana8": 0.3, "similitud_clientes": 0.9},
+    "comisiones_lista": {"Recaudación / pesos↔transfer": null, "USD exterior ↔ billete": null, "USDT ↔ billete": null,
+      "Canje billetes (BsAs, cara chica, malos)": null, "USD exterior ↔ USDT": null},
+    "fondeo_excluir_inversores": ["Cambio General"],
+    "pendientes_tipos": [
+      {"tipo": "USDT General", "cliente": ["USDT General"]},
+      {"tipo": "Préstamos y deudas", "detalle": ["Prestamos", "Deuda"]},
+      {"tipo": "Garantías y dividendos", "detalle": ["Garantias", "Dividendos"]},
+      {"tipo": "Inversores", "inversores": true},
+      {"tipo": "Clientes y cuentas corrientes", "resto": true}]
+  }
 }

@@ -1,0 +1,2343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tablero Semanal Financiera</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<style>
+/* Una sección por vez: encabezado fijo arriba, barra inferior en el celular y riel izquierdo desde 960 px.
+   Tinta para la interfaz; el color queda para los datos y los estados. */
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3; --surface: #fdfdfc; --surface-2: #efeee9;
+  --ink: #121211; --ink-2: #4f4e4a; --ink-3: #6b6a65;
+  --hair: #e3e2db; --axis: #c3c2b7; --focus: #2a78d6;
+  --op-1: #eb6834; --op-2: #2a78d6; --op-resto: #199e70;
+  --dato: #848fa3; --dato-foco: #2f4466; --banda: rgba(18,18,17,.10);
+  --ord-1: #86b6ef; --ord-2: #3987e5; --ord-3: #256abf; --ord-4: #104281;
+  --ok-ink: #006300; --warn-ink: #8a5a00; --crit: #d03b3b; --crit-ink: #b02a2a;
+  --warn-bg: rgba(250,178,25,.12); --crit-bg: rgba(208,59,59,.08);
+  --velo: rgba(18,18,17,.38); --sombra: rgba(18,18,17,.10);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --head-h: 51px; --nav-h: 56px; --rail: 200px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f0f0e; --surface: #1a1a19; --surface-2: #232321;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a3a29b;
+    --hair: #2c2c2a; --axis: #383835; --focus: #5b9be6;
+    --op-1: #d95926; --op-2: #3987e5; --op-resto: #199e70;
+    --dato: #6b7890; --dato-foco: #c9d6ea; --banda: rgba(240,239,236,.14);
+    --ord-1: #184f95; --ord-2: #2a6fc4; --ord-3: #5b9be6; --ord-4: #9ec5f4;
+    --ok-ink: #0ca30c; --warn-ink: #fab219; --crit: #e66767; --crit-ink: #eb7575;
+    --warn-bg: rgba(250,178,25,.14); --crit-bg: rgba(230,103,103,.14);
+    --velo: rgba(0,0,0,.6); --sombra: rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f0f0e; --surface: #1a1a19; --surface-2: #232321;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a3a29b;
+  --hair: #2c2c2a; --axis: #383835; --focus: #5b9be6;
+  --op-1: #d95926; --op-2: #3987e5; --op-resto: #199e70;
+  --dato: #6b7890; --dato-foco: #c9d6ea; --banda: rgba(240,239,236,.14);
+  --ord-1: #184f95; --ord-2: #2a6fc4; --ord-3: #5b9be6; --ord-4: #9ec5f4;
+  --ok-ink: #0ca30c; --warn-ink: #fab219; --crit: #e66767; --crit-ink: #eb7575;
+  --warn-bg: rgba(250,178,25,.14); --crit-bg: rgba(230,103,103,.14);
+  --velo: rgba(0,0,0,.6); --sombra: rgba(0,0,0,.4);
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + var(--head-h));
+  scroll-padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); }
+body.hoja-abierta { overflow: hidden; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font);
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.num, .t, .eje, .tab { font-variant-numeric: tabular-nums; }
+
+/* Encabezado */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--hair); }
+.top-in { height: var(--head-h); display: flex; align-items: center; gap: 8px; }
+.top h1 { font-size: 15px; margin: 0; font-weight: 600; white-space: nowrap; }
+@media (max-width: 959px) { .top .titulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
+.chip-sem { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; max-width: 100%; padding: 0 12px; border: 1px solid var(--axis);
+  border-radius: 20px; background: var(--surface); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.chip-sem .est { font-weight: 400; color: var(--ink-2); }
+.chip-sem .est-c { display: none; }
+@media (max-width: 380px) { .chip-sem .est-l { display: none; } .chip-sem .est-c { display: inline; } }
+.chip-sem svg { flex: none; }
+.sp { flex: 1; }
+.b-ic { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 22px; background: transparent; color: var(--ink-2); text-decoration: none; font-weight: 700; font-size: 17px; }
+.b-ic:hover { background: var(--surface-2); color: var(--ink); }
+
+/* Navegación */
+.nav { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--hair);
+  padding-bottom: env(safe-area-inset-bottom, 0px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.nav button { min-height: var(--nav-h); border: 0; background: none; color: var(--ink-3); display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; font-size: 11px; letter-spacing: .02em; position: relative; padding: 0 2px; }
+.nav button[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.nav button[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; border-radius: 0 0 2px 2px; background: var(--ink); }
+
+/* Contenido */
+.main { padding-block: 8px 32px; }
+.main-in { max-width: 1200px; margin: 0 auto; min-width: 0; }
+.banner { padding: 6px 12px; margin-bottom: 10px; border-radius: 12px; background: var(--surface-2); font-size: 13px; color: var(--ink-2); }
+.banner p { margin: 0; }
+.banner b { color: var(--ink); }
+.banner .link { font-weight: 600; margin-left: 4px; min-height: 28px; }
+.banner .corto { display: none; }
+/* En el celular el banner va en una línea y con poco aire: con él, la primera pantalla tiene que seguir mostrando las
+   alertas y los indicadores 1 a 4. El "Ver" conserva un área táctil de 44 px con ::after. */
+@media (max-width: 599px) {
+  .banner .largo { display: none; } .banner .corto { display: inline; }
+  .banner { padding: 0 10px; margin-bottom: 2px; }
+  .banner .link { min-height: 26px; position: relative; }
+  .banner .link::after { content: ""; position: absolute; inset: -9px -10px; }
+  .main { padding-top: 4px; }
+  .alertas.portada { gap: 6px; }
+}
+.anclas { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 6px; margin-bottom: 4px; }
+.anclas::-webkit-scrollbar { display: none; }
+.mods > .anclas { grid-column: 1 / -1; margin: 0; min-width: 0; }
+.chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 16px;
+  font-size: 13px; color: var(--ink-2); background: var(--surface); white-space: nowrap; text-decoration: none; position: relative; flex: none; }
+.chip::after { content: ""; position: absolute; inset: -6px 0; }
+.chip:hover { color: var(--ink); border-color: var(--axis); }
+.periodo { margin: 4px 0 12px; font-size: 13px; color: var(--ink-2); }
+.link { border: 0; background: none; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; font-size: inherit; min-height: 44px; }
+.periodo .link { display: inline-flex; align-items: center; vertical-align: middle; }
+.mods { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+
+/* Módulos */
+.mod { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 12px; position: relative; min-width: 0;
+  scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--head-h) + 12px); display: flex; flex-direction: column; gap: 10px; }
+.mod.plano { background: none; border: 0; padding: 0; }
+.mod-h { padding-right: 40px; min-height: 32px; display: flex; flex-direction: column; justify-content: center; }
+.mod h2 { font-size: 17px; line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+.mod h3 { font-size: 13px; margin: 0; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+.mod-sub { margin: 0; font-size: 13px; color: var(--ink-2); }
+.mod p { margin: 0; }
+.nota { font-size: 13px; color: var(--ink-2); }
+.vacio { font-size: 15px; color: var(--ink-2); padding: 8px 0; }
+details.ayuda > summary { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--axis);
+  display: grid; place-items: center; list-style: none; cursor: pointer; font-weight: 700; font-size: 15px; color: var(--ink-2); background: var(--surface); }
+.mod.plano details.ayuda > summary { top: 0; right: 0; }
+details.ayuda > summary::after { content: ""; position: absolute; inset: -6px; }
+details.ayuda > summary::-webkit-details-marker { display: none; }
+details.ayuda[open] > summary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.ayuda-txt { padding: 10px 12px; background: var(--surface-2); border-radius: 8px; font-size: 13px; color: var(--ink-2); }
+.ayuda-txt .ay-l { color: var(--ink); font-size: 15px; margin: 0 0 6px; }
+.ayuda-txt dl { margin: 0; display: grid; gap: 2px; }
+.ayuda-txt dt { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; margin-top: 6px; color: var(--ink-3); }
+.ayuda-txt dd { margin: 0; }
+
+/* Alertas */
+.alertas { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.alerta { border-radius: 10px; background: var(--surface); border: 1px solid var(--hair); border-left: 4px solid var(--sev, var(--ink-3)); min-width: 0; }
+.al-a { display: flex; align-items: center; gap: 4px; padding: 7px 6px 7px 10px; min-height: 44px; color: inherit; text-decoration: none; border-radius: 0 9px 9px 0; }
+.al-a:hover .al-ch { color: var(--ink); }
+.al-a p, .al-p { margin: 0; flex: 1; min-width: 0; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.al-p { padding: 8px 10px; }
+.al-sev { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--sev, var(--ink-3)); margin-right: 6px; vertical-align: 1px; }
+.al-ch { flex: none; color: var(--ink-3); }
+.alerta.s-critico { --sev: var(--crit); background: var(--crit-bg); }
+.alerta.s-critico .al-sev { color: var(--crit-ink); }
+.alerta.s-atencion { --sev: var(--warn-ink); background: var(--warn-bg); }
+.alerta.s-info { --sev: var(--ink-3); }
+.alerta.revisada { --sev: var(--axis); background: var(--surface); }
+.alerta.revisada .al-a p, .alerta.revisada .al-p { color: var(--ink-2); }
+.alerta.revisada .al-sev { color: var(--ok-ink); }
+.al-pie { display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: center; font-size: 13px; padding: 0 10px 6px; }
+.mod-h.fila { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+.mod-h.fila h2 { flex: 1; min-width: 0; }
+.mod-h .al-fecha { font-size: 13px; font-weight: 400; color: var(--ink-2); margin-left: 6px; }
+.ok-box { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--hair); color: var(--ok-ink); font-weight: 600; }
+.ok-box span { color: var(--ink); }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2);
+  white-space: nowrap; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.tag.crit { color: var(--crit-ink); background: var(--crit-bg); }
+.tag.warn { color: var(--warn-ink); background: var(--warn-bg); }
+.tag.ok { color: var(--ok-ink); }
+details.mini > summary { font-size: 13px; color: var(--ink-2); cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 4px; list-style: none; }
+details.mini > summary::-webkit-details-marker { display: none; }
+details.mini > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); margin: 0 4px 0 2px; flex: none; }
+details.mini[open] > summary::before { transform: rotate(45deg); margin-top: -3px; }
+details.mini > summary:hover { color: var(--ink); }
+details.mini[open] > summary { color: var(--ink); }
+.claves { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.como { margin: 2px 0 0; font-size: 13px; color: var(--ink); }
+.claves code { font-size: 12px; overflow-wrap: anywhere; color: var(--ink); }
+
+/* Indicadores */
+.inds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.ind { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 8px; position: relative; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ind.crit { border-color: var(--crit); background: var(--crit-bg); }
+.ind .k { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; padding-right: 32px; min-height: 28px; display: flex; align-items: center; line-height: 1.25; }
+.ind details.ayuda > summary { top: 6px; right: 6px; }
+.ind details.ayuda[open] { margin: 4px 0; }
+.ind .v { font-size: 28px; line-height: 1.1; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.ind .v .u { font-size: 15px; font-weight: 500; color: var(--ink-2); margin-right: 4px; letter-spacing: 0; }
+.ind.compacta .v { font-size: 24px; }
+.ind .v2 { font-size: 17px; line-height: 1.3; font-weight: 650; }
+.ind .v2 .u { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.ind .v2 .nw { white-space: nowrap; }
+.ind .v2.crit-t { color: var(--crit-ink); }
+.ind .v2 .u2 { font-size: 13px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+.ind .s, .ind .c { font-size: 13px; color: var(--ink-2); line-height: 1.35; overflow-wrap: anywhere; }
+.ind .c { color: var(--ink-2); }
+.ind .falta { color: var(--ink-3); }
+.ind .spark { margin-top: auto; padding-top: 4px; }
+.ind .spark svg { display: block; width: 100%; }
+.ind a { color: var(--ink); text-underline-offset: 2px; }
+.ind a.ver { display: inline-flex; align-items: center; min-height: 44px; margin-block: -10px -12px; }
+
+/* Gráficos */
+.graf { position: relative; width: 100%; min-width: 0; }
+.graf svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.graf svg:focus-visible { outline-offset: 0; }
+.eje text { fill: var(--ink-3); font-size: 11px; font-family: var(--font); }
+.marca { fill: var(--ink-3); font-size: 11px; font-family: var(--font); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.rot { font-size: 11px; font-family: var(--font); font-weight: 600; }
+.lectura { min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 6px 10px; border-radius: 8px;
+  background: var(--surface-2); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lectura b { color: var(--ink); font-weight: 600; }
+.lectura .lt { flex: 1 1 200px; min-width: 0; }
+.lectura .btn { margin-left: auto; }
+.ley { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); align-items: center; }
+.ley .it { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+.sw.redondo { border-radius: 50%; }
+.sw.lin { height: 2px; width: 14px; border-radius: 1px; }
+.sw.dash { height: 0; width: 14px; border-top: 2px dashed var(--ink-3); background: none !important; }
+.sw.dash-dato { border-top-color: var(--dato); }
+.sw.trama { background: repeating-linear-gradient(135deg, var(--dato) 0 2px, transparent 2px 5px); border: 1px solid var(--dato); }
+.sw.trama-g { background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, transparent 2px 5px); border: 1px solid var(--ink-3); }
+.btn { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--axis); background: var(--surface); font-size: 13px; color: var(--ink); white-space: nowrap; position: relative; }
+.btn::after { content: ""; position: absolute; inset: -4px 0; }
+.btn:hover { border-color: var(--ink-3); }
+.mas { align-self: flex-start; }
+details.vt > summary { font-size: 13px; color: var(--ink-2); cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 2px; }
+details.vt[open] > summary { color: var(--ink); }
+
+/* Control segmentado */
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; max-width: 100%; flex-wrap: wrap; }
+.seg button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-2); font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px var(--sombra); }
+
+/* Listas de barras */
+.barras { list-style: none; margin: 0; padding: 0; display: grid; }
+.barras li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 7px 0; border-top: 1px solid var(--hair); align-items: center; }
+.barras li:first-child { border-top: 0; }
+.barras .nom { grid-column: 1 / -1; font-size: 15px; overflow-wrap: anywhere; display: flex; gap: 6px; align-items: baseline; }
+.barras .nom .pos { color: var(--ink-3); font-size: 13px; min-width: 1.6em; font-variant-numeric: tabular-nums; }
+.barras .pista { height: 8px; border-radius: 2px; position: relative; min-width: 0; }
+.barras .pista i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--dato); min-width: 2px; }
+.barras li.click { cursor: pointer; }
+.barras li.click:hover .nom > span:last-child { text-decoration: underline; text-underline-offset: 2px; }
+.barras .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.barras .val { font-size: 13px; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; display: flex; gap: 6px; align-items: center; }
+.punto { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; align-self: center; }
+.dos { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.buscar { display: flex; gap: 8px; align-items: center; }
+.buscar input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--axis); background: var(--bg); font-size: 16px; }
+
+/* Cifras */
+.cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cifra .k { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; }
+.cifra .v { font-size: 24px; font-weight: 650; line-height: 1.15; overflow-wrap: anywhere; }
+.cifra .v .u { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-right: 3px; }
+.cifra .s { font-size: 13px; color: var(--ink-2); }
+.cifra.crit .v, .cifra.crit .k { color: var(--crit-ink); }
+.aviso { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: var(--warn-bg); color: var(--ink); }
+.aviso svg { color: var(--warn-ink); flex: none; margin-top: 1px; }
+
+/* Tablas */
+.tbl-wrap { overflow-x: auto; max-width: 100%; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.t th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--axis); vertical-align: bottom; }
+.t td { padding: 8px; border-bottom: 1px solid var(--hair); vertical-align: top; overflow-wrap: anywhere; }
+.t th:first-child, .t td:first-child { padding-left: 0; }
+.t th:last-child, .t td:last-child { padding-right: 0; }
+.t .n { text-align: right; white-space: nowrap; }
+.t th.n { white-space: normal; }
+.t tr.click { cursor: pointer; }
+.t tr.click:hover td { background: var(--surface-2); }
+.t tr.det td { background: var(--surface-2); padding: 8px 10px; }
+.t tr.tot td { font-weight: 650; border-bottom: 0; border-top: 1px solid var(--axis); }
+.t .sub2 { display: block; font-size: 11px; color: var(--ink-3); }
+.det-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; margin: 0; font-size: 13px; }
+.det-grid dt { color: var(--ink-3); }
+.det-grid dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Ítems con detalle */
+.items { list-style: none; margin: 0; padding: 0; }
+.items > li { border-top: 1px solid var(--hair); }
+.items > li:first-child { border-top: 0; }
+.items details > summary { list-style: none; cursor: pointer; padding: 8px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; }
+.items details > summary::-webkit-details-marker { display: none; }
+.items .a { font-size: 15px; overflow-wrap: anywhere; }
+.items .b { font-size: 13px; color: var(--ink-2); grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.items .m { font-size: 13px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.items .d { padding: 0 0 10px; }
+.items .plain { padding: 8px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; }
+.items li.rev .a, .items li.rev .b, .items li.rev .m { color: var(--ink-3); }
+.items li.rev .tag.crit, .items li.rev .tag.warn { color: var(--ink-2); background: var(--surface-2); }
+.items li.click { cursor: pointer; }
+.items li.click:hover .a { text-decoration: underline; text-underline-offset: 2px; }
+.pares { display: grid; gap: 2px; }
+.pares .fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--hair); font-size: 13px; }
+.pares .fila:first-child { border-top: 0; }
+.pares .bb { grid-column: 1 / -1; display: grid; gap: 3px; }
+.pares .bb i { display: block; height: 7px; border-radius: 2px; min-width: 2px; }
+.hoja.ancha { width: auto; }
+@media (min-width: 960px) { .hoja.ancha { width: 560px; } }
+
+/* Antigüedad y dos lados */
+.apil { display: flex; height: 22px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--surface); }
+.apil i { display: block; height: 100%; min-width: 2px; }
+.lados { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px 0; font-size: 13px; }
+.lados .tit { grid-column: 1 / -1; padding-top: 6px; color: var(--ink); font-size: 13px; }
+.lados .l, .lados .r { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.lados .l { justify-content: flex-end; border-right: 1px solid var(--axis); padding-right: 6px; }
+.lados .r { padding-left: 6px; }
+.lados .bar { height: 10px; border-radius: 2px; min-width: 0; flex: none; }
+.lados .txt { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lados .cab { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); font-weight: 600; }
+
+/* Múltiplos */
+.mult { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.mult > div { min-width: 0; border-top: 1px solid var(--hair); padding-top: 6px; }
+.mult .tt { font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 0; }
+.mult .tt b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Control */
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--hair); }
+.check:first-child { border-top: 0; }
+.check .ic { margin-top: 2px; }
+.check .tt { font-weight: 600; font-size: 15px; }
+.check .dd { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.check.rev .tt { color: var(--ink-2); font-weight: 500; }
+.check.rev .ic { color: var(--ink-3); }
+.grupo-t { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--ink-2); margin: 6px 0 0; }
+.fresca { list-style: none; margin: 0; padding: 0; }
+.fresca li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--hair); }
+.fresca li:first-child { border-top: 0; }
+.fresca .f { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.fresca .dd { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); }
+.c-crit { color: var(--crit-ink); } .c-warn { color: var(--warn-ink); } .c-ok { color: var(--ok-ink); } .c-info { color: var(--ink-3); }
+.switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 0; background: none; padding: 0; font-size: 13px; color: var(--ink); }
+.switch .tr { width: 36px; height: 22px; border-radius: 11px; background: var(--axis); position: relative; flex: none; transition: background .15s; }
+.switch .tr::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.switch[aria-pressed="true"] .tr { background: var(--ink); }
+.switch[aria-pressed="true"] .tr::after { transform: translateX(14px); }
+.lista-txt { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; }
+.glos { margin: 0; display: grid; gap: 8px; }
+.glos dt { font-weight: 600; }
+.glos dd { margin: 0; color: var(--ink-2); font-size: 13px; }
+
+/* Selector (hoja inferior / panel) */
+.velo { position: fixed; inset: 0; background: var(--velo); z-index: 40; }
+.hoja { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 86vh; max-height: 86dvh; overflow: auto; overscroll-behavior: contain;
+  background: var(--surface); border-radius: 16px 16px 0 0; padding-top: 8px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px var(--sombra); display: flex; flex-direction: column; gap: 12px; animation: sube .18s ease-out; }
+@keyframes sube { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+/* En la hoja (columna flex con alto máximo) los hijos no se encogen: una tabla con overflow quedaba en 0 px */
+.hoja > * { flex-shrink: 0; }
+.hoja-h { display: flex; align-items: center; gap: 8px; }
+.hoja-h h2 { flex: 1; font-size: 17px; margin: 0; }
+.agarre { width: 36px; height: 4px; border-radius: 2px; background: var(--axis); margin: 0 auto; }
+.semanas { list-style: none; margin: 0; padding: 0; display: grid; }
+.semanas button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; border: 0; border-top: 1px solid var(--hair); background: none;
+  text-align: left; padding: 0 4px; font-size: 15px; }
+.semanas li:first-child button { border-top: 0; }
+.semanas button .nm { flex: 1; min-width: 0; }
+.semanas button .es { font-size: 13px; color: var(--ink-2); }
+.semanas button[aria-pressed="true"] { font-weight: 650; }
+.semanas button[aria-pressed="true"] .ck { visibility: visible; }
+.semanas .ck { visibility: hidden; color: var(--ink); }
+.semanas button:hover { background: var(--surface-2); }
+
+/* Clave y vacío */
+.pantalla { min-height: 70vh; display: grid; place-items: center; padding-block: 32px; }
+.caja-clave { width: 100%; max-width: 360px; display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 20px; }
+.caja-clave h1 { font-size: 17px; margin: 0; }
+.caja-clave p { margin: 0; font-size: 13px; color: var(--ink-2); }
+.caja-clave input { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--axis); background: var(--bg); font-size: 16px; }
+.caja-clave button { min-height: 44px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-weight: 600; }
+.caja-clave .err { color: var(--crit); font-size: 13px; min-height: 1.2em; }
+
+@media (min-width: 600px) {
+  .dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  .cifras.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 599px) { .t .p3 { display: none; } .t th, .t td { padding-left: 6px; padding-right: 6px; } }
+@media (min-width: 600px) { .t .m3 { display: none; } }
+/* Tablas anchas en un módulo angosto (escritorio en dos columnas, tableta): se compactan como en el celular según el
+   ancho del módulo y no el de la pantalla, así no quedan columnas escondidas detrás de un desplazamiento lateral. */
+.tbl-wrap.cq { container: tw / inline-size; }
+@container tw (max-width: 779px) { .cq-780 .t .p3 { display: none; } .cq-780 .t .m3 { display: table-cell; } }
+@container tw (max-width: 419px) { .cq-420 .t .p3 { display: none; } }
+/* Celular: en la portada cada alerta ocupa 3 líneas como máximo, para que la primera pantalla muestre también los
+   indicadores 1 a 4 completos. Por eso cada alerta dice lo esencial en sus primeros ~90 caracteres (lo arma Python).
+   El texto entero está en "Ver todas" y en el lector de pantalla. */
+@media (max-width: 959px) {
+  .alertas.portada .al-a p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+}
+@media (max-width: 959px) {
+  #semana-indicadores > .mod-h { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; }
+  #semana-indicadores > details.ayuda { display: none; }
+}
+@media (min-width: 600px) { .solo-movil { display: none !important; } }
+@media (max-width: 959px) { .solo-escritorio { display: none !important; } }
+.resumen-sem { margin: 0 0 4px; font-size: 15px; color: var(--ink-2); }
+.resumen-sem b { color: var(--ink); }
+@media (min-width: 960px) {
+  html { scroll-padding-bottom: 0; }
+  body { padding-bottom: 0; }
+  .top-in { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .top h1 { width: calc(var(--rail) - 16px); flex: none; }
+  .nav { top: calc(env(safe-area-inset-top, 0px) + var(--head-h) + 1px); right: auto; width: var(--rail); border-top: 0; border-right: 1px solid var(--hair);
+    grid-template-columns: minmax(0, 1fr); grid-auto-rows: min-content; align-content: start; gap: 2px; padding: 12px 8px 12px max(8px, env(safe-area-inset-left, 0px)); }
+  .nav button { min-height: 44px; flex-direction: row; justify-content: flex-start; gap: 10px; font-size: 15px; padding: 0 12px; border-radius: 8px; letter-spacing: 0; }
+  .nav button[aria-current="page"] { background: var(--surface-2); }
+  .nav button[aria-current="page"]::before { top: 10px; bottom: 10px; left: 0; right: auto; width: 3px; height: auto; border-radius: 0 2px 2px 0; }
+  .nav button:hover { color: var(--ink); }
+  .main { margin-left: var(--rail); padding-block: 16px 40px; }
+  .mods { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .mod { padding: 16px; }
+  .mod.plano { padding: 0; }
+  .mod.ancho { grid-column: 1 / -1; }
+  .mods > .anclas.en-mods { order: -1; }
+  .inds { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .mult { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 20px; }
+  .ind { padding: 16px; gap: 4px; }
+  .hoja { left: max(16px, env(safe-area-inset-left, 0px)); right: auto; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + var(--head-h) + 8px); width: 400px;
+    max-height: calc(100vh - 90px); border-radius: 12px; padding-bottom: 16px; box-shadow: 0 8px 32px var(--sombra); }
+  .agarre { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<div id="pant-clave" class="pantalla gut" hidden>
+  <form class="caja-clave" id="form-clave" autocomplete="off">
+    <h1>Tablero semanal</h1>
+    <p>Los datos están cifrados. Ingresá la clave para verlos; se descifran solo en este dispositivo.</p>
+    <label class="vh" for="clave">Clave</label>
+    <input id="clave" type="password" placeholder="Clave" autocomplete="off">
+    <button type="submit" id="abrir">Abrir</button>
+    <div class="err" id="err-clave" role="alert"></div>
+  </form>
+</div>
+<div id="pant-msj" class="pantalla gut" hidden>
+  <div class="caja-clave"><h1 id="msj-t">Sin datos</h1><p id="msj-p"></p></div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in gut">
+      <h1 class="titulo" id="titulo">Tablero semanal</h1>
+      <button type="button" class="chip-sem" id="chip-sem" aria-haspopup="dialog" aria-controls="hoja"></button>
+      <span class="sp"></span>
+      <a class="b-ic" id="b-ayuda" href="#control-metodo" aria-label="Cómo se calculó" title="Cómo se calculó">?</a>
+      <button type="button" class="b-ic" id="b-tema" aria-label="Cambiar tema" title="Cambiar tema"></button>
+    </div>
+  </header>
+  <nav class="nav gut" id="nav" aria-label="Secciones"></nav>
+  <main class="main gut" id="main">
+    <div class="main-in">
+      <div id="banner"></div>
+      <div id="secs"></div>
+    </div>
+  </main>
+  <div class="velo" id="velo" hidden></div>
+  <div class="hoja gut" id="hoja" role="dialog" aria-modal="true" aria-labelledby="hoja-t" hidden></div>
+</div>
+
+<script>
+"use strict";
+const PAQUETE = /*__PAQUETE__*/null;
+let D = null, X = null;
+
+/* ---------- ayudantes ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+/* Espacio duro entre la unidad y el número, y entre el número y k/M, para que un monto no se parta en dos renglones
+   ("USD 434" arriba y "k" abajo). Se aplica a todo texto que pasa por h(), también a los que arma Python. */
+const NB = "\u00a0";
+const nb = s => s.replace(/(USDT|USD|R\$|\$|€|£|≈) (?=[−\-\d])/g, "$1" + NB).replace(/(\d) (k|M)\b/g, "$1" + NB + "$2").replace(/≈ (?=\S)/g, "≈" + NB);
+const h = (tag, attrs, ...kids) => {
+  const e = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat(Infinity)) if (k != null && k !== false) e.append(k instanceof Node ? k : document.createTextNode(nb(String(k))));
+  return e;
+};
+const NS = "http://www.w3.org/2000/svg";
+const sv = (tag, a = {}, ...kids) => {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(a)) if (v != null) e.setAttribute(k, v);
+  for (const k of kids.flat()) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+};
+const LS = {
+  get(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } },
+};
+const limpio = a => [].concat(a).flat(Infinity).filter(x => x != null && x !== false);
+const range = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; };
+const sum = a => a.reduce((x, y) => x + (y || 0), 0);
+const mean = a => a.length ? sum(a) / a.length : null;
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const esEscritorio = () => window.matchMedia("(min-width: 960px)").matches;
+const sinMov = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- números y fechas (es-AR) ---------- */
+const NFc = {};
+const nf = d => NFc[d] || (NFc[d] = new Intl.NumberFormat("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
+const MENOS = "−";
+const sgn = s => String(s).replace(/-/g, MENOS);
+const recorta = s => s.includes(",") ? s.replace(/,?0+$/, "") : s;
+const ok = v => v != null && isFinite(v);
+function comp(v) {
+  if (!ok(v)) return "—";
+  const a = Math.abs(v); let s;
+  if (a < 999.5) s = nf(0).format(a);
+  else if (a < 99950) s = recorta(nf(1).format(a / 1e3)) + NB + "k";
+  else if (a < 999500) s = nf(0).format(a / 1e3) + NB + "k";
+  else if (a < 9.995e6) s = recorta(nf(2).format(a / 1e6)) + NB + "M";
+  else if (a < 9.995e7) s = recorta(nf(1).format(a / 1e6)) + NB + "M";
+  else s = nf(0).format(a / 1e6) + NB + "M";
+  return (v < 0 && s !== "0" ? MENOS : "") + s;
+}
+const PREF = ["USD", "USD", "USDT", "$", "€", "R$", "£", ""];
+const fUSD = v => ok(v) ? "USD" + NB + comp(v) : "—";
+const fARS = v => ok(v) ? "$" + NB + comp(v) : "—";
+const fMon = (v, m) => ok(v) ? (PREF[m] ? PREF[m] + NB : "") + comp(v) : "—";
+const fNum = v => ok(v) ? sgn(nf(0).format(v)) : "—";
+const fPrecio = v => ok(v) ? "$" + NB + sgn(nf(1).format(v)) : "—";
+/* tasas de la hoja Inversores: hasta 2 decimales (0,875% → "0,88%", 1,25% → "1,25%", 1% → "1%") */
+const fTasa = f => ok(f) ? sgn(recorta(nf(2).format(f * 100))) + "%" : "—";
+function fPct(f) {
+  if (!ok(f)) return "—";
+  const p = f * 100, a = Math.abs(p);
+  return sgn(a < 9.95 && a >= 0.05 ? nf(1).format(p) : nf(0).format(p)) + "%";
+}
+const fPtsAbs = d => { const a = Math.abs(d * 100); return (a < 9.95 ? nf(1).format(a) : nf(0).format(a)) + " pts"; };
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const MESES_L = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const pf = s => { const [y, m, d] = String(s).slice(0, 10).split("-").map(Number); return { y, m, d }; };
+const utc = s => { const p = pf(s); return Date.UTC(p.y, p.m - 1, p.d); };
+const dm = s => { if (!s) return "—"; const p = pf(s); return String(p.d).padStart(2, "0") + "/" + String(p.m).padStart(2, "0"); };
+const diasEntre = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
+const mesL = s => { if (!s) return "—"; const [y, m] = s.split("-").map(Number); return MESES_L[m - 1] + " " + y; };
+const mesC = s => { const [y, m] = s.split("-").map(Number); return MESES[m - 1] + (m === 1 ? " " + String(y).slice(2) : ""); };
+const plural = (n, a, b) => n + " " + (n === 1 ? a : b);
+
+function semLabel(w, sinK) {
+  const s = X.S[w]; if (!s) return "—";
+  const a = pf(s.ini), b = pf(s.fin);
+  let t = a.m === b.m ? `${a.d}–${b.d} ${MESES[b.m - 1]}` : `${a.d} ${MESES[a.m - 1]}–${b.d} ${MESES[b.m - 1]}`;
+  if (!sinK && s.k > 1) t += ` (${s.k} sem.)`;
+  return t;
+}
+const semCorta = w => X.S[w] ? dm(X.S[w].ini) : "—";
+/* las fotos (caja, plata afuera) se rotulan con el día del cierre */
+const semFin = w => X.S[w] ? (completa(w) ? dm(X.S[w].fin) : "en curso") : "—";
+const estadoSem = w => { const s = X.S[w]; if (!s) return ""; return s.completa ? "cerrada" : `en curso (${plural(s.dias_ops || 0, "día", "días")})`; };
+
+/* ---------- íconos ---------- */
+const IC = {
+  semana: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  clientes: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"/><circle cx="17" cy="9.5" r="2.5"/><path d="M17.2 14.2c2.6.2 4.3 2.5 4.3 5.3"/>',
+  operacion: '<path d="M4 8h14M14.5 4.5 18 8l-3.5 3.5M20 16H6M9.5 12.5 6 16l3.5 3.5"/>',
+  saldos: '<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M3 10.5h18M15.5 15.2h2.5"/><path d="M6 6l9-3 1 3"/>',
+  control: '<path d="M12 3l7.5 3v6c0 4.4-3.2 8-7.5 9-4.3-1-7.5-4.6-7.5-9V6L12 3z"/><path d="m8.6 12.2 2.4 2.4 4.4-4.6"/>',
+  tema: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
+  abajo: '<path d="m7 10 5 5 5-5"/>',
+  der: '<path d="m10 7 5 5-5 5"/>',
+  cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  critico: '<path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"/><path d="M12 7.5v5.5M12 16.4v.1"/>',
+  atencion: '<path d="M12 3.5 22 20H2z"/><path d="M12 9.5v4.5M12 17.2v.1"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.1"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="m7.8 12.3 2.8 2.8 5.6-5.8"/>',
+  pausa: '<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+};
+function icono(n, tam = 18, cls) {
+  const s = sv("svg", { viewBox: "0 0 24 24", width: tam, height: tam, fill: "none", stroke: "currentColor", "stroke-width": 1.9,
+    "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true", focusable: "false", class: cls || null });
+  s.innerHTML = IC[n] || "";
+  return s;
+}
+
+/* ---------- textos fijos: ayuda y glosario ---------- */
+const U = () => (D && D.config && D.config.umbrales) || {};
+const IMP = () => Object.assign({ top: 30, ventana_semanas: 12, ausente_semanas: 2, top_alerta: 10 }, (D && D.config && D.config.importantes) || {});
+const signoAConfirmar = () => !(D && D.config && D.config.signo_pendientes_confirmado);
+const signoNota = () => signoAConfirmar() ? " El signo está a confirmar: nos deben y debemos podrían estar invertidos." : "";
+const FUENTE_VOL = "Operaciones finalizadas de Cajas y Recaudadora del Registro General, sin USDT General ni Cambio General.";
+const AYUDA = {
+  "ind-1": { l: "USD operados con clientes en la semana, contando cada operación una vez.",
+    q: "El total que se movió con clientes en la semana elegida.",
+    c: "Cada operación cuenta una vez: el promedio entre lo que entra y lo que sale, pasado a USD. Se compara con la semana anterior y con el promedio de las 4 semanas cerradas previas. La semana doble se divide por 2. En el minigráfico, la línea es la tendencia: el promedio móvil de 4 semanas, que incluye la semana.",
+    f: FUENTE_VOL },
+  "ind-2": { l: "Cantidad de operaciones con clientes en la semana.",
+    q: "Cuántas operaciones finalizadas hubo.",
+    c: "Se cuentan las mismas operaciones que el volumen. La operación típica es la mediana: la mitad de las operaciones es menor y la otra mitad, mayor.",
+    f: FUENTE_VOL },
+  "ind-3": { l: "Clientes distintos que operaron en la semana.",
+    q: "Cuántos clientes distintos operaron. Nuevos: primera operación del año. Regresaron: volvieron después de 4 semanas de calendario o más sin operar.",
+    c: "Los nombres se agrupan sin lo que va entre paréntesis y sin acentos. Se compara con el promedio de las 4 semanas previas; la hoja de dos semanas no entra en esa comparación.",
+    f: FUENTE_VOL },
+  "ind-4": { l: "Qué parte del volumen de la semana hicieron los 5 clientes más grandes.",
+    q: "Mide cuánto dependemos de pocos clientes.",
+    c: "Volumen de los 5 mayores dividido el volumen total de la semana. La comparación va en puntos: pasar de 40% a 43% son 3 puntos.",
+    f: FUENTE_VOL },
+  "ind-5": { l: "Precio promedio de compra y de venta del dólar billete en la semana, y la diferencia entre los dos, en pesos por dólar.",
+    q: "A cuánto compramos y a cuánto vendimos el dólar billete, y cuántos pesos por dólar separan los dos precios.",
+    c: () => `Promedio de las cotizaciones ponderado por los USD de cada operación, por separado para compras y ventas. Con menos de ${U().precios_min_ops ?? 5} operaciones o menos de ${fUSD(U().precios_min_usd ?? 10000)} en un lado, el dato es poco firme.`,
+    f: "Operaciones de Cajas de USD contra Pesos en efectivo." },
+  "ind-6": { l: () => "Operaciones abiertas y cuentas corrientes en la foto de la semana." + signoNota(),
+    q: "Nos deben: lo que clientes y terceros tienen que entregarnos. Debemos: lo que tenemos que entregarles.",
+    c: "Suma en USD de los pendientes abiertos en la foto de la semana. Lo que nos deben se compara con la semana anterior.",
+    f: "Bloque de pendientes de cada hoja semanal." },
+  "ind-7": { l: "Caja propia al cierre de la semana: lo que queda en las cajas de USD billete después de descontar la plata de terceros.",
+    q: "Dólares billete en las cajas de USD (incluye cara chica, cambio y malos), sin la plata de inversores y de clientes con operaciones abiertas que está en esas cajas. Abajo va el saldo que muestra la planilla en la fila Balance, que sí la incluye.",
+    c: () => "Saldo de cierre de cada caja (la fila Balance) menos los pendientes abiertos de esa caja. Puede dar negativo si en la caja hay más plata de terceros que saldo." + (signoAConfirmar() ? " Depende del signo de los pendientes, que está a confirmar." : "") + " Los cambios incluyen aportes, retiros y movimientos con clientes. El tablero anterior mostraba el saldo al inicio de la semana.",
+    f: "Fila de Cierre y bloque de pendientes de la hoja semanal." },
+  "ind-8": { l: "Filas con diferencias de carga sin revisar.",
+    q: "Graves: diferencias de USD 100 o más. Menores: de USD 10 a 100.",
+    c: "Se compara lo imputado en las columnas de caja con el Debe y el Haber de cada operación. Las filas que ya se dieron por revisadas no cuentan.",
+    f: "Registro General y notas de revisión." },
+  "semana-alertas": { l: "Lo que conviene mirar hoy.",
+    q: "Avisos automáticos: filas para revisar, retiros de inversores, cheques vencidos, transferencias sin USDT, clientes importantes que no vinieron, cambios de volumen, concentración, plata afuera vieja, costos fijos sin cargar, caja y control de carga.",
+    c: "Se calculan una vez, a la fecha de corte, y no cambian si elegís otra semana. Lo que ya está revisado sale de la portada y queda atenuado en «Ver todas».",
+    f: "Registro General, hojas CQ e Inversores y notas de revisión." },
+  "semana-indicadores": { l: "Los números de la semana, comparados con la anterior y con el promedio de las 4 previas.",
+    q: "Ocho indicadores: los cuatro primeros son de actividad y llevan un minigráfico; los otros son fotos de la semana.",
+    c: "Las comparaciones usan semanas cerradas. La semana en curso no se compara hasta que cierre. Los minigráficos muestran las últimas semanas y una línea de tendencia (promedio móvil de 4 semanas, que incluye la semana).",
+    f: "Registro General." },
+  "semana-volumen": { l: "Lo que se movió con clientes cada semana, en USD, contando cada operación una vez.",
+    q: "El volumen de cada semana y su tendencia: el promedio móvil de 4 semanas (la semana y las 3 anteriores).",
+    c: "La semana doble se divide por 2. La semana en curso va rayada porque está incompleta. La línea de tendencia no es el «Promedio de 4 semanas» del indicador: ese no incluye la semana. Tocá o arrastrá sobre el gráfico para leer una semana.",
+    f: FUENTE_VOL },
+  "semana-movio": { l: "Qué productos y operadores explican la semana, contra su promedio.",
+    q: "Volumen de la semana por producto y por operador.",
+    c: "Cada % compara la semana con el promedio de las 4 semanas cerradas anteriores.",
+    f: FUENTE_VOL },
+  "semana-top5": { l: "Los cinco clientes con más volumen en la semana.",
+    q: "El ranking de la semana elegida.",
+    c: "Volumen de cada cliente y su parte del total de la semana. El color del punto es el operador que más lo atendió.",
+    f: FUENTE_VOL },
+  "clientes-ranking": { l: "Volumen de cada cliente en el período.",
+    q: "Clientes ordenados por volumen, con su parte del total.",
+    c: "Suma de las operaciones de cada cliente en las semanas del período. La flecha ▲▼ indica cuántos puestos subió o bajó contra el período anterior del mismo largo; «entró» quiere decir que en ese período no había operado. El color del punto es el operador que más lo atendió.",
+    f: FUENTE_VOL },
+  "clientes-concentracion": { l: () => `Si los 5 mayores pasan el ${fPct(U().top5_max ?? 0.5)}, dependemos de pocos clientes.`,
+    q: "Qué parte del volumen hacen el mayor cliente, los 5 mayores y los 10 mayores.",
+    c: "Volumen de los mayores dividido el total del período. La línea muestra la parte de los 5 mayores cada semana; la punteada es el límite de atención.",
+    f: FUENTE_VOL },
+  "clientes-novinieron": { l: () => `De los ${IMP().top} que más movieron en ${IMP().ventana_semanas} semanas, los que no operaron en las últimas ${IMP().ausente_semanas}.`,
+    q: "Clientes grandes que no vinieron.",
+    c: () => `Se toman los ${IMP().top} clientes con más volumen en las ${IMP().ventana_semanas} semanas que terminan en la semana elegida y se listan los que no operaron en las últimas ${IMP().ausente_semanas}.`,
+    f: FUENTE_VOL },
+  "clientes-dejaron": { l: "Clientes con 3 operaciones o más que cumplen 4 semanas sin operar y no volvieron.",
+    q: "Clientes habituales que dejaron de venir en las últimas 4 semanas.",
+    c: "Entran en la semana en que suman 4 semanas de calendario sin operar. Si volvieron antes de la semana elegida, no aparecen.",
+    f: "Registro General. Cubre las últimas 12 semanas." },
+  "clientes-altas": { l: "Nuevos: primera operación del año. Regresaron: volvieron después de 4 semanas de calendario o más sin operar.",
+    q: "Cuántos clientes se suman, cuántos vuelven y cuántos pasan a inactivos cada semana.",
+    c: "Pasan a inactivos los clientes con 3 operaciones o más que cumplen 4 semanas de calendario sin operar. Volumen de clientes habituales: parte del volumen de la semana que hicieron clientes que ya habían operado en las 4 semanas anteriores. La hoja de dos semanas divide los nuevos por 2.",
+    f: FUENTE_VOL },
+  "operacion-usdt": { l: "Precio del USDT en pesos y cuántos USD billete vale un USDT.",
+    q: "La cotización promedio del USDT con USDT General y la paridad contra el dólar billete.",
+    c: "Paridad: precio en pesos del USDT dividido el del dólar billete de la misma semana. Transferencias cubiertas: transferencias a clientes que se pagaron con USDT.",
+    f: "Operaciones de USDT General del Registro General." },
+  "operacion-comisiones": { l: "El % pactado en la columna Cotización/Comisión.",
+    q: "La comisión típica que se pactó en cada tipo de operación.",
+    c: "Mediana del % pactado de las operaciones de cada tipo en el período. Cuando esté cargada la comisión de lista de cada tipo, se marca en la barra y se avisa si la mediana queda más de 0,1 puntos por debajo.",
+    f: "Columna Cotización/Comisión del Registro General." },
+  "operacion-dias": { l: "Cómo se repartió la semana elegida, día por día.",
+    q: "Volumen y cantidad de operaciones de cada día.",
+    c: "El día sale del Cierre diario. Cuando el Cierre no tiene fecha, el día es aproximado.",
+    f: FUENTE_VOL },
+  "operacion-tamano": { l: "La operación típica es la mediana; el promedio lo inflan las grandes.",
+    q: "Cuántas operaciones y cuánto volumen hay en cada tramo de tamaño.",
+    c: "Tramos por USD de cada operación. El percentil 90 es el monto que dejan por debajo 9 de cada 10 operaciones.",
+    f: FUENTE_VOL },
+  "saldos-inversiones": { l: "Proyectos e inversiones en garantía, en la unidad de la planilla.",
+    q: "Lo que está invertido en proyectos o tomado en garantía.",
+    c: "Saldo de cada columna de inversiones y garantías, con el cambio contra la semana anterior. La unidad está a confirmar.",
+    f: "Columnas de inversiones y garantías de la hoja semanal." },
+  "control-gastos": { l: "Gastos cargados con Detalle = Gastos.",
+    q: "Gastos por mes y por categoría.",
+    c: "Solo cuentan las filas con Detalle = Gastos, pasadas a USD con la cotización de su semana. Las categorías salen de palabras clave del texto.",
+    f: "Registro General." },
+  "operacion-operadores": { l: "Quién operó cada semana.",
+    q: "Volumen semanal por operador.",
+    c: "Los dos operadores destacados van por separado y el resto del equipo, junto. Tocá «Resto del equipo» para ver a cada uno. Los % son del período elegido.",
+    f: FUENTE_VOL },
+  "operacion-productos": { l: "Volumen por producto en el período.",
+    q: "Cómo se reparte el volumen entre billete, transferencias, USDT, exterior, canje y otros.",
+    c: "Suma de las operaciones de cada producto en el período y su parte del total. Con el período de una semana, el % de al lado compara con el promedio de las 4 semanas anteriores.",
+    f: FUENTE_VOL },
+  "operacion-precios": { l: "Precio promedio ponderado de compra y de venta, y la diferencia en pesos por dólar.",
+    q: "A cuánto compramos y vendimos el dólar cada semana.",
+    c: "Promedio de las cotizaciones ponderado por los USD de cada operación, por separado para compras y ventas. La diferencia % es la diferencia dividida el promedio de los dos precios. Un punto hueco indica pocos datos.",
+    f: "Operaciones de Cajas: USD contra Pesos (billete) o contra Transfer (transferencia)." },
+  "saldos-caja": { l: "Caja propia al cierre de la semana. El tablero anterior mostraba el saldo al inicio de la semana, por eso las cifras pueden no coincidir.",
+    q: "Lo que queda en cada moneda después de descontar la plata de terceros (inversores y clientes con operaciones abiertas), en su unidad y su equivalente en USD.",
+    c: () => "Caja propia: saldo de cierre de cada caja (la fila Balance) menos los pendientes abiertos de esa caja. Puede dar negativo si en la caja hay más plata de terceros que saldo." + (signoAConfirmar() ? " Depende del signo de los pendientes, que está a confirmar." : "") + " «Saldo de la planilla (Balance)» muestra la cifra de la fila Balance, con la plata de terceros incluida. El total en USD es solo una referencia: cada moneda se compara en su unidad.",
+    f: "Fila de Cierre y bloque de pendientes de cada hoja semanal, con las cotizaciones de esa semana." },
+  "saldos-afuera": { l: () => "Operaciones abiertas y cuentas corrientes." + signoNota(),
+    q: "Lo que nos deben y lo que debemos, por tipo y por antigüedad.",
+    c: "La antigüedad son las semanas desde que apareció el N° de Ope por primera vez. Los ítems sin N° de Ope no tienen antigüedad.",
+    f: "Bloque de pendientes de la hoja semanal." },
+  "saldos-usdt": { l: "Transferencias de USDT General con «?»: el USDT todavía no está confirmado.",
+    q: "Pesos que se transfirieron a cambio de USDT que todavía no se confirmó.",
+    c: () => `Ítems de USDT General marcados con «?» en la foto de la semana. Se cuentan aparte los que llevan ${U().usdt_q_semanas ?? 4} semanas o más.`,
+    f: "Bloque de pendientes de la hoja semanal." },
+  "saldos-cheques": { l: "Cheques en cartera, vencidos y próximos vencimientos.",
+    q: "Los cheques que todavía no se cobraron ni se colocaron.",
+    c: "En cartera: ni cobrados ni colocados. Vencidos: en cartera y con el vencimiento ya pasado. El % de cada titular es sobre la cartera.",
+    f: "Hojas CQ de la base." },
+  "saldos-inversores": { l: "Capital de inversores, interés mensual comprometido y retiros previstos.",
+    q: "La plata de terceros que fondea la operación.",
+    c: "Tasa mensual: interés mensual dividido el capital. La cuenta propia se muestra, pero no suma como fondeo de terceros.",
+    f: "Hoja Inversores de la base." },
+  "control-semana": { l: "Chequeos automáticos de la carga.",
+    q: "Controles sobre las hojas: saldos que no pasan igual a la semana siguiente, cajas sin moneda, operadores nuevos, cotizaciones que faltan.",
+    c: "Bloqueantes: frenan la publicación. Avisos: conviene mirarlos. Lo que ya se dio por revisado se ve atenuado.",
+    f: "Registro General y actualizaciones." },
+  "control-revisar": { l: "Lo cargado en las columnas de caja no coincide con la operación, o hay filas canceladas o sin estado con importes.",
+    q: "Filas con diferencias de carga.",
+    c: "Graves: diferencias de USD 100 o más. Menores: de USD 10 a 100. Para darla por revisada, decile a Claude, por ejemplo, «la fila 120 del 12/10 ya está». Las filas cargadas incluyen los movimientos internos, por eso son más que las operaciones con clientes.",
+    f: "Registro General y notas de revisión." },
+  "control-hojas": { l: "Hasta qué fecha llega cada parte de la planilla.",
+    q: "La última operación, el último cheque nuevo y el último costo fijo cargados.",
+    c: "Días entre cada fecha y la fecha de corte.",
+    f: "Registro General y hoja CQ." },
+  "control-notas": { l: "Hallazgos y preguntas sobre la planilla.",
+    q: "Lo que quedó anotado para mirar o preguntar.",
+    c: "Las notas se cargan por chat; el tablero solo las muestra. Las abiertas van primero.",
+    f: "Notas manuales del tablero." },
+  "control-metodo": { l: "Cómo se calcula cada número del tablero.",
+    q: "Las reglas de cálculo, el glosario y las cotizaciones de cada semana.",
+    c: "Cada número del tablero sale de estas reglas.",
+    f: "Registro General y la configuración del tablero (cotizaciones fijas y umbrales de las alertas)." },
+};
+const GLOSARIO = () => {
+  const dob = X.S.findIndex(s => s.k > 1);
+  return [
+    ["Caja propia", "Lo que queda en cada caja después de descontar lo que es de terceros (inversores y clientes con operaciones abiertas). Puede dar negativo."],
+    ["Plata afuera", "Operaciones abiertas y cuentas corrientes: lo que clientes y terceros nos tienen que entregar y lo que les tenemos que entregar."],
+    ["Saldo de la planilla (Balance)", "El saldo de cada caja en la fila Balance de la planilla, con la plata de terceros incluida. Es la caja propia más la plata afuera de esa caja."],
+    ["Paridad USDT", "Cuántos USD billete vale un USDT. Sale de comparar el precio en pesos del USDT con el del dólar billete; suele estar entre 1,02 y 1,05."],
+    ["Cara chica", "Billetes de USD viejos. Se canjean con descuento."],
+    ["Malos", "Billetes de USD dañados. Se canjean con descuento."],
+    ["Semana doble", dob >= 0 ? `La hoja «Dos Semanas» (${semLabel(dob, true)}) cubre dos semanas. Para comparar, sus flujos se dividen por 2.` : "Una hoja que cubre dos semanas. Para comparar, sus flujos se dividen por 2."],
+    ["Promedio de 4 semanas", "Promedio de las 4 semanas cerradas anteriores a la elegida, por semana. No incluye la semana elegida: es contra lo que se comparan los indicadores."],
+    ["Promedio móvil de 4 semanas", "Promedio de cada semana y las 3 anteriores. Es la línea de tendencia de los gráficos de volumen; como incluye la semana, no coincide con el «Promedio de 4 semanas»."],
+    ["Diferencias de carga", "Filas donde lo cargado en las columnas de caja no coincide con la operación. Graves: USD 100 o más. Menores: de USD 10 a 100."],
+    ["Operación típica", "La mediana: la mitad de las operaciones es menor y la otra mitad, mayor."],
+  ];
+};
+const txt = v => typeof v === "function" ? v() : v;
+function ayuda(clave, titulo) {
+  const A = AYUDA[clave]; if (!A) return null;
+  return h("details", { class: "ayuda" }, h("summary", { "aria-label": "Ayuda: " + titulo, title: "Ayuda" }, "?"),
+    h("div", { class: "ayuda-txt" }, h("p", { class: "ay-l" }, txt(A.l)),
+      h("dl", {}, h("dt", {}, "Qué es"), h("dd", {}, txt(A.q)), h("dt", {}, "Cómo se calcula"), h("dd", {}, txt(A.c)), h("dt", {}, "De dónde sale"), h("dd", {}, txt(A.f)))));
+}
+
+/* ---------- datos ---------- */
+function tab(t) {
+  if (!t || !Array.isArray(t.c) || !Array.isArray(t.f)) return [];
+  const c = t.c;
+  return t.f.map(r => { const o = {}; for (let i = 0; i < c.length; i++) o[c[i]] = r[i]; return o; });
+}
+function preparar() {
+  const S = tab(D.semanas), nW = S.length;
+  const porW = rows => { const a = Array.from({ length: nW }, () => []); for (const r of rows) if (r.w != null && a[r.w]) a[r.w].push(r); return a; };
+  X = { S, nW, dic: D.dic || {}, opg: D.op_grupo || [] };
+  for (const k of ["cli", "op", "prod", "tipo_com", "cat", "caja", "mon", "tipo_pend", "tramo"]) X.dic[k] = X.dic[k] || [];
+  X.sem = Array(nW).fill(null); for (const r of tab(D.sem)) if (r.w != null && r.w < nW) X.sem[r.w] = r;
+  X.cubo = porW(tab(D.cubo));
+  X.caja = porW(tab(D.caja)); X.pendSem = porW(tab(D.pend_sem)); X.pend = porW(tab(D.pend));
+  X.precios = porW(tab(D.precios)); X.calidad = porW(tab(D.calidad));
+  X.revisar = tab(D.revisar); X.inactivos = tab(D.inactivos);
+  X.k = w => (S[w] && S[w].k) || 1;
+  X.primSaldos = S.findIndex(s => s.formato_actual === 1);
+  X.iniW = new Map(S.map((s, i) => [s.ini, i]));
+  X.revisadas = new Map();
+  for (const r of ((D.notas && D.notas.revisadas) || [])) { const o = typeof r === "string" ? { clave: r } : r; if (o && o.clave) X.revisadas.set(o.clave, o); }
+  // sumas por semana: cliente, operador, producto
+  X.wCli = []; X.wOp = []; X.wProd = [];
+  for (let w = 0; w < nW; w++) {
+    const c = new Map(), o = new Map(), p = new Map();
+    for (const r of X.cubo[w]) {
+      const u = r.usd || 0;
+      c.set(r.cli, (c.get(r.cli) || 0) + u); o.set(r.op, (o.get(r.op) || 0) + u); p.set(r.prod, (p.get(r.prod) || 0) + u);
+    }
+    X.wCli.push(c); X.wOp.push(o); X.wProd.push(p);
+  }
+  X.iUSDT = X.dic.tipo_pend.findIndex(t => norm(t) === "usdt general");
+  // primera semana de cada cliente: por presencia en el cubo (n > 0), como sem.nuevos en Python, aunque sume USD 0
+  X.primeraCli = new Map();
+  for (let w = 0; w < nW; w++) for (const r of X.cubo[w]) if ((r.n || 0) > 0 && !X.primeraCli.has(r.cli)) X.primeraCli.set(r.cli, w);
+}
+const nomCli = i => X.dic.cli[i] != null ? X.dic.cli[i] : (i == null ? "—" : "Cliente " + i);
+const nomOp = i => X.dic.op[i] != null ? X.dic.op[i] : "—";
+const colorGrupo = g => g === 0 ? "var(--op-1)" : g === 1 ? "var(--op-2)" : "var(--op-resto)";
+const colorOp = i => colorGrupo(X.opg[i]);
+const nombreGrupo = g => g === 2 ? "Resto del equipo" : (X.dic.op.filter((_, i) => X.opg[i] === g).join(" y ") || (g === 0 ? "Operador 1" : "Operador 2"));
+const semVal = (w, campo) => X.sem[w] && ok(X.sem[w][campo]) ? X.sem[w][campo] : null;
+const uSem = (w, campo) => { const v = semVal(w, campo); return v == null ? null : v / X.k(w); };
+const completa = w => !!(X.S[w] && X.S[w].completa);
+
+/* P4: promedio de las semanas completas f−4…f−1 (al menos 2) */
+function P4(fn, f, filtro) {
+  const v = [];
+  for (let j = f - 4; j <= f - 1; j++) { if (j < 0 || !completa(j) || (filtro && !filtro(j))) continue; const x = fn(j); if (ok(x)) v.push(x); }
+  return v.length >= 2 ? mean(v) : null;
+}
+/* promedio móvil de 4 semanas que incluye la semana */
+function MA4(fn, w, filtro) {
+  if (!completa(w) || (filtro && !filtro(w))) return null;
+  const v = [];
+  for (let j = w - 3; j <= w; j++) { if (j < 0 || !completa(j) || (filtro && !filtro(j))) continue; const x = fn(j); if (ok(x)) v.push(x); }
+  return v.length >= 2 ? mean(v) : null;
+}
+const k1 = j => X.k(j) === 1;
+const rel = (a, b) => ok(a) && ok(b) && b !== 0 ? a / b - 1 : null;
+
+/* ---------- estado ---------- */
+const SECS = [
+  { id: "semana", t: "Semana", ic: "semana", anclas: [["alertas", "Alertas"], ["indicadores", "Indicadores"], ["volumen", "Volumen"], ["movio", "Qué se movió"], ["top5", "Mayores clientes"]] },
+  { id: "clientes", t: "Clientes", ic: "clientes", per: true, anclas: [["ranking", "Ranking"], ["concentracion", "Concentración"], ["altas", "Altas"], ["novinieron", "No vinieron"], ["dejaron", "Dejaron de operar"]] },
+  { id: "operacion", t: "Operación", ic: "operacion", per: true, anclas: [["operadores", "Operadores"], ["productos", "Productos"], ["precios", "Precio del dólar"], ["usdt", "USDT"], ["comisiones", "Comisiones"], ["dias", "Días"], ["tamano", "Tamaño"]] },
+  { id: "saldos", t: "Saldos", ic: "saldos", anclas: [["caja", "Caja"], ["afuera", "Plata afuera"], ["usdt", "USDT sin confirmar"], ["cheques", "Cheques"], ["inversores", "Inversores"], ["inversiones", "Inversiones"]] },
+  { id: "control", t: "Control", ic: "control", per: true, anclas: [["semana", "La semana"], ["revisar", "Para revisar"], ["hojas", "Hojas al día"], ["gastos", "Gastos"], ["notas", "Notas"], ["metodo", "Cómo se calculó"]] },
+];
+const ST = { foco: 0, rango: "4", sec: "semana", canal: 0, cajaModo: 0, verAlertas: false, todasRev: false, restoAbierto: false };
+const SUCIA = {}; const DIB = {}; let COLA = [];
+const RANGOS = [["1", "Semana"], ["4", "4 sem"], ["12", "12 sem"], ["anio", "Año"]];
+
+function tend() {
+  const f = ST.foco;
+  if (ST.rango === "anio") return range(0, f);
+  const st = (D.config && D.config.semanas_tendencia) || {};
+  const n = esEscritorio() ? (st.escritorio || 26) : (st.movil || 12);
+  return range(Math.max(0, f - n + 1), f);
+}
+function periodo(f = ST.foco, r = ST.rango) {
+  const n = { "1": 1, "4": 4, "12": 12 }[r];
+  return n ? range(Math.max(0, f - n + 1), f) : range(0, f);
+}
+function textoPeriodo() {
+  const f = ST.foco, al = completa(f) ? "al " + dm(X.S[f].fin) : "hasta la semana en curso";
+  if (ST.rango === "1") return "la semana " + semLabel(f) + (completa(f) ? "" : " (en curso)");
+  if (ST.rango === "anio") return "el año " + al;
+  const n = periodo().length;
+  return plural(n, "semana", "semanas") + " " + al;
+}
+const lineaPeriodo = () => h("p", { class: "periodo" }, "Mostrando: " + textoPeriodo() + " · ", h("button", { type: "button", class: "link", onclick: abrirSelector }, "Cambiar"));
+
+/* ---------- componentes ---------- */
+function modulo(id, titulo, o = {}) {
+  const el = h("section", { class: "mod" + (o.ancho ? " ancho" : "") + (o.plano ? " plano" : ""), id, "aria-labelledby": id + "-t" },
+    h("div", { class: "mod-h" }, h("h2", { id: id + "-t" }, titulo)), ayuda(o.ayuda || id, titulo),
+    o.sub ? h("p", { class: "mod-sub" }, o.sub) : null);
+  return el;
+}
+function tablaHTML(cols, filas, o = {}) {
+  const t = h("table", { class: "t" },
+    h("thead", {}, h("tr", {}, cols.map(c => h("th", { class: [c.n ? "n" : "", c.p3 ? "p3" : "", c.m3 ? "m3" : ""].join(" ").trim() || null, scope: "col" }, c.t)))));
+  const tb = h("tbody");
+  for (const f of filas) {
+    const tr = h("tr", { class: f._cls || null }, cols.map(c => {
+      const v = c.v(f);
+      return h("td", { class: [c.n ? "n" : "", c.p3 ? "p3" : "", c.m3 ? "m3" : ""].join(" ").trim() || null }, v instanceof Node ? v : (v == null ? "—" : String(v)));
+    }));
+    const det = o.detalle === false ? null : o.detalle || (cols.some(c => c.p3) ? () => null : null);
+    if (det) {
+      tr.classList.add("click"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", "false");
+      const abrir = () => {
+        const sig = tr.nextElementSibling;
+        if (sig && sig.classList.contains("det")) { sig.remove(); tr.setAttribute("aria-expanded", "false"); return; }
+        const cont = det(f) || h("dl", { class: "det-grid" }, cols.filter(c => !c.m3).map(c => { const v = c.v(f); return [h("dt", {}, c.t), h("dd", {}, v instanceof Node ? v.cloneNode(true) : (v == null ? "—" : String(v)))]; }));
+        tr.after(h("tr", { class: "det" }, h("td", { colspan: cols.length }, cont)));
+        tr.setAttribute("aria-expanded", "true");
+      };
+      tr.addEventListener("click", abrir);
+      tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+    }
+    tb.append(tr);
+  }
+  if (o.pie) tb.append(h("tr", { class: "tot" }, cols.map(c => { const v = c.v(o.pie); return h("td", { class: [c.n ? "n" : "", c.p3 ? "p3" : ""].join(" ").trim() || null }, v == null ? "" : v); })));
+  t.append(tb);
+  return h("div", { class: "tbl-wrap" + (o.cq ? " cq cq-" + o.cq : "") }, t);
+}
+const verTabla = (cols, filas, o) => h("details", { class: "vt" }, h("summary", {}, "Ver como tabla"), tablaHTML(cols, filas, o));
+function seg(id, opciones, actual, alElegir, etiqueta) {
+  return h("div", { class: "seg", role: "group", "aria-label": etiqueta }, opciones.map(([v, t]) =>
+    h("button", { type: "button", id: id + "-" + v, "aria-pressed": String(v) === String(actual) ? "true" : "false", onclick: () => alElegir(v) }, t)));
+}
+function leyenda(items) {
+  return h("div", { class: "ley" }, items.map(it => h("span", { class: "it" }, h("span", { class: "sw " + (it.cls || ""), style: it.color ? `background:${it.color}` : null }), it.t)));
+}
+function tagRev(fecha, palabra = "Revisada") { return h("span", { class: "tag ok" }, icono("check", 12), palabra + (fecha ? " " + dm(fecha) : "")); }
+function flechaTxt(x) { if (!ok(x)) return null; if (Math.abs(x) < 0.005) return "= "; return (x > 0 ? "▲ " : "▼ ") + fPct(Math.abs(x)) + " "; }
+const chipDelta = x => ok(x) ? h("span", { class: "tag" }, Math.abs(x) < 0.005 ? "=" : (x > 0 ? "▲ " : "▼ ") + fPct(Math.abs(x))) : null;
+function boton(t, fn, o = {}) { return h("button", Object.assign({ type: "button", class: "btn" + (o.cls ? " " + o.cls : ""), onclick: fn }, o.attrs || {}), t); }
+function avisoEl(texto) { return h("div", { class: "aviso", role: "note" }, icono("atencion", 16), h("span", {}, texto)); }
+
+/* ---------- gráficos SVG ---------- */
+let UID = 0;
+function escala(lo, hi, n = 4) {
+  if (!ok(lo) || !ok(hi)) { lo = 0; hi = 1; }
+  if (hi - lo < 1e-9) { const d = Math.abs(hi) * 0.1 || 1; hi += d; if (lo !== 0) lo -= d; }
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw * 0.9999);
+  const a = Math.floor(lo / step + 1e-9) * step, b = Math.ceil(hi / step - 1e-9) * step;
+  const vals = []; for (let v = a; v <= b + step * 1e-6; v += step) vals.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return { lo: a, hi: b, step, vals };
+}
+const decs = s => { for (let d = 0; d < 4; d++) if (Math.abs(Math.round(s * 10 ** d) - s * 10 ** d) < 1e-6) return d; return 3; };
+function fmtEje(step, maxAbs, tipo) {
+  if (tipo === "pct") { const d = decs(step * 100); return v => sgn(nf(d).format(v * 100)) + "%"; }
+  if (tipo === "precio") { const d = decs(step); return v => sgn(nf(d).format(v)); }
+  const div = maxAbs >= 1e6 ? 1e6 : maxAbs >= 1e3 ? 1e3 : 1, suf = div === 1e6 ? " M" : div === 1e3 ? " k" : "";
+  const d = decs(step / div);
+  return v => v === 0 ? "0" : sgn(nf(d).format(v / div)) + suf;
+}
+const altoGraf = () => esEscritorio() ? 220 : 180;
+function barra(x, y, w, hh, r) {
+  if (hh <= 0 || w <= 0) return null;
+  r = Math.min(r, w / 2, hh);
+  return `M${x},${y + hh}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + hh}Z`;
+}
+function barraAbajo(x, y, w, hh, r) {
+  if (hh <= 0 || w <= 0) return null;
+  r = Math.min(r, w / 2, hh);
+  return `M${x},${y}H${x + w}V${y + hh - r}Q${x + w},${y + hh} ${x + w - r},${y + hh}H${x + r}Q${x},${y + hh} ${x},${y + hh - r}Z`;
+}
+/* lectura compartida por uno o más gráficos */
+function lectura(render, inicial) {
+  const el = h("div", { class: "lectura", "aria-live": "polite" });
+  const G = { el, cur: inicial, subs: new Map(), set(i) { G.cur = i; const p = limpio(render(i)), b = p.filter(x => x instanceof HTMLButtonElement); el.replaceChildren(h("span", { class: "lt" }, p.filter(x => !(x instanceof HTMLButtonElement))), ...b); for (const f of G.subs.values()) f(i); } };
+  G.set(inicial);
+  return G;
+}
+/*
+  c = { n, H, etiq(i), capas[], yMin, yMax, tipoY, aria, grupo, sinX, mt, nTicks, fmtY }
+  capas: {tipo:"barras", series:[{vals, fill(i), trama(i)}]} · {tipo:"linea", vals, color, ancho, puntos, hueco(i), rot}
+         {tipo:"banda", a, b} · {tipo:"ref", v, rot} · {tipo:"marca", i, t, sobre}
+*/
+function grafico(el, W, c) {
+  const id = ++UID, H = c.H || altoGraf(), n = c.n;
+  const vals = [];
+  for (const k of c.capas) {
+    if (k.tipo === "barras") for (let i = 0; i < n; i++) vals.push(sum(k.series.map(s => s.vals[i] > 0 ? s.vals[i] : 0)), sum(k.series.map(s => s.vals[i] < 0 ? s.vals[i] : 0)));
+    else if (k.tipo === "linea") vals.push(...k.vals.filter(ok));
+    else if (k.tipo === "banda") vals.push(...k.a.filter(ok), ...k.b.filter(ok));
+    else if (k.tipo === "ref" && ok(k.v)) vals.push(k.v);
+  }
+  let lo = c.yMin, hi = c.yMax;
+  if (!ok(lo)) lo = vals.length ? Math.min(0, ...vals) : 0;
+  if (!ok(hi)) hi = vals.length ? Math.max(...vals) : 1;
+  if (hi <= lo) hi = lo + (Math.abs(lo) || 1);
+  const E = escala(lo, hi, c.nTicks || 4);
+  const fy = c.fmtY || fmtEje(E.step, Math.max(Math.abs(E.lo), Math.abs(E.hi)), c.tipoY);
+  const labs = E.vals.map(fy);
+  const ml = Math.ceil(Math.max(...labs.map(s => s.length)) * 6.4) + 10;
+  const rots = c.capas.filter(k => k.rot && k.tipo === "linea");
+  const mr = c.mr != null ? c.mr : (rots.length ? Math.max(...rots.map(k => k.rot.length)) * 6.6 + 12 : 8);
+  const mt = c.mt != null ? c.mt : 14, mb = c.sinX ? 6 : 22;
+  const pw = Math.max(10, W - ml - mr), ph = Math.max(10, H - mt - mb), bw = pw / n;
+  const x = i => ml + bw * (i + 0.5);
+  const y = v => mt + ph * (1 - (v - E.lo) / (E.hi - E.lo));
+  const svg = sv("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": c.aria || "Gráfico" });
+  const defs = sv("defs");
+  defs.append(sv("pattern", { id: "tr" + id, width: 5, height: 5, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
+    sv("rect", { width: 5, height: 5, style: "fill:var(--surface)" }), sv("rect", { width: 2, height: 5, style: "fill:var(--dato)" })));
+  svg.append(defs);
+  // grilla y eje y
+  const g = sv("g", { class: "eje" });
+  E.vals.forEach((v, j) => {
+    g.append(sv("line", { x1: ml, x2: W - mr, y1: y(v), y2: y(v), style: `stroke:${v === 0 ? "var(--axis)" : "var(--hair)"}`, "stroke-width": 1, "shape-rendering": "crispEdges" }));
+    g.append(sv("text", { x: ml - 6, y: y(v) + 4, "text-anchor": "end" }, labs[j]));
+  });
+  // eje x
+  if (!c.sinX) {
+    const paso = Math.max(1, Math.ceil(48 / bw));
+    for (let i = n - 1; i >= 0; i -= paso) {
+      const t = c.etiq(i); if (!t) continue;
+      let anc = "middle", xx = x(i);
+      if (xx - 20 < ml - 6) { anc = "start"; xx = Math.max(2, xx - bw / 2); } else if (xx + 20 > W) { anc = "end"; xx = W - 2; }
+      g.append(sv("text", { x: xx, y: H - 6, "text-anchor": anc }, t));
+    }
+  }
+  svg.append(g);
+  const cursor = sv("rect", { x: 0, y: mt, width: Math.max(2, bw), height: ph, style: "fill:var(--banda)", opacity: 0 });
+  svg.append(cursor);
+  const top = new Array(n).fill(null);
+  for (const k of c.capas) {
+    if (k.tipo === "banda") {
+      let seg = [];
+      const tramo = () => { if (seg.length > 1) svg.append(sv("path", { d: "M" + seg.map(i => `${x(i)},${y(k.b[i])}`).join("L") + "L" + seg.slice().reverse().map(i => `${x(i)},${y(k.a[i])}`).join("L") + "Z", style: "fill:var(--banda)" })); seg = []; };
+      for (let i = 0; i < n; i++) { if (ok(k.a[i]) && ok(k.b[i])) seg.push(i); else tramo(); }
+      tramo();
+    } else if (k.tipo === "barras") {
+      const bwi = Math.max(2, Math.min(bw * 0.68, 34));
+      for (let i = 0; i < n; i++) {
+        let bp = 0, bn = 0, jp = 0, jn = 0;
+        for (const s of k.series) {
+          const v = s.vals[i]; if (!ok(v) || v === 0) continue;
+          const neg = v < 0, base = neg ? bn : bp;
+          const y0 = y(base), y1 = y(base + v);
+          let yy = Math.min(y0, y1), hh = Math.abs(y1 - y0);
+          if ((neg ? jn : jp) > 0) { hh = Math.max(0, hh - 2); if (neg) yy += 2; }
+          const tr = s.trama && s.trama(i);
+          const d = neg ? barraAbajo(x(i) - bwi / 2, yy, bwi, hh, 2) : barra(x(i) - bwi / 2, yy, bwi, hh, 2);
+          if (d) svg.append(sv("path", { d, style: tr ? `fill:url(#tr${id});stroke:var(--dato);stroke-width:1` : `fill:${s.fill(i)}` }));
+          if (neg) { bn += v; jn++; } else { bp += v; jp++; }
+        }
+        top[i] = y(Math.max(bp, 0));
+      }
+    } else if (k.tipo === "ref") {
+      if (!ok(k.v)) continue;
+      svg.append(sv("line", { x1: ml, x2: W - mr, y1: y(k.v), y2: y(k.v), style: "stroke:var(--ink-3)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
+      if (k.rot) svg.append(sv("text", { x: W - mr, y: y(k.v) - 5, "text-anchor": "end", class: "marca" }, k.rot));
+    }
+  }
+  const rotPos = [];
+  for (const k of c.capas) {
+    if (k.tipo !== "linea") continue;
+    let d = "", abierto = false;
+    for (let i = 0; i < n; i++) {
+      const v = k.vals[i];
+      if (!ok(v)) { abierto = false; continue; }
+      d += (abierto ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1); abierto = true;
+    }
+    if (d) svg.append(sv("path", { d, style: `fill:none;stroke:${k.color}`, "stroke-width": k.ancho || 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": k.guion ? "4 3" : null }));
+    if (k.puntos) for (let i = 0; i < n; i++) {
+      const v = k.vals[i]; if (!ok(v)) continue;
+      const hueco = k.hueco && k.hueco(i);
+      svg.append(sv("circle", { cx: x(i), cy: y(v), r: hueco ? 3.5 : 3, style: hueco ? `fill:var(--surface);stroke:${k.color};stroke-width:1.75` : `fill:${k.color};stroke:var(--surface);stroke-width:1.5` }));
+    }
+    if (k.rot) { let last = -1; for (let i = n - 1; i >= 0; i--) if (ok(k.vals[i])) { last = i; break; } if (last >= 0) rotPos.push({ t: k.rot, y: y(k.vals[last]), x: x(last), color: k.color }); }
+  }
+  // rótulos directos sin choques
+  rotPos.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < rotPos.length; i++) if (rotPos[i].y - rotPos[i - 1].y < 14) rotPos[i].y = rotPos[i - 1].y + 14;
+  for (const r of rotPos) svg.append(sv("text", { x: r.x + 7, y: Math.min(H - mb, Math.max(mt + 4, r.y + 4)), class: "rot", style: `fill:var(--ink-2)` }, r.t));
+  for (const k of c.capas) {
+    if (k.tipo !== "marca" || k.i == null || k.i < 0 || k.i >= n) continue;
+    // por encima de su columna y de las vecinas, para que el rótulo no se pise con ellas en el celular
+    const tops = [k.i - 1, k.i, k.i + 1].map(j => top[j]).filter(v => v != null);
+    for (const L of c.capas) if (L.tipo === "linea") for (const j of [k.i - 1, k.i, k.i + 1]) if (j >= 0 && j < n && ok(L.vals[j])) tops.push(y(L.vals[j]) - 2);
+    const yy = tops.length ? Math.min(...tops) : mt + 10;
+    const mw = k.t.length * 3.4 + 2;
+    svg.append(sv("text", { x: Math.min(W - mw, Math.max(ml + mw, x(k.i))), y: Math.max(10, yy - 4), "text-anchor": "middle", class: "marca" }, k.t));
+  }
+  // lectura
+  if (c.grupo) {
+    const G = c.grupo;
+    const mover = i => { cursor.setAttribute("x", x(i) - bw / 2); cursor.setAttribute("opacity", 1); };
+    G.subs.set(el, mover);
+    if (G.cur != null && G.cur >= 0 && G.cur < n) mover(G.cur);
+    const hit = sv("rect", { x: ml, y: mt, width: pw, height: ph, style: "fill:transparent;cursor:crosshair" });
+    const leer = ev => {
+      const r = svg.getBoundingClientRect(); if (!r.width) return;
+      const px = (ev.clientX - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(n - 1, Math.floor((px - ml) / bw)));
+      if (i !== G.cur) G.set(i);
+    };
+    hit.addEventListener("pointerdown", leer);
+    hit.addEventListener("pointermove", leer);
+    svg.append(hit);
+    svg.setAttribute("tabindex", "0");
+    svg.addEventListener("keydown", e => {
+      let i = G.cur == null ? n - 1 : G.cur;
+      if (e.key === "ArrowLeft") i--; else if (e.key === "ArrowRight") i++; else if (e.key === "Home") i = 0; else if (e.key === "End") i = n - 1; else return;
+      e.preventDefault(); G.set(Math.max(0, Math.min(n - 1, i)));
+    });
+  }
+  el.replaceChildren(svg);
+}
+/* minigráfico de las tarjetas: columnas + promedio móvil */
+function mini(el, W, vals, ma, fi) {
+  const H = 30, n = vals.length, mx = Math.max(...vals.filter(ok), ...ma.filter(ok), 1e-9);
+  const bw = W / n, y = v => H - 2 - (H - 6) * (v / mx);
+  const svg = sv("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true", focusable: "false" });
+  vals.forEach((v, i) => {
+    if (!ok(v) || v <= 0) return;
+    const d = barra(i * bw + bw * 0.18, y(v), Math.max(1.5, bw * 0.64), H - 2 - y(v), 1.5);
+    if (d) svg.append(sv("path", { d, style: `fill:${i === fi ? "var(--dato-foco)" : "var(--dato)"}` }));
+  });
+  let d = "", ab = false;
+  ma.forEach((v, i) => { if (!ok(v)) { ab = false; return; } d += (ab ? "L" : "M") + (i * bw + bw / 2).toFixed(1) + "," + y(v).toFixed(1); ab = true; });
+  if (d) svg.append(sv("path", { d, style: "fill:none;stroke:var(--ink-2)", "stroke-width": 1.5, "stroke-linejoin": "round" }));
+  svg.append(sv("line", { x1: 0, x2: W, y1: H - 1.5, y2: H - 1.5, style: "stroke:var(--axis)", "stroke-width": 1 }));
+  el.replaceChildren(svg);
+}
+function lienzo(dibujar, cls) { const el = h("div", { class: "graf" + (cls ? " " + cls : "") }); COLA.push({ el, dibujar }); return el; }
+function dibujarCola() {
+  const items = COLA; COLA = [];
+  const lst = (DIB[ST.sec] || []).filter(it => it.el.isConnected);
+  for (const it of items) { if (!it.el.isConnected) continue; it.w = it.el.clientWidth; if (it.w > 0) it.dibujar(it.el, it.w); lst.push(it); }
+  DIB[ST.sec] = lst;
+}
+function redibujar() {
+  for (const it of (DIB[ST.sec] || [])) {
+    if (!it.el.isConnected) continue;
+    const w = it.el.clientWidth;
+    if (w > 0 && Math.abs(w - (it.w || 0)) > 2) { it.w = w; it.dibujar(it.el, w); }
+  }
+}
+
+/* ---------- cálculos del navegador ---------- */
+function ranking(ws) {
+  const m = new Map(), ops = new Map();
+  for (const w of ws) for (const r of (X.cubo[w] || [])) {
+    m.set(r.cli, (m.get(r.cli) || 0) + (r.usd || 0));
+    let o = ops.get(r.cli); if (!o) ops.set(r.cli, o = new Map());
+    o.set(r.op, (o.get(r.op) || 0) + (r.usd || 0));
+  }
+  // cuenta a todo cliente con alguna operación en el período (presencia en el cubo), como sem.clientes en Python;
+  // uno con USD 0 queda último
+  const arr = [...m.entries()].map(([cli, usd]) => {
+    let op = null, mx = -Infinity; for (const [k, v] of ops.get(cli)) if (v > mx) { mx = v; op = k; }
+    return { cli, usd, op };
+  }).sort((a, b) => b.usd - a.usd);
+  return { arr, tot: sum(arr.map(r => r.usd)) };
+}
+function porDim(mapas, ws) { const m = new Map(); for (const w of ws) for (const [k, v] of mapas[w] || []) m.set(k, (m.get(k) || 0) + v); return m; }
+function uDim(mapas, w, k) { const v = (mapas[w] && mapas[w].get(k)) || 0; return v / X.k(w); }
+function fotoCaja(w) {
+  const rows = X.caja[w] || [];
+  const mom = completa(w) ? 0 : 1;
+  let r = rows.filter(x => x.momento === mom);
+  if (!r.length) r = rows;
+  return r;
+}
+function cajaMon(w, m, modo) {
+  const rows = fotoCaja(w).filter(r => r.mon === m);
+  if (!rows.length) return null;
+  const kU = modo ? "saldo_real" : "caja_real", kD = modo ? "saldo_real_usd" : "caja_real_usd";
+  return { unid: sum(rows.map(r => r[kU])), usd: rows.some(r => ok(r[kD])) ? sum(rows.map(r => r[kD])) : null,
+    revisar: rows.some(r => r.confiable === 0), rows, momento: rows[0].momento };
+}
+function pendFoto(w) {
+  const rows = X.pendSem[w] || [], mom = completa(w) ? 0 : 1;
+  let r = rows.filter(x => x.momento === mom); if (!r.length) r = rows;
+  return r;
+}
+function pendTot(w) {
+  const r = pendFoto(w); if (!r.length) return null;
+  const s = k => sum(r.map(x => x[k]));
+  return { nos: s("nos_deben"), deb: s("debemos"), items: s("items"), mas4: s("mas4"), rows: r };
+}
+function precio(w, canal, lado) { return (X.precios[w] || []).find(r => r.canal === canal && r.lado === lado) || null; }
+const pocos = p => !!p && ((ok(U().precios_min_ops) && p.n < U().precios_min_ops) || (ok(U().precios_min_usd) && p.usd < U().precios_min_usd));
+function importantesAusentes(f) {
+  const I = IMP(), win = range(Math.max(0, f - I.ventana_semanas + 1), f);
+  const rk = ranking(win).arr.filter(r => r.usd > 0).slice(0, I.top);
+  const aus = range(Math.max(0, f - I.ausente_semanas + 1), f);
+  return rk.map((r, i) => ({ ...r, pos: i })).filter(r => aus.every(w => !(X.wCli[w].get(r.cli) > 0))).map(r => {
+    let ult = null; for (let w = f; w >= 0; w--) if (X.wCli[w].get(r.cli) > 0) { ult = w; break; }
+    let hace = 0; if (ult != null) for (let j = ult + 1; j <= f; j++) hace += X.k(j);
+    return { ...r, ult, hace, nWin: sum(win.map(w => X.k(w))) };
+  });
+}
+function dejaron(f) {
+  return X.inactivos.filter(r => r.w >= f - 3 && r.w <= f && (r.vuelve_w == null || r.vuelve_w > f)).sort((a, b) => (b.usd_hist || 0) - (a.usd_hist || 0));
+}
+function revisarDe(w) { return X.revisar.filter(r => r.w === w && (r.sev === "Alta" || r.sev === "Media")); }
+function claveLegible(cl) {
+  const m = /^(\d{4}-\d{2}-\d{2})#(\d+)(?:#(.+))?$/.exec(cl || "");
+  if (!m) return null;
+  const w = X.iniW.get(m[1]);
+  return "Fila " + m[2] + " · " + (w != null ? semLabel(w) : dm(m[1])) + (m[3] && m[3] !== "None" && m[3] !== "null" ? " · Ope " + m[3] : "");
+}
+/* Frase para decirle a Claude que algo ya se revisó, a partir de su clave (la clave queda en el detalle) */
+function comoMarcar(cl) {
+  cl = String(cl || "");
+  let m = /^(\d{4}-\d{2}-\d{2})#(\d+)/.exec(cl);
+  if (m) return `la fila ${m[2]} del ${dm(m[1])} ya está`;
+  m = /^control:(C\d+):([^:]*)/.exec(cl);
+  if (m) {
+    if (m[1] === "C12") return `lo de la caja ${m[2]} ya está`;
+    if (m[1] === "C08" || m[1] === "C09") return `la diferencia de la caja ${m[2]} ya está`;
+    if (m[1] === "C13") return `lo del operador «${m[2]}» ya está`;
+    if (m[1] === "C14") return `${m[2]} es otro cliente, está bien`;
+    return `el aviso ${m[1]} ya está revisado`;
+  }
+  m = /^retiro:(.+):(\d{4}-\d{2})$/.exec(cl);
+  if (m) return `el retiro de ${m[1]} ya está visto`;
+  if (cl.startsWith("cheques:")) return "lo de los cheques vencidos ya está";
+  if (cl.startsWith("usdtq:")) return "lo de las transferencias sin USDT ya está";
+  if (cl.startsWith("pendviejos:")) return "lo de la plata afuera vieja ya está";
+  if (cl.startsWith("sinope:")) return "lo de los ítems sin N° de Ope ya está";
+  m = /^ausente:(.+):\d{4}-\d{2}-\d{2}$/.exec(cl);
+  if (m) return `lo de ${m[1]} ya está`;
+  const otras = { ausentes: "lo de los clientes que no vinieron ya está", fijos: "lo de los costos fijos ya está", vol: "lo del volumen de la semana ya está",
+    conc: "lo de la concentración ya está", caja: "lo de la caja ya está" };
+  const pre = cl.split(":")[0];
+  if (otras[pre]) return otras[pre];
+  return "esa alerta ya está vista";
+}
+const comoEl = claves => claves.length ? h("p", { class: "como" }, "Decile a Claude, por ejemplo, «" + comoMarcar(claves[0]) + "».") : null;
+const fechaRevisada = claves => { let f = null; for (const c of claves || []) { const r = X.revisadas.get(c); if (r && r.fecha && (!f || r.fecha > f)) f = r.fecha; } return f; };
+
+/* ---------- SEMANA ---------- */
+const SEV = { critico: { o: 0, p: "Crítica", ic: "critico" }, atencion: { o: 1, p: "Atención", ic: "atencion" }, info: { o: 2, p: "Info", ic: "info" } };
+function destinoAncla(a) {
+  const m = /^#([a-z]+)(?:-([a-z0-9]+))?$/.exec(a || ""); if (!m) return null;
+  const s = SECS.find(x => x.id === m[1]); if (!s) return null;
+  if (m[2] && IMPL.has(m[1] + "-" + m[2])) { const an = s.anclas.find(x => x[0] === m[2]); if (an) return an[1]; }
+  return s.t;
+}
+function alertaEl(a, completo) {
+  const s = SEV[a.sev] || SEV.info, dest = destinoAncla(a.ancla);
+  const claves = a.claves || (a.clave ? [a.clave] : []);
+  // una alerta revisada no lleva la palabra de severidad: va con el ícono de OK y la fecha
+  const frev = a.revisada ? (a.revisada_fecha || fechaRevisada(claves)) : null;
+  const cuerpo = [a.revisada ? h("span", { class: "al-sev" }, icono("ok", 14), "Revisada" + (frev ? " " + dm(frev) : ""))
+    : h("span", { class: "al-sev" }, icono(s.ic, 14), s.p), a.texto || ""];
+  const li = h("li", { class: `alerta s-${SEV[a.sev] ? a.sev : "info"}` + (a.revisada ? " revisada" : "") });
+  if (dest) li.append(h("a", { class: "al-a", href: a.ancla }, h("p", {}, cuerpo, h("span", { class: "vh" }, " Ir a " + dest + ".")), icono("der", 16, "al-ch")));
+  else li.append(h("p", { class: "al-p" }, cuerpo));
+  if (completo && claves.length && !a.revisada) li.append(h("div", { class: "al-pie" },
+    h("details", { class: "mini" }, h("summary", {}, "Para darla por revisada"), comoEl(claves),
+      h("ul", { class: "claves" }, claves.map(c => { const l = claveLegible(c); return h("li", {}, l ? l + " · " : "", h("code", {}, c)); })))));
+  return li;
+}
+/* frase-resumen de la semana (escritorio: en el celular la primera pantalla ya va justa con alertas e indicadores) */
+function resumenSemana() {
+  const f = ST.foco; if (!completa(f)) return null;
+  const u = uSem(f, "usd"), p4 = P4(w => uSem(w, "usd"), f), n = uSem(f, "n"), c = semVal(f, "clientes");
+  if (!ok(u)) return null;
+  const d = ok(p4) && p4 ? u / p4 - 1 : null;
+  const vivas = (D.alertas || []).filter(a => !a.revisada), nc = vivas.filter(a => a.sev === "critico").length, na = vivas.filter(a => a.sev === "atencion").length;
+  const temas = [nc ? plural(nc, "tema crítico", "temas críticos") : null, na ? `${na} para mirar` : null].filter(Boolean);
+  return h("p", { class: "resumen-sem solo-escritorio" }, h("b", {}, "Semana " + semLabel(f) + ": "),
+    fUSD(u) + (X.k(f) > 1 ? " por semana" : "") + (ok(d) ? ` (${Math.abs(d) < 0.005 ? "igual que" : fPct(Math.abs(d)) + (d > 0 ? " más que" : " menos que")} el promedio de 4 semanas)` : ""),
+    ok(n) ? `, ${fNum(Math.round(n))} operaciones` : "", ok(c) ? `, ${fNum(c)} clientes. ` : ". ",
+    ST.foco === D.foco ? (temas.length ? temas.join(" y ") + "." : "Nada urgente.") : "");
+}
+function mAlertas() {
+  const el = modulo("semana-alertas", "Alertas", { plano: true, ancho: true });
+  const rs = resumenSemana(); if (rs) el.querySelector(".mod-h").after(rs);
+  const al = (D.alertas || []).slice().sort((a, b) => ((SEV[a.sev] || {}).o ?? 3) - ((SEV[b.sev] || {}).o ?? 3) || String(a.id).localeCompare(String(b.id)));
+  const vivas = al.filter(a => !a.revisada), n = esEscritorio() ? 5 : 3;
+  const lista = ST.verAlertas ? al : vivas.slice(0, n);
+  const cab = el.querySelector(".mod-h");
+  cab.classList.add("fila");
+  cab.querySelector("h2").append(h("span", { class: "al-fecha" }, "al " + dm(D.fecha_corte)));
+  if (al.length > lista.length || ST.verAlertas) cab.append(boton(ST.verAlertas ? "Ver menos" : `Ver todas (${al.length})`, () => { ST.verAlertas = !ST.verAlertas; rehacer(mAlertas); }, { attrs: { id: "b-alertas", "aria-expanded": String(ST.verAlertas) } }));
+  if (ST.foco !== D.foco) el.append(h("p", { class: "mod-sub" }, "Calculadas al corte: no cambian con la semana elegida."));
+  if (!vivas.length && !ST.verAlertas) el.append(h("div", { class: "ok-box" }, icono("ok", 20), h("span", {}, "Nada urgente esta semana")));
+  if (lista.length) el.append(h("ul", { class: "alertas" + (ST.verAlertas ? "" : " portada") }, lista.map(a => alertaEl(a, ST.verAlertas))));
+  return el;
+}
+function tarjeta(o) {
+  const el = h("article", { class: "ind" + (o.compacta ? " compacta" : "") + (o.crit ? " crit" : ""), "aria-labelledby": o.id + "-k" },
+    h("div", { class: "k", id: o.id + "-k" }, o.t), ayuda(o.id, o.t));
+  if (o.cifra != null) el.append(h("div", { class: "v" }, o.cifra));
+  for (const l of (o.lineas || [])) el.append(l);
+  for (const l of (o.sub || [])) if (l) el.append(h("div", { class: "s" }, l));
+  for (const l of (o.cmp || [])) if (l) el.append(h("div", { class: "c" }, l));
+  if (o.spark) el.append(h("div", { class: "spark" }, lienzo(o.spark)));
+  return el;
+}
+const cifraU = (u, v) => [h("span", { class: "u" }, u), v];
+function comparaciones(f, fnU, filtro, modo) {
+  // devuelve líneas de comparación para la tarjeta
+  if (!completa(f)) return ["en curso · " + plural(X.S[f].dias_ops || 0, "día", "días") + "; se compara al cerrar"];
+  if (filtro && !filtro(f)) return ["Semana doble: no se compara"];
+  const out = [], uf = fnU(f), p4 = P4(fnU, f, filtro);
+  const prev = f - 1 >= 0 && completa(f - 1) && (!filtro || filtro(f - 1)) ? fnU(f - 1) : null;
+  if (modo === "pts") {
+    if (ok(uf) && ok(prev)) out.push(flechaPts(uf - prev) + " vs sem. anterior");
+    out.push(ok(uf) && ok(p4) ? flechaPts(uf - p4) + " vs prom. 4 sem." : "Sin semanas para comparar");
+  } else {
+    if (modo !== "solo4" && ok(uf) && ok(prev) && prev !== 0) out.push(flechaTxt(uf / prev - 1) + "vs sem. anterior");
+    out.push(ok(uf) && ok(p4) && p4 !== 0 ? flechaTxt(uf / p4 - 1) + "vs prom. 4 sem." : "Sin semanas para comparar");
+  }
+  return out;
+}
+function flechaPts(d) { if (Math.abs(d) < 0.005) return "="; return (d > 0 ? "▲ " : "▼ ") + fPtsAbs(d); }
+function sparkDe(fn, filtro) {
+  const ws = tend(), f = ST.foco;
+  const vals = ws.map(fn), ma = ws.map(w => MA4(fn, w, filtro));
+  return (el, W) => mini(el, W, vals, ma, ws.indexOf(f));
+}
+function mIndicadores() {
+  const f = ST.foco, S = X.S[f], cur = !S.completa, dob = S.k > 1, sm = X.sem[f] || {};
+  const el = modulo("semana-indicadores", "Indicadores", { plano: true, ancho: true,
+    sub: dob ? semLabel(f) + " · valores por semana" : cur ? semLabel(f) + " · " + estadoSem(f) : null });
+  const uUSD = w => uSem(w, "usd"), uN = w => uSem(w, "n");
+  const cards = [];
+  // 1 volumen
+  const p4usd = P4(uUSD, f);
+  cards.push(tarjeta({ id: "ind-1", t: "Volumen operado", cifra: ok(uUSD(f)) ? cifraU("USD", comp(uUSD(f))) : "—",
+    sub: [ok(p4usd) ? "Promedio de 4 semanas: " + fUSD(p4usd) : null], cmp: comparaciones(f, uUSD), spark: sparkDe(uUSD) }));
+  // 2 operaciones
+  cards.push(tarjeta({ id: "ind-2", t: "Operaciones", cifra: ok(uN(f)) ? fNum(Math.round(uN(f))) : "—",
+    sub: [ok(sm.ticket_med) ? "Operación típica: " + fUSD(sm.ticket_med) : null], cmp: comparaciones(f, uN), spark: sparkDe(uN) }));
+  // 3 clientes
+  const cl = w => semVal(w, "clientes");
+  cards.push(tarjeta({ id: "ind-3", t: "Clientes que operaron", cifra: ok(cl(f)) ? fNum(cl(f)) : "—",
+    sub: [ok(sm.nuevos) ? `${plural(Math.round(uSem(f, "nuevos")), "nuevo", "nuevos")} · ${sm.recuperados ?? 0} regresaron` : null],
+    cmp: comparaciones(f, cl, k1, "solo4"), spark: sparkDe(cl, k1) }));
+  // 4 top5
+  const t5 = w => semVal(w, "top5");
+  cards.push(tarjeta({ id: "ind-4", t: "Los 5 mayores clientes", cifra: ok(t5(f)) ? fPct(t5(f)) : "—",
+    sub: [ok(sm.top1) ? "El mayor: " + fPct(sm.top1) : null], cmp: comparaciones(f, t5, k1, "pts"), spark: sparkDe(t5, k1) }));
+  // 5 dólar billete
+  const c0 = precio(f, 0, 0), v0 = precio(f, 0, 1);
+  const dif = c0 && v0 ? v0.cot - c0.cot : null;
+  let cmp5 = [];
+  if (cur) cmp5 = ["en curso · se compara al cerrar"];
+  else { const cp = precio(f - 1, 0, 0), vp = precio(f - 1, 0, 1); if (ok(dif) && cp && vp) { const d = dif - (vp.cot - cp.cot); cmp5 = [(Math.abs(d) < 0.05 ? "= " : (d > 0 ? "▲ " : "▼ ") + fPrecio(Math.abs(d)) + " ") + "vs sem. anterior"]; } }
+  const lado = (t, p) => h("div", { class: "v2" }, h("span", { class: "u" }, t + " "), h("span", { class: "nw" }, p ? fPrecio(p.cot) : "—"));
+  cards.push(tarjeta({ id: "ind-5", t: "Dólar billete", compacta: true,
+    lineas: (c0 || v0) ? [lado("Compra", c0), lado("Venta", v0)] : [h("div", { class: "v" }, "—")],
+    sub: [ok(dif) ? `Diferencia ${fPrecio(dif)} por dólar` : (c0 ? "Sin ventas en la semana" : v0 ? "Sin compras en la semana" : "Sin operaciones de billete"),
+      pocos(c0) || pocos(v0) ? "pocos datos" : null], cmp: cmp5.map(x => /vs sem/.test(x) ? "Diferencia " + x : x) }));
+  // 6 plata afuera
+  const pt = pendTot(f), pp = f > 0 ? pendTot(f - 1) : null;
+  const firma = signoAConfirmar() ? " · falta confirmar si nos deben y debemos están al revés" : "";
+  cards.push(tarjeta({ id: "ind-6", t: "Plata afuera", compacta: true,
+    lineas: pt ? [h("div", { class: "v2" }, h("span", { class: "u" }, "Nos deben "), h("span", { class: "nw" }, h("span", { class: "u" }, "USD "), comp(pt.nos))),
+        h("div", { class: "v2" }, h("span", { class: "u" }, "Debemos "), h("span", { class: "nw" }, h("span", { class: "u" }, "USD "), comp(pt.deb)))]
+      : [h("div", { class: "v" }, "—"), h("div", { class: "s falta" }, X.primSaldos >= 0 && f < X.primSaldos ? "Sin saldos antes del " + dm(X.S[X.primSaldos].ini) : "Sin datos de pendientes")],
+    sub: pt ? [plural(pt.mas4, "abierto", "abiertos") + " hace 4 semanas o más" + firma] : [],
+    cmp: pt ? (cur ? ["en curso · se compara al cerrar"] : (pp && pp.nos ? [flechaTxt(pt.nos / pp.nos - 1) + "nos deben vs sem. anterior"] : [])) : [] }));
+  // 7 caja USD billete
+  const cu = cajaMon(f, 0, 0), cuP = f > 0 && completa(f) ? cajaMon(f - 1, 0, 0) : null;
+  const ca = cajaMon(f, 3, 0), ct = cajaMon(f, 2, 0);
+  let c7 = [];
+  if (cu) {
+    if (cur) c7 = ["Al inicio de la semana en curso"];
+    else if (cuP) { const d = cu.unid - cuP.unid; c7 = [(Math.abs(d) < 0.5 ? "= " : (d > 0 ? "▲ " : "▼ ") + fUSD(Math.abs(d)) + " ") + "vs sem. anterior", h("span", { class: "falta" }, "Incluye aportes, retiros y movimientos con clientes")]; }
+  }
+  const cuB = cajaMon(f, 0, 1);
+  cards.push(tarjeta({ id: "ind-7", t: "Caja propia USD billete", compacta: true,
+    cifra: cu ? cifraU("USD", comp(cu.unid)) : "—",
+    sub: cu ? [cuB ? "En la planilla (Balance): " + fUSD(cuB.unid) : null,
+      [ca ? `Pesos ${fARS(ca.unid)}` + (ok(ca.usd) ? ` (≈ ${fUSD(ca.usd)})` : "") : null, ct ? `USDT ${comp(ct.unid)}` : null].filter(Boolean).join(" · "),
+      cu.revisar ? h("span", { class: "c-warn" }, "dato a revisar") : null]
+      : [X.primSaldos >= 0 && f < X.primSaldos ? "Sin saldos antes del " + dm(X.S[X.primSaldos].ini) : "Sin datos de caja"],
+    cmp: c7 }));
+  // 8 para revisar
+  const rv = revisarDe(f).filter(r => !r.revisada), a = rv.filter(r => r.sev === "Alta").length, m = rv.length - a;
+  const ant = X.revisar.filter(r => r.w < f && !r.revisada && (r.sev === "Alta" || r.sev === "Media")).length;
+  const verLista = h("a", { href: "#control-revisar", class: "ver" }, "Ver lista");
+  cards.push(tarjeta({ id: "ind-8", t: "Para revisar", compacta: true, crit: !cur && a > 0,
+    lineas: cur ? [h("div", { class: "v2" }, "—"), h("div", { class: "s" }, "Se revisa al cerrar la semana")]
+      : [h("div", { class: "v2" + (a > 0 ? " crit-t" : "") }, a > 0 ? icono("critico", 15) : null, a > 0 ? " " : null, fNum(a), h("span", { class: "u" }, a === 1 ? " grave" : " graves"), " ", h("span", { class: "u2" }, "(≥ USD 100)")),
+         h("div", { class: "v2" }, fNum(m), h("span", { class: "u" }, m === 1 ? " menor" : " menores"), " ", h("span", { class: "u2" }, "(USD 10–100)"))],
+    sub: [h("span", {}, ant ? `y ${ant} de semanas anteriores · ` : "", verLista)] }));
+  el.append(h("div", { class: "inds" }, cards));
+  return el;
+}
+function mVolumen() {
+  const f = ST.foco;
+  const el = modulo("semana-volumen", "Volumen por semana", { ancho: true });
+  let ws = tend();
+  if (D.en_curso != null && D.en_curso === f + 1 && ST.rango !== "anio") ws = ws.concat([D.en_curso]);
+  else if (D.en_curso != null && D.en_curso === f + 1) ws = ws.concat([D.en_curso]);
+  if (ws.length < 2) {
+    el.append(h("p", { class: "vacio" }, fUSD(uSem(f, "usd")) + " · Todavía no hay historia para comparar"));
+    return el;
+  }
+  const u = ws.map(w => uSem(w, "usd")), un = ws.map(w => uSem(w, "n")), ma = ws.map(w => MA4(x => uSem(x, "usd"), w));
+  const fi = ws.indexOf(f);
+  const G = lectura(i => {
+    const w = ws[i], k = X.k(w), por = k > 1 ? " por semana" : "";
+    return [h("b", {}, semLabel(w)), " · " + fUSD(u[i]) + por + " · " + (ok(un[i]) ? fNum(Math.round(un[i])) + (Math.round(un[i]) === 1 ? " operación" : " operaciones") : "—") + por,
+      !completa(w) ? " · en curso" : null,
+      w !== f ? boton("Ver esta semana", () => cambiarFoco(w), { attrs: { id: "b-verw" } }) : null];
+  }, fi);
+  const hayCurso = ws.some(w => !completa(w));
+  el.append(G.el, lienzo((c, W) => grafico(c, W, {
+    n: ws.length, etiq: i => completa(ws[i]) ? semCorta(ws[i]) : "en curso", grupo: G, aria: `Volumen por semana en USD, ${semLabel(ws[0])} a ${semLabel(ws[ws.length - 1])}, con la línea del promedio móvil de 4 semanas (incluye cada semana). Semana elegida ${semLabel(f)}: ${fUSD(uSem(f, "usd"))}.`,
+    capas: [{ tipo: "barras", series: [{ vals: u, fill: i => ws[i] === f ? "var(--dato-foco)" : "var(--dato)", trama: i => !completa(ws[i]) }] },
+      { tipo: "linea", vals: ma, color: "var(--ink-2)", ancho: 1.75 },
+      ...ws.map((w, i) => X.k(w) > 1 ? { tipo: "marca", i, t: "2 sem." } : null).filter(Boolean)],
+  })));
+  el.append(leyenda([{ t: "USD por semana", color: "var(--dato)" }, { t: "Semana elegida", color: "var(--dato-foco)" }, { t: "Tendencia: promedio móvil de 4 semanas (incluye la semana)", cls: "lin", color: "var(--ink-2)" },
+    hayCurso ? { t: "En curso", cls: "trama" } : null].filter(Boolean)));
+  const wDob = ws.find(w => X.k(w) > 1);
+  if (wDob != null) el.append(h("p", { class: "nota" }, `La semana doble (${semLabel(wDob, true)}) se muestra dividida por 2 para poder compararla.`));
+  el.append(verTabla([{ t: "Semana", v: r => semLabel(r) }, { t: "USD por semana", n: 1, v: r => fNum(uSem(r, "usd")) }, { t: "Operaciones por semana", n: 1, p3: 1, v: r => fNum(uSem(r, "n")) },
+    { t: "Prom. móvil 4 sem.", n: 1, v: r => fNum(MA4(x => uSem(x, "usd"), r)) }, { t: "Estado", p3: 1, v: r => estadoSem(r) }], ws.slice().reverse()));
+  return el;
+}
+function listaBarras(filas, o = {}) {
+  const mx = Math.max(...filas.map(r => r.v), 1e-9);
+  return h("ul", { class: "barras" }, filas.map(r => h("li", r.abrir ? { class: "click", role: "button", tabindex: "0", onclick: r.abrir, onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); r.abrir(); } } } : {},
+    h("div", { class: "nom" }, r.pos != null ? h("span", { class: "pos" }, r.pos) : null, r.punto ? h("span", { class: "punto", style: `background:${r.punto}`, title: r.puntoT || null }) : null, h("span", {}, r.t)),
+    h("div", { class: "pista" }, r.v > 0 ? h("i", { style: `width:${Math.max(0.5, r.v / mx * 100).toFixed(1)}%;background:${r.color || "var(--dato)"}` }) : null,
+      ok(r.marca) ? h("b", { class: "tick", style: `left:${Math.min(100, r.marca / mx * 100).toFixed(1)}%`, title: r.marcaT || null }) : null),
+    h("div", { class: "val" }, r.val, r.chip || null))));
+}
+function filasMovio(mapas, f, nombre, color) {
+  const keys = new Set();
+  for (let w = Math.max(0, f - 4); w <= f; w++) for (const k of (mapas[w] || new Map()).keys()) keys.add(k);
+  const hayP4 = P4(() => 1, f) != null;
+  return [...keys].map(k => {
+    const uf = uDim(mapas, f, k), p4 = hayP4 ? P4(w => uDim(mapas, w, k), f) : null;
+    return { k, uf, p4 };
+  }).filter(r => r.uf > 0 || (r.p4 || 0) > 0).sort((a, b) => b.uf - a.uf).map(r => ({
+    t: nombre(r.k), v: r.uf, val: fUSD(r.uf), color: color ? color(r.k) : null,
+    chip: completa(f) && ok(r.p4) && r.p4 > 0 ? chipDelta(r.uf / r.p4 - 1) : null,
+  }));
+}
+function mMovio() {
+  const f = ST.foco;
+  const el = modulo("semana-movio", "Qué se movió", { sub: semLabel(f) + (completa(f) ? " · el % compara con el promedio de las 4 semanas anteriores" : " · en curso: se compara al cerrar") });
+  const pr = filasMovio(X.wProd, f, i => X.dic.prod[i] ?? "—"), op = filasMovio(X.wOp, f, nomOp, colorOp);
+  if (!pr.length) { el.append(h("p", { class: "vacio" }, "No hubo operaciones en la semana.")); return el; }
+  el.append(h("div", { class: "dos" }, h("div", {}, h("h3", {}, "Productos"), listaBarras(pr)), h("div", {}, h("h3", {}, "Operadores"), listaBarras(op))));
+  if (completa(f) && P4(() => 1, f) == null) el.append(h("p", { class: "nota" }, "Sin semanas para comparar."));
+  return el;
+}
+function filasRanking(rk, desde, hasta, prevPos) {
+  return rk.arr.slice(desde, hasta).map((r, i) => {
+    let chip = null;
+    if (prevPos) { const p = prevPos.get(r.cli), pos = desde + i; chip = h("span", { class: "tag" }, p == null ? "entró" : p === pos ? "=" : p > pos ? "▲" + (p - pos) : "▼" + (pos - p)); }
+    return { pos: desde + i + 1, t: nomCli(r.cli), v: r.usd, val: fUSD(r.usd) + " · " + fPct(rk.tot ? r.usd / rk.tot : null), punto: colorOp(r.op), puntoT: "Operador que más lo atendió: " + nomOp(r.op), chip, abrir: () => hojaCliente(r.cli) };
+  });
+}
+function leyendaOps() {
+  const g = [0, 1, 2].filter(x => x === 2 || X.opg.includes(x));
+  const l = leyenda(g.map(x => ({ t: nombreGrupo(x), color: colorGrupo(x), cls: "redondo" })));
+  l.prepend(h("span", {}, "El color del punto es el operador que más lo atendió:"));
+  return l;
+}
+function mTop5() {
+  const f = ST.foco;
+  const el = modulo("semana-top5", "Los 5 mayores clientes de la semana", { sub: semLabel(f) + (X.k(f) > 1 ? " · total de las " + X.k(f) + " semanas" : "") });
+  const rk = ranking([f]);
+  if (!rk.arr.length) { el.append(h("p", { class: "vacio" }, "No hubo operaciones en la semana.")); return el; }
+  el.append(listaBarras(filasRanking(rk, 0, 5)), leyendaOps(), h("a", { href: "#clientes-ranking", class: "link", style: "align-self:flex-start;display:inline-flex;align-items:center" }, "Ver ranking"));
+  return el;
+}
+
+/* ---------- CLIENTES ---------- */
+function mRanking() {
+  const el = modulo("clientes-ranking", "Ranking de clientes");
+  const R = periodo(), rk = ranking(R);
+  if (!rk.arr.length) { el.append(h("p", { class: "vacio" }, "No hubo operaciones en el período.")); return el; }
+  const nuevos = sum(R.map(w => semVal(w, "nuevos") || 0));
+  el.append(h("p", { class: "mod-sub" }, `${plural(rk.arr.length, "cliente operó", "clientes operaron")} · ${plural(nuevos, "nuevo", "nuevos")} · ${fUSD(rk.tot)} en total`));
+  // puesto anterior (mismo largo)
+  let prevPos = null;
+  if (ST.rango !== "anio" && R[0] > 0) {
+    const L = R.length, prev = range(Math.max(0, R[0] - L), R[0] - 1);
+    if (prev.length) { prevPos = new Map(); ranking(prev).arr.forEach((r, i) => prevPos.set(r.cli, i)); }
+  }
+  let lim = 10, q = "";
+  const inp = h("input", { type: "search", id: "rk-buscar", placeholder: "Buscar cliente", "aria-label": "Buscar cliente", autocomplete: "off" });
+  const cont = h("div"), mas = h("div");
+  const pintar = () => {
+    const nq = norm(q);
+    const idx = rk.arr.map((r, i) => i).filter(i => !nq || norm(nomCli(rk.arr[i].cli)).includes(nq));
+    const vis = idx.slice(0, lim);
+    const filas = vis.map(i => filasRanking(rk, i, i + 1, prevPos)[0]);
+    cont.replaceChildren(filas.length ? listaBarras(filas) : h("p", { class: "vacio" }, "Ningún cliente coincide con la búsqueda."));
+    mas.replaceChildren(idx.length > lim ? boton(lim === 10 ? `Ver todos (${idx.length})` : `Ver 50 más (quedan ${idx.length - lim})`, () => { lim += lim === 10 ? 40 : 50; pintar(); }, { cls: "mas", attrs: { id: "rk-mas" } }) : "");
+  };
+  inp.addEventListener("input", () => { q = inp.value; lim = 10; pintar(); });
+  el.append(h("div", { class: "buscar" }, inp), leyendaOps(), cont, mas);
+  pintar();
+  return el;
+}
+function mConcentracion() {
+  const el = modulo("clientes-concentracion", "Concentración");
+  const rk = ranking(periodo()), t = rk.tot;
+  if (!t) { el.append(h("p", { class: "vacio" }, "No hubo operaciones en el período.")); return el; }
+  const sh = n => sum(rk.arr.slice(0, n).map(r => r.usd)) / t;
+  el.append(h("p", { style: "font-size:15px" }, h("b", {}, "El mayor " + fPct(sh(1))), " · ", h("b", {}, "Los 5 mayores " + fPct(sh(5))), " · ", h("b", {}, "Los 10 mayores " + fPct(sh(10)))));
+  const ws = tend(), f = ST.foco, v = ws.map(w => semVal(w, "top5")), lim = U().top5_max;
+  if (ws.length >= 2) {
+    const G = lectura(i => [h("b", {}, semLabel(ws[i])), " · Los 5 mayores " + fPct(v[i]) + " · El mayor " + fPct(semVal(ws[i], "top1")), X.k(ws[i]) > 1 ? " · hoja de 2 semanas" : null], ws.indexOf(f));
+    el.append(h("h3", {}, "Los 5 mayores, semana a semana"), G.el, lienzo((c, W) => grafico(c, W, {
+      n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, yMin: 0, yMax: Math.max(1, ...v.filter(ok)) > 0.95 ? 1 : Math.max(lim || 0, ...v.filter(ok)) * 1.1, tipoY: "pct",
+      aria: `Parte de los 5 mayores clientes por semana. Semana elegida: ${fPct(semVal(f, "top5"))}.`,
+      capas: [ok(lim) ? { tipo: "ref", v: lim, rot: "límite " + fPct(lim) } : null, { tipo: "linea", vals: v, color: "var(--dato-foco)", puntos: true, hueco: i => X.k(ws[i]) > 1 }].filter(Boolean),
+    })));
+    el.append(leyenda([{ t: "Los 5 mayores", cls: "lin", color: "var(--dato-foco)" }, ok(lim) ? { t: "Límite de atención", cls: "dash" } : null].filter(Boolean)));
+    el.append(verTabla([{ t: "Semana", v: w => semLabel(w) }, { t: "El mayor", n: 1, v: w => fPct(semVal(w, "top1")) }, { t: "5 mayores", n: 1, v: w => fPct(semVal(w, "top5")) }, { t: "10 mayores", n: 1, v: w => fPct(semVal(w, "top10")) }], ws.slice().reverse()));
+  }
+  return el;
+}
+function mNoVinieron() {
+  const f = ST.foco, I = IMP();
+  const el = modulo("clientes-novinieron", "Importantes que no vinieron", { sub: `De los ${I.top} mayores de ${I.ventana_semanas} semanas · sin operar en las últimas ${I.ausente_semanas}` });
+  const aus = importantesAusentes(f);
+  if (!completa(f)) el.append(h("p", { class: "nota" }, "La semana en curso todavía está abierta: alguno puede venir antes del cierre."));
+  if (!aus.length) { el.append(h("div", { class: "ok-box" }, icono("ok", 20), h("span", {}, "Vinieron todos"))); return el; }
+  el.append(h("ul", { class: "items" }, aus.map(r => h("li", { class: "click", role: "button", tabindex: "0", onclick: () => hojaCliente(r.cli), onkeydown: e => { if (e.key === "Enter") hojaCliente(r.cli); } }, h("div", { class: "plain" },
+    h("span", { class: "a" }, nomCli(r.cli)), h("span", { class: "m" }, r.pos < I.top_alerta ? h("span", { class: "tag" }, "entre los " + I.top_alerta + " mayores") : ""),
+    h("span", { class: "b" }, "Última vez: " + (r.ult != null ? `${semLabel(r.ult)} (hace ${r.hace} sem.)` : "—") + ` · ${fUSD(r.usd)} en las últimas ${r.nWin} semanas`))))));
+  return el;
+}
+function mDejaron() {
+  const f = ST.foco;
+  const el = modulo("clientes-dejaron", "Dejaron de operar", { sub: "Pasaron a inactivos en las últimas 4 semanas y no volvieron" });
+  const lst = dejaron(f);
+  const cobertura = Math.max(0, X.nW - 12);
+  if (f - 3 < cobertura) el.append(h("p", { class: "nota" }, "Solo hay datos de las últimas 12 semanas: para una semana anterior la lista puede estar incompleta."));
+  if (!lst.length) { el.append(h("p", { class: "vacio" }, "Nadie dejó de operar en estas 4 semanas.")); return el; }
+  let lim = 10;
+  const ul = h("ul", { class: "items" }), mas = h("div");
+  const pintar = () => {
+    ul.replaceChildren(...lst.slice(0, lim).map(r => h("li", { class: "click", role: "button", tabindex: "0", onclick: () => hojaCliente(r.cli), onkeydown: e => { if (e.key === "Enter") hojaCliente(r.cli); } }, h("div", { class: "plain" }, h("span", { class: "a" }, nomCli(r.cli)), h("span", { class: "m" }, ""),
+      h("span", { class: "b" }, "Última operación: " + (r.ult_w != null ? semLabel(r.ult_w) : "—") + " · " + fNum(r.ops_hist || 0) + ((r.ops_hist || 0) === 1 ? " operación" : " operaciones") + " por " + fUSD(r.usd_hist) + " en el año")))));
+    mas.replaceChildren(lst.length > lim ? boton(`Ver todos (${lst.length})`, () => { lim = lst.length; pintar(); }, { cls: "mas", attrs: { id: "dej-mas" } }) : "");
+  };
+  pintar();
+  el.append(ul, mas);
+  return el;
+}
+
+/* ---------- OPERACIÓN ---------- */
+function mOperadores() {
+  const el = modulo("operacion-operadores", "Volumen por operador");
+  const ws = tend(), f = ST.foco, R = periodo();
+  const grupos = [0, 1, 2].filter(g => g === 2 || X.opg.includes(g));
+  const vals = grupos.map(g => ws.map(w => { let s = 0; for (const [op, v] of X.wOp[w]) if ((X.opg[op] ?? 2) === g) s += v; return s / X.k(w); }));
+  const enR = porDim(X.wOp, R), totR = sum([...enR.values()]);
+  const pctG = g => { let s = 0; for (const [op, v] of enR) if ((X.opg[op] ?? 2) === g) s += v; return totR ? s / totR : null; };
+  const G = lectura(i => [h("b", {}, semLabel(ws[i])), ...grupos.map((g, j) => " · " + (g === 2 ? "Resto" : nombreGrupo(g)) + " " + fUSD(vals[j][i])), X.k(ws[i]) > 1 ? " (por semana)" : null], ws.indexOf(f));
+  const items = grupos.map(g => {
+    const sw = h("span", { class: "sw", style: `background:${colorGrupo(g)}` });
+    const t = `${nombreGrupo(g)} ${fPct(pctG(g))}`;
+    if (g !== 2) return h("span", { class: "it" }, sw, t);
+    return h("button", { type: "button", class: "btn", id: "b-resto", "aria-expanded": String(ST.restoAbierto), onclick: () => { ST.restoAbierto = !ST.restoAbierto; rehacer(mOperadores); } }, h("span", { class: "it", style: "display:inline-flex;gap:6px;align-items:center" }, sw, t, " ", ST.restoAbierto ? "▴" : "▾"));
+  });
+  el.append(h("p", { class: "mod-sub" }, "% del período: " + textoPeriodo()));
+  el.append(h("div", { class: "ley" }, items));
+  if (ST.restoAbierto) {
+    const filas = [...enR.entries()].filter(([op]) => (X.opg[op] ?? 2) === 2).sort((a, b) => b[1] - a[1]).map(([op, v]) => ({ t: nomOp(op), v, val: fUSD(v) + " · " + fPct(totR ? v / totR : null), color: "var(--op-resto)" }));
+    el.append(filas.length ? listaBarras(filas) : h("p", { class: "nota" }, "Nadie más operó en el período."));
+  }
+  el.append(G.el, lienzo((c, W) => grafico(c, W, {
+    n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, aria: "Volumen por semana de cada operador, en USD.",
+    capas: [{ tipo: "barras", series: grupos.map((g, j) => ({ vals: vals[j], fill: () => colorGrupo(g) })) }],
+  })));
+  el.append(verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, ...grupos.map((g, j) => ({ t: g === 2 ? "Resto" : nombreGrupo(g), n: 1, v: i => fNum(vals[j][i]) }))], ws.map((_, i) => i).reverse()));
+  return el;
+}
+function mProductos() {
+  const el = modulo("operacion-productos", "Productos");
+  const R = periodo(), f = ST.foco, enR = porDim(X.wProd, R), tot = sum([...enR.values()]);
+  if (!tot) { el.append(h("p", { class: "vacio" }, "No hubo operaciones en el período.")); return el; }
+  const una = ST.rango === "1" && completa(f);
+  const filas = [...enR.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([p, v]) => {
+    const p4 = una ? P4(w => uDim(X.wProd, w, p), f) : null;
+    return { t: X.dic.prod[p] ?? "—", v, val: fUSD(v) + " · " + fPct(v / tot), chip: una && ok(p4) && p4 > 0 ? chipDelta(uDim(X.wProd, f, p) / p4 - 1) : null };
+  });
+  el.append(h("p", { class: "mod-sub" }, textoPeriodo().replace(/^./, c => c.toUpperCase()) + " · " + fUSD(tot) + (una ? " · el % de al lado compara con el promedio de las 4 semanas anteriores" : "")));
+  el.append(listaBarras(filas));
+  const ws = tend(), prods = [...enR.keys()].filter(p => enR.get(p) > 0).sort((a, b) => enR.get(b) - enR.get(a));
+  // guion opcional en las palabras largas del encabezado ("Transfe-rencia"), para que la columna no ensanche la tabla
+  const corteSuave = t => String(t).replace(/([A-Za-zÁÉÍÓÚáéíóúñÑ]{7})([A-Za-zÁÉÍÓÚáéíóúñÑ]{5,})/g, "$1\u00ad$2");
+  el.append(h("details", { class: "vt" }, h("summary", {}, "Ver como tabla"), h("p", { class: "nota", style: "margin:6px 0" }, "Mezcla semanal: % del volumen de cada semana."),
+    // con el módulo angosto (celular, escritorio en dos columnas), los 3 productos de más volumen y "Resto"; si entra, todos
+    tablaHTML([{ t: "Semana", v: w => semCorta(w) }, ...prods.map((p, j) => ({ t: corteSuave(X.dic.prod[p] ?? "—"), n: 1, p3: j >= 3 ? 1 : 0, v: w => { const tt = sum([...X.wProd[w].values()]); return tt ? fPct((X.wProd[w].get(p) || 0) / tt) : "—"; } })),
+      prods.length > 3 ? { t: "Resto", n: 1, m3: 1, v: w => { const tt = sum([...X.wProd[w].values()]); return tt ? fPct(sum(prods.slice(3).map(p => X.wProd[w].get(p) || 0)) / tt) : "—"; } } : null].filter(Boolean), ws.slice().reverse(), { cq: 780 })));
+  return el;
+}
+function mPrecios() {
+  const el = modulo("operacion-precios", "Precio del dólar", { ancho: true });
+  const canal = ST.canal, ws = tend(), f = ST.foco;
+  el.append(seg("canal", [[0, "Billete"], [1, "Transferencia"]], canal, v => { ST.canal = Number(v); rehacer(mPrecios); }, "Canal"));
+  const C = ws.map(w => precio(w, canal, 0)), V = ws.map(w => precio(w, canal, 1));
+  const c = C.map(p => p ? p.cot : null), v = V.map(p => p ? p.cot : null);
+  const dif = ws.map((_, i) => ok(c[i]) && ok(v[i]) ? (v[i] - c[i]) / ((v[i] + c[i]) / 2) : null);
+  if (!c.some(ok) && !v.some(ok)) { el.append(h("p", { class: "vacio" }, "No hay operaciones de este canal en el período.")); return el; }
+  const G = lectura(i => {
+    const p = [h("b", {}, semLabel(ws[i])), " · Compra " + (ok(c[i]) ? fPrecio(c[i]) + (pocos(C[i]) ? " (pocos datos)" : "") : "sin compras"),
+      " · Venta " + (ok(v[i]) ? fPrecio(v[i]) + (pocos(V[i]) ? " (pocos datos)" : "") : "sin ventas")];
+    if (ok(dif[i])) p.push(` · Diferencia ${fPrecio(v[i] - c[i])} (${fPct(dif[i])})`);
+    return p;
+  }, ws.indexOf(f));
+  const todos = [...c, ...v].filter(ok), lo = Math.min(...todos), hi = Math.max(...todos), pad = Math.max((hi - lo) * 0.08, 1);
+  el.append(G.el, lienzo((cn, W) => grafico(cn, W, {
+    n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, yMin: lo - pad, yMax: hi + pad, tipoY: "precio",
+    aria: `Precio promedio de compra y de venta del dólar ${canal ? "por transferencia" : "billete"}, en pesos.`,
+    capas: [{ tipo: "banda", a: c, b: v }, { tipo: "linea", vals: c, color: "var(--ink-2)", puntos: true, hueco: i => pocos(C[i]), rot: "Compra" },
+      { tipo: "linea", vals: v, color: "var(--ink)", puntos: true, hueco: i => pocos(V[i]), rot: "Venta" }],
+  })));
+  el.append(h("h3", {}, "Diferencia %"), lienzo((cn, W) => grafico(cn, W, {
+    n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, H: 100, nTicks: 2, tipoY: "pct", yMin: Math.min(0, ...dif.filter(ok)),
+    aria: "Diferencia entre venta y compra, en % del precio promedio.", mr: 52,
+    capas: [{ tipo: "linea", vals: dif, color: "var(--ink-2)", puntos: true, hueco: i => pocos(C[i]) || pocos(V[i]) }],
+  })));
+  el.append(leyenda([{ t: "Venta", cls: "lin", color: "var(--ink)" }, { t: "Compra", cls: "lin", color: "var(--ink-2)" }, { t: "Entre compra y venta", color: "var(--banda)" }, { t: "Punto hueco: pocos datos", cls: "" }].map((x, i) => i === 3 ? { t: x.t, cls: "", color: "transparent;border:1.75px solid var(--ink-2);border-radius:50%" } : x)));
+  el.append(verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "Compra", n: 1, v: i => C[i] ? sgn(nf(1).format(C[i].cot)) : "sin compras" }, { t: "Ops", n: 1, p3: 1, v: i => C[i] ? fNum(C[i].n) : "—" },
+    { t: "Venta", n: 1, v: i => V[i] ? sgn(nf(1).format(V[i].cot)) : "sin ventas" }, { t: "Ops", n: 1, p3: 1, v: i => V[i] ? fNum(V[i].n) : "—" },
+    { t: "Dif. $", n: 1, v: i => ok(dif[i]) ? sgn(nf(1).format(v[i] - c[i])) : "—" }, { t: "Dif. %", n: 1, v: i => fPct(dif[i]) },
+    { t: "Nota", p3: 1, v: i => pocos(C[i]) || pocos(V[i]) ? "pocos datos" : "" }], ws.map((_, i) => i).reverse()));
+  return el;
+}
+
+/* ---------- SALDOS ---------- */
+const MON_N = ["USD billete", "USD exterior", "USDT", "Pesos", "Euros", "Reales", "Libras"];
+function sinSaldos(f) {
+  if (X.primSaldos < 0) return "Esta base no tiene semanas con saldos.";
+  if (f < X.primSaldos) return "El formato con saldos empieza el " + dm(X.S[X.primSaldos].ini) + ".";
+  return null;
+}
+function mCaja() {
+  const f = ST.foco, modo = ST.cajaModo;
+  const fotoTxt = completa(f) ? "Al cierre del " + dm(X.S[f].fin) : "Al inicio de la semana en curso";
+  const el = modulo("saldos-caja", "Caja por moneda", { ancho: true, sub: fotoTxt });
+  const falta = sinSaldos(f);
+  if (falta || !fotoCaja(f).length) { el.append(h("p", { class: "vacio" }, "— " + (falta || "Sin datos de caja para esta semana."))); return el; }
+  el.append(seg("cajamodo", [[0, "Caja propia"], [1, "Saldo de la planilla (Balance)"]], modo, v => { ST.cajaModo = Number(v); rehacer(mCaja); }, "Qué mostrar"));
+  const filas = [];
+  for (let m = 0; m < 7; m++) {
+    const a = cajaMon(f, m, modo); if (!a) continue;
+    const p = completa(f) && f > 0 ? cajaMon(f - 1, m, modo) : null;
+    filas.push({ m, a, p });
+  }
+  const tot = sum(filas.map(r => r.a.usd || 0));
+  const cols = [
+    { t: "Moneda", v: r => r.m == null ? "Total equivalente (referencia)" : h("span", {}, MON_N[r.m], r.a.revisar ? h("span", { class: "sub2 c-warn" }, "dato a revisar") : null) },
+    { t: "En su unidad", n: 1, v: r => r.m == null ? "" : h("span", {}, fMon(r.a.unid, r.m), r.p ? h("span", { class: "sub2" }, Math.abs(r.a.unid - r.p.unid) < 0.5 ? "= sin cambios" : (r.a.unid - r.p.unid > 0 ? "▲ " : "▼ ") + fMon(Math.abs(r.a.unid - r.p.unid), r.m)) : null) },
+    { t: "≈ USD", n: 1, v: r => r.m == null ? fUSD(tot) : fUSD(r.a.usd) },
+    { t: "%", n: 1, p3: 1, v: r => r.m == null ? "100%" : (tot && ok(r.a.usd) ? fPct(r.a.usd / tot) : "—") },
+  ];
+  el.append(tablaHTML(cols, filas, { pie: { m: null }, detalle: r => h("dl", { class: "det-grid" },
+    r.a.rows.map(x => [h("dt", {}, X.dic.caja[x.caja] ?? "Caja " + x.caja), h("dd", {}, fMon(modo ? x.saldo_real : x.caja_real, r.m) + (x.confiable === 0 ? " · dato a revisar" : ""))]),
+    h("dt", {}, "Cambio"), h("dd", {}, r.p ? sgn(fMon(r.a.unid - r.p.unid, r.m)) : "—"), h("dt", {}, "%"), h("dd", {}, tot && ok(r.a.usd) ? fPct(r.a.usd / tot) : "—")) }));
+  // una caja propia negativa (la moneda o alguna de sus cajas) se explica abajo de la tabla
+  const negs = modo ? [] : filas.filter(r => r.a.unid < -0.5 || r.a.rows.some(x => (x.caja_real || 0) < -0.5));
+  if (negs.length) el.append(h("p", { class: "nota" }, h("b", {}, "Negativo (" + negs.map(r => MON_N[r.m]).join(", ") + "): "),
+    (negs.length > 1 || negs[0].a.rows.filter(x => (x.caja_real || 0) < -0.5).length > 1 ? "en esas cajas" : "en esa caja") + " hay más plata de terceros que saldo." +
+    (negs.some(r => r.a.unid >= -0.5) ? " Tocá la fila para ver cada caja." : "") + (signoAConfirmar() ? " Depende del signo de los pendientes, que está a confirmar." : "")));
+  el.append(h("p", { class: "nota" }, "Los cambios incluyen aportes, retiros y movimientos con clientes." + (completa(f) ? "" : " Parcial: no incluye los pendientes nuevos de la semana.")));
+  // múltiplos
+  const ws = tend().filter(w => X.primSaldos >= 0 && w >= X.primSaldos);
+  if (ws.length >= 2) {
+    const mult = h("div", { class: "mult" }), series = [];
+    for (const r of filas) {
+      const vals = ws.map(w => { const a = cajaMon(w, r.m, modo); return a ? a.unid : null; });
+      const hue = ws.map(w => { const a = cajaMon(w, r.m, modo); return !!(a && a.revisar); });
+      series.push({ m: r.m, vals });
+      mult.append(h("div", {}, h("div", { class: "tt" }, h("span", {}, MON_N[r.m]), h("b", {}, fMon(r.a.unid, r.m))),
+        lienzo((c, W) => grafico(c, W, { n: ws.length, H: 96, nTicks: 2, mt: 8, etiq: i => i === ws.length - 1 || i === 0 ? semFin(ws[i]) : "", aria: `${MON_N[r.m]} al cierre de cada semana, en su unidad.`,
+          yMin: Math.min(0, ...vals.filter(ok)),
+          capas: [{ tipo: "linea", vals, color: "var(--dato-foco)", ancho: 1.75, puntos: true, hueco: i => hue[i] }] }))));
+    }
+    el.append(h("h3", {}, modo ? "Saldo de la planilla, semana a semana" : "Caja propia, semana a semana"), mult);
+    if (filas.some(r => ws.some(w => { const a = cajaMon(w, r.m, modo); return a && a.revisar; }))) el.append(h("p", { class: "nota" }, "Punto hueco: dato a revisar (el saldo no coincide con la hoja siguiente)."));
+    // los pesos van en millones para que la tabla entre en el celular sin desplazamiento lateral
+    const celda = (m, v) => !ok(v) ? "—" : m === 3 ? sgn(nf(1).format(v / 1e6)) : fNum(v);
+    el.append(verTabla([{ t: "Al cierre del", v: i => semFin(ws[i]) }, ...series.map(s => ({ t: s.m === 3 ? "Pesos (M)" : MON_N[s.m], n: 1, p3: s.m >= 4 ? 1 : 0, v: i => celda(s.m, s.vals[i]) }))], ws.map((_, i) => i).reverse()));
+  }
+  return el;
+}
+function mAfuera() {
+  const f = ST.foco, cur = !completa(f);
+  const el = modulo("saldos-afuera", "Plata afuera", { ancho: true, sub: cur ? "Al inicio de la semana en curso · parcial: no incluye los pendientes nuevos de la semana" : "Foto al " + dm(X.S[f].fin) });
+  const pt = pendTot(f);
+  if (!pt) { el.append(h("p", { class: "vacio" }, "— " + (sinSaldos(f) || "Sin datos de pendientes para esta semana."))); return el; }
+  const pp = !cur && f > 0 ? pendTot(f - 1) : null;
+  const dl = (a, b) => pp && b ? (flechaTxt(a / b - 1) + "vs sem. anterior") : null;
+  el.append(h("div", { class: "cifras" },
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Nos deben"), h("div", { class: "v" }, cifraU("USD", comp(pt.nos))), h("div", { class: "s" }, dl(pt.nos, pp && pp.nos) || (cur ? "en curso" : ""))),
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Debemos"), h("div", { class: "v" }, cifraU("USD", comp(pt.deb))), h("div", { class: "s" }, dl(pt.deb, pp && pp.deb) || (cur ? "en curso" : "")))));
+  if (signoNota()) el.append(avisoEl("El signo está a confirmar: nos deben y debemos podrían estar invertidos. Si sabés cuál es, decíselo a Claude y deja de aparecer."));
+  // por tipo
+  const tipos = pt.rows.slice().sort((a, b) => (b.nos_deben + b.debemos) - (a.nos_deben + a.debemos));
+  const mx = Math.max(...tipos.map(r => Math.max(r.nos_deben || 0, r.debemos || 0)), 1e-9);
+  const lados = h("div", { class: "lados", role: "img", "aria-label": "Plata afuera por tipo: " + tipos.map(r => `${X.dic.tipo_pend[r.tipo_pend]}: nos deben ${fUSD(r.nos_deben)}, debemos ${fUSD(r.debemos)}`).join("; ") },
+    h("div", { class: "l cab" }, "Nos deben"), h("div", { class: "r cab" }, "Debemos"));
+  for (const r of tipos) {
+    lados.append(h("div", { class: "tit" }, X.dic.tipo_pend[r.tipo_pend] ?? "—", h("span", { class: "nota" }, " · " + plural(r.items, "ítem", "ítems"))),
+      h("div", { class: "l" }, h("span", { class: "txt" }, r.nos_deben ? fUSD(r.nos_deben) : "—"), h("span", { class: "bar", style: `width:${(r.nos_deben / mx * 45).toFixed(1)}%;background:var(--ink-3)` })),
+      h("div", { class: "r" }, h("span", { class: "bar", style: `width:${(r.debemos / mx * 45).toFixed(1)}%;background:var(--dato)` }), h("span", { class: "txt" }, r.debemos ? fUSD(r.debemos) : "—")));
+  }
+  el.append(h("h3", {}, "Por tipo"), lados, verTabla([{ t: "Tipo", v: r => X.dic.tipo_pend[r.tipo_pend] ?? "—" }, { t: "Ítems", n: 1, v: r => fNum(r.items) }, { t: "Nos deben", n: 1, v: r => fNum(r.nos_deben) }, { t: "Debemos", n: 1, v: r => fNum(r.debemos) }], tipos));
+  // antigüedad
+  const tr = [["a01", "0–1 sem.", "var(--ord-1)"], ["a24", "2–4 sem.", "var(--ord-2)"], ["a512", "5–12 sem.", "var(--ord-3)"], ["a12", "más de 12 sem.", "var(--ord-4)"]];
+  const tv = tr.map(([k, t, c]) => ({ t, c, n: sum(pt.rows.map(r => r[k])), usd: sum(pt.rows.map(r => r[k + "_usd"])) }));
+  tv.push({ t: "sin N° de Ope", c: null, n: sum(pt.rows.map(r => r.sin_ope)), usd: sum(pt.rows.map(r => r.sin_ope_usd)) });
+  const totA = sum(tv.map(x => x.usd));
+  if (totA > 0) {
+    el.append(h("h3", {}, "Antigüedad"), h("div", { class: "apil", role: "img", "aria-label": "Antigüedad de la plata afuera: " + tv.map(x => `${x.t} ${fPct(x.usd / totA)}`).join(", ") },
+      tv.filter(x => x.usd > 0).map(x => h("i", { style: `flex:${(x.usd / totA).toFixed(4)} 1 0;` + (x.c ? `background:${x.c}` : "background:repeating-linear-gradient(135deg, var(--ink-3) 0 2px, var(--surface-2) 2px 5px)"), title: `${x.t}: ${fPct(x.usd / totA)}` }))),
+      leyenda(tv.map(x => ({ t: `${x.t} ${fPct(x.usd / totA)} · ${fUSD(x.usd)}`, color: x.c, cls: x.c ? "" : "trama-g" }))),
+      verTabla([{ t: "Antigüedad", v: x => x.t }, { t: "Ítems", n: 1, v: x => fNum(x.n) }, { t: "USD", n: 1, v: x => fNum(x.usd) }, { t: "%", n: 1, v: x => fPct(x.usd / totA) }], tv));
+  }
+  // evolución
+  const ws = tend().filter(w => X.primSaldos >= 0 && w >= X.primSaldos);
+  if (ws.length >= 2) {
+    const nos = ws.map(w => { const p = pendTot(w); return p ? p.nos : null; }), deb = ws.map(w => { const p = pendTot(w); return p ? p.deb : null; });
+    const G = lectura(i => [h("b", {}, semLabel(ws[i])), " · Nos deben " + fUSD(nos[i]) + " · Debemos " + fUSD(deb[i])], ws.indexOf(f));
+    el.append(h("h3", {}, "Evolución"), G.el, lienzo((c, W) => grafico(c, W, { n: ws.length, etiq: i => semFin(ws[i]), grupo: G, aria: "Nos deben y debemos al cierre de cada semana, en USD.",
+      capas: [{ tipo: "linea", vals: nos, color: "var(--dato-foco)", rot: "Nos deben" }, { tipo: "linea", vals: deb, color: "var(--dato)", ancho: 2.25, guion: true, rot: "Debemos" }] })),
+      leyenda([{ t: "Nos deben", cls: "lin", color: "var(--dato-foco)" }, { t: "Debemos", cls: "dash dash-dato" }]),
+      verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "Nos deben", n: 1, v: i => fNum(nos[i]) }, { t: "Debemos", n: 1, v: i => fNum(deb[i]) }], ws.map((_, i) => i).reverse()));
+  }
+  // lista
+  const mom = cur ? 1 : 0, items = (X.pend[f] || []).filter(r => r.momento === mom).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
+  el.append(h("h3", {}, "Ítems abiertos"));
+  if (!items.length) {
+    const ref = D.foco != null ? semLabel(D.foco) : "la última semana cerrada";
+    el.append(h("p", { class: "nota" }, `El detalle por ítem está para la última semana cerrada (${ref}) y para la semana en curso.`));
+    return el;
+  }
+  // un mismo nombre puede venir de dos cuentas distintas de la planilla: se aclara cuál es cuál
+  const porCli = new Map(); for (const r of items) porCli.set(r.cli, (porCli.get(r.cli) || 0) + 1);
+  const repetidos = new Set([...porCli].filter(([, n]) => n > 1).map(([c]) => c));
+  let lim = 10, q = "";
+  const inp = h("input", { type: "search", id: "pd-buscar", placeholder: "Buscar cliente o tipo", "aria-label": "Buscar en la plata afuera", autocomplete: "off" });
+  const ul = h("ul", { class: "items" }), mas = h("div");
+  const pintar = () => {
+    const nq = norm(q);
+    const fl = items.filter(r => !nq || norm(nomCli(r.cli) + " " + (r.cli_txt || "") + " " + (X.dic.tipo_pend[r.tipo_pend] || "")).includes(nq));
+    ul.replaceChildren(...(fl.length ? fl.slice(0, lim).map(r => itemPend(r, repetidos.has(r.cli))) : [h("li", {}, h("p", { class: "vacio" }, "Ningún ítem coincide con la búsqueda."))]));
+    mas.replaceChildren(fl.length > lim ? boton(`Ver todos (${fl.length})`, () => { lim = fl.length; pintar(); }, { cls: "mas", attrs: { id: "pd-mas" } }) : "");
+  };
+  inp.addEventListener("input", () => { q = inp.value; lim = 10; pintar(); });
+  el.append(h("p", { class: "mod-sub" }, `${plural(items.length, "ítem", "ítems")} · los de mayor monto primero`), h("div", { class: "buscar" }, inp), ul, mas);
+  pintar();
+  return el;
+}
+function itemPend(r, rep) {
+  const nos = r.usd < 0;
+  return h("li", {}, h("details", {}, h("summary", {},
+    h("span", { class: "a" }, nomCli(r.cli)), h("span", { class: "m" }, (nos ? "nos debe " : "le debemos ") + fUSD(Math.abs(r.usd))),
+    h("span", { class: "b" }, rep && r.cli_txt && norm(r.cli_txt) !== norm(nomCli(r.cli)) ? "«" + r.cli_txt + "» · " : null, X.dic.tipo_pend[r.tipo_pend] ?? "—", " · ", r.sem_abierto != null ? `abierto hace ${r.sem_abierto} sem.` : "sin N° de Ope", r.nuevo ? h("span", { class: "tag" }, "nuevo") : null,
+      r.con_q ? h("span", { class: "tag warn" }, "USDT sin confirmar") : null)),
+    h("div", { class: "d" }, h("dl", { class: "det-grid" },
+      h("dt", {}, "En la planilla"), h("dd", {}, r.cli_txt || "—"), h("dt", {}, "Detalle"), h("dd", {}, r.detalle || "—"),
+      h("dt", {}, "N° de Ope"), h("dd", {}, r.ope != null ? String(r.ope) : "—"), h("dt", {}, "Abierto desde"), h("dd", {}, r.w_origen != null ? semLabel(r.w_origen) : "—"),
+      h("dt", {}, "Fila"), h("dd", {}, r.fila != null ? String(r.fila) : "—"), r.codigo ? [h("dt", {}, "Código"), h("dd", {}, r.codigo)] : null))));
+}
+function mUSDT() {
+  const f = ST.foco, cur = !completa(f), nsem = U().usdt_q_semanas ?? 4;
+  const el = modulo("saldos-usdt", "Transferencias sin USDT confirmado", { sub: cur ? "Al inicio de la semana en curso" : "Foto al " + dm(X.S[f].fin) });
+  const mom = cur ? 1 : 0;
+  const items = (X.pend[f] || []).filter(r => r.momento === mom && r.tipo_pend === X.iUSDT && r.con_q === 1).sort((a, b) => (b.sem_abierto ?? -1) - (a.sem_abierto ?? -1));
+  if (items.length || (X.pend[f] || []).some(r => r.momento === mom)) {
+    const viejos = items.filter(r => (r.sem_abierto ?? 0) >= nsem).length;
+    el.append(h("div", { class: "cifras" },
+      h("div", { class: "cifra" }, h("div", { class: "k" }, "Transferencias"), h("div", { class: "v" }, fNum(items.length)), h("div", { class: "s" }, fUSD(sum(items.map(r => Math.abs(r.usd)))))),
+      h("div", { class: "cifra" }, h("div", { class: "k" }, `${nsem} semanas o más`), h("div", { class: "v" }, fNum(viejos)), h("div", { class: "s" }, fUSD(sum(items.filter(r => (r.sem_abierto ?? 0) >= nsem).map(r => Math.abs(r.usd))))))));
+    if (!items.length) { el.append(h("div", { class: "ok-box" }, icono("ok", 20), h("span", {}, "No hay transferencias sin confirmar"))); return el; }
+    let lim = 10;
+    const ul = h("ul", { class: "items" }), mas = h("div");
+    const pintar = () => {
+      ul.replaceChildren(...items.slice(0, lim).map(r => h("li", {}, h("details", {}, h("summary", {},
+        h("span", { class: "a" }, r.ope != null ? "Ope " + r.ope : "Sin N° de Ope"), h("span", { class: "m" }, fUSD(Math.abs(r.usd))),
+        h("span", { class: "b" }, r.sem_abierto != null ? `abierta hace ${r.sem_abierto} sem.` : "sin antigüedad", (r.sem_abierto ?? 0) >= nsem ? h("span", { class: "tag warn" }, `${nsem} sem. o más`) : null)),
+        h("div", { class: "d" }, h("dl", { class: "det-grid" }, h("dt", {}, "En la planilla"), h("dd", {}, r.cli_txt || "—"), h("dt", {}, "Desde"), h("dd", {}, r.w_origen != null ? semLabel(r.w_origen) : "—"), h("dt", {}, "Fila"), h("dd", {}, r.fila != null ? String(r.fila) : "—")))))));
+      mas.replaceChildren(items.length > lim ? boton(`Ver todas (${items.length})`, () => { lim = items.length; pintar(); }, { cls: "mas", attrs: { id: "usdt-mas" } }) : "");
+    };
+    pintar();
+    el.append(ul, mas);
+    return el;
+  }
+  // sin foto por ítem: cifras desde pend_sem
+  const ps = pendFoto(f).filter(r => r.tipo_pend === X.iUSDT);
+  if (!ps.length) { el.append(h("p", { class: "vacio" }, "— " + (sinSaldos(f) || "Sin datos para esta semana."))); return el; }
+  el.append(h("div", { class: "cifras" },
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Transferencias"), h("div", { class: "v" }, fNum(sum(ps.map(r => r.con_q))))),
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "4 semanas o más"), h("div", { class: "v" }, fNum(sum(ps.map(r => r.con_q_mas4)))))),
+    h("p", { class: "nota" }, `El detalle por ítem está para la última semana cerrada (${semLabel(D.foco)}) y para la semana en curso.`));
+  return el;
+}
+function mCheques() {
+  const C = D.cheques;
+  const el = modulo("saldos-cheques", "Cheques");
+  if (!C || (C.cartera_n == null && !tab(C.venc).length)) { el.append(h("p", { class: "vacio" }, "La base no tiene hoja CQ.")); return el; }
+  const lim = U().cheques_dias_sin_altas ?? 30, dias = C.ultima_alta && D.fecha_corte ? diasEntre(C.ultima_alta, D.fecha_corte) : null;
+  if (ok(dias) && dias > lim) el.append(avisoEl(`La hoja CQ no tiene cheques nuevos desde el ${dm(C.ultima_alta)}: puede estar sin actualizar.`));
+  el.append(h("div", { class: "cifras" },
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "En cartera"), h("div", { class: "v" }, fARS(C.cartera_ars)),
+      h("div", { class: "s" }, (ok(C.cot) && C.cot ? "≈ " + fUSD(C.cartera_ars / C.cot) + " · " : "") + plural(C.cartera_n || 0, "cheque", "cheques"))),
+    h("div", { class: "cifra" + (C.vencidos_n ? " crit" : "") }, h("div", { class: "k" }, C.vencidos_n ? [icono("critico", 13), " Vencido"] : "Vencidos"), h("div", { class: "v" }, fARS(C.vencidos_ars)),
+      h("div", { class: "s" }, plural(C.vencidos_n || 0, "cheque", "cheques") + (C.vencidos_n && ok(C.cot) && C.cot ? " · ≈ " + fUSD(C.vencidos_ars / C.cot) : "")))));
+  if (ok(C.tasa_mensual_mediana)) el.append(h("p", { class: "nota" }, "Tasa mediana histórica de todos los cheques de la hoja CQ: " + fPct(C.tasa_mensual_mediana) + " mensual."));
+  const venc = tab(C.venc).sort((a, b) => String(a.mes).localeCompare(String(b.mes)));
+  if (venc.length) {
+    const G = lectura(i => [h("b", {}, mesL(venc[i].mes)), " · " + fARS(venc[i].ars) + " · " + plural(venc[i].n || 0, "cheque", "cheques"), venc[i].vencido ? h("span", { class: "c-crit" }, " · Vencido") : null], venc.length - 1);
+    el.append(h("h3", {}, "Vencimientos por mes (cartera)"), G.el, lienzo((c, W) => grafico(c, W, {
+      n: venc.length, etiq: i => mesC(venc[i].mes), grupo: G, aria: "Cheques en cartera por mes de vencimiento, en pesos.",
+      capas: [{ tipo: "barras", series: [{ vals: venc.map(r => r.ars), fill: i => venc[i].vencido ? "var(--crit)" : "var(--dato)" }] }] })),
+      leyenda([{ t: "Por vencer", color: "var(--dato)" }, { t: "Vencido", color: "var(--crit)" }]),
+      verTabla([{ t: "Mes", v: r => mesL(r.mes) }, { t: "Cheques", n: 1, v: r => fNum(r.n) }, { t: "$", n: 1, v: r => fNum(r.ars) }, { t: "Estado", v: r => r.vencido ? "Vencido" : "Por vencer" }], venc));
+  }
+  const tit = tab(C.titulares).sort((a, b) => (b.cartera_ars || 0) - (a.cartera_ars || 0)).slice(0, 5);
+  if (tit.length) el.append(h("h3", {}, tit.length >= 5 ? "Los 5 mayores titulares" : "Titulares"), listaBarras(tit.map(r => ({ t: r.titular || "—", v: r.cartera_ars || 0, val: fARS(r.cartera_ars) + " · " + fPct(r.pct) + " de la cartera" }))));
+  return el;
+}
+function mInversores() {
+  const F = D.fondeo;
+  const el = modulo("saldos-inversores", "Inversores", { ancho: true });
+  if (!F) { el.append(h("p", { class: "vacio" }, "La base no tiene hoja Inversores.")); return el; }
+  // textos de la hoja que son solo un guion o un punto se tratan como vacíos ("Retiro: -" no dice nada)
+  const vacioPl = v => v == null || /^[\s\-–—.]*$/.test(String(v)) ? null : v;
+  const inv = tab(F.inversores).map(r => ({ ...r, retiro_txt: vacioPl(r.retiro_txt), detalle: vacioPl(r.detalle), plazo: vacioPl(r.plazo), destino: vacioPl(r.destino) }));
+  const mesCorte = String(D.fecha_corte || "").slice(0, 7);
+  const ret = inv.filter(r => !r.propio && r.retiro_mes && r.retiro_mes >= mesCorte).sort((a, b) => a.retiro_mes.localeCompare(b.retiro_mes));
+  el.append(h("div", { class: "cifras c4" },
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Capital de terceros"), h("div", { class: "v" }, cifraU("USD", comp(F.capital_terceros_usd)))),
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Interés mensual comprometido"), h("div", { class: "v" }, cifraU("USD", comp(F.interes_mensual_usd)))),
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Tasa promedio"), h("div", { class: "v" }, fTasa(F.tasa_promedio)), h("div", { class: "s" }, "mensual")),
+    h("div", { class: "cifra" }, h("div", { class: "k" }, "Retiros previstos"), h("div", { class: "v" }, fNum(ret.length)), h("div", { class: "s" }, ret.length ? fUSD(sum(ret.map(r => r.monto_usd))) : "ninguno con fecha"))));
+  if (ret.length) el.append(h("ul", { class: "items" }, ret.map(r => h("li", {}, h("div", { class: "plain" }, h("span", { class: "a" }, r.inversor), h("span", { class: "m" }, fUSD(r.monto_usd)),
+    h("span", { class: "b" }, "Retiro: " + mesL(r.retiro_mes) + (r.retiro_txt && norm(r.retiro_txt) !== norm(MESES_L[Number(r.retiro_mes.slice(5)) - 1]) ? ` («${r.retiro_txt}»)` : "")))))));
+  const cols = [
+    { t: "Inversor", v: r => h("span", {}, r.inversor || "—", r.propio ? h("span", { class: "sub2" }, "propio (no es fondeo de terceros)") : null,
+      r.retiro_txt || r.retiro_mes ? h("span", { class: "sub2 solo-movil" }, "Retiro: " + (r.retiro_txt || mesL(r.retiro_mes))) : null) },
+    { t: "Capital", n: 1, v: r => fUSD(r.monto_usd) },
+    { t: "Tasa mensual", n: 1, v: r => fTasa(r.tasa_mensual) },
+    { t: "Interés/mes", n: 1, p3: 1, v: r => fUSD(r.interes_mensual_usd) },
+    { t: "Retiro", p3: 1, v: r => h("span", {}, r.retiro_txt || (r.retiro_mes ? mesL(r.retiro_mes) : "—"), r.detalle ? h("span", { class: "sub2" }, r.detalle) : null) },
+  ];
+  el.append(h("h3", {}, "Todos los inversores"), tablaHTML(cols, inv.slice().sort((a, b) => (a.propio || 0) - (b.propio || 0) || (b.monto_usd || 0) - (a.monto_usd || 0)), { detalle: r => h("dl", { class: "det-grid" },
+    h("dt", {}, "Plazo"), h("dd", {}, r.plazo || "—"), h("dt", {}, "Destino"), h("dd", {}, r.destino || "—"), h("dt", {}, "Detalle"), h("dd", {}, r.detalle || "—"),
+    h("dt", {}, "Interés por mes"), h("dd", {}, fUSD(r.interes_mensual_usd)), h("dt", {}, "Retiro"), h("dd", {}, (r.retiro_txt || "—") + (r.retiro_mes ? " · " + mesL(r.retiro_mes) : ""))) }));
+  if (inv.some(r => r.propio)) el.append(h("p", { class: "nota" }, "La cuenta propia no suma al capital de terceros ni al interés comprometido."));
+  return el;
+}
+
+/* ---------- CONTROL ---------- */
+const SEV_TXT = { Alta: "Grave", Media: "Menor", Baja: "Leve" };
+const NIVEL = { bloqueante: ["Bloqueantes", "critico", "c-crit"], aviso: ["Avisos", "atencion", "c-warn"], info: ["Info", "info", "c-info"], ok: ["OK", "ok", "c-ok"], no_evaluado: ["Chequeos todavía no disponibles", "pausa", "c-info"] };
+function checkEl(c) {
+  const N = NIVEL[c.nivel] || NIVEL.info, fr = c.revisada ? fechaRevisada(c.claves) : null;
+  return h("li", { class: "check" + (c.revisada ? " rev" : "") }, h("span", { class: "ic " + N[2] }, icono(N[1], 18)),
+    h("div", {}, h("div", { class: "tt" }, c.titulo || c.id), c.detalle ? h("div", { class: "dd" }, c.detalle) : null,
+      c.revisada ? h("div", {}, tagRev(fr, "Revisado")) : null,
+      (c.claves || []).length && !c.revisada && c.nivel !== "bloqueante" ? h("details", { class: "mini" }, h("summary", {}, "Para darlo por revisado"), comoEl(c.claves), h("ul", { class: "claves" }, c.claves.map(k => h("li", {}, h("code", {}, k))))) : null));
+}
+function mControl() {
+  const C = D.control || {};
+  const el = modulo("control-semana", "Control de la semana", { sub: C.resumen || null });
+  const checks = C.checks || [];
+  if (!checks.length) el.append(h("p", { class: "vacio" }, "Sin chequeos para mostrar."));
+  for (const nv of ["bloqueante", "aviso", "info"]) {
+    const l = checks.filter(c => c.nivel === nv); if (!l.length) continue;
+    l.sort((a, b) => (a.revisada || 0) - (b.revisada || 0));
+    el.append(h("p", { class: "grupo-t" }, NIVEL[nv][0] + " (" + l.length + ")"), h("ul", { class: "checks" }, l.map(checkEl)));
+  }
+  for (const nv of ["ok", "no_evaluado"]) {
+    const l = checks.filter(c => c.nivel === nv); if (!l.length) continue;
+    el.append(h("details", { class: "mini" }, h("summary", {}, NIVEL[nv][0] + " (" + l.length + ")"), h("ul", { class: "checks" }, l.map(checkEl))));
+  }
+  const otros = checks.filter(c => !NIVEL[c.nivel]);
+  if (otros.length) el.append(h("ul", { class: "checks" }, otros.map(checkEl)));
+  const csm = tab(C.cajas_sin_moneda);
+  if (csm.length) el.append(h("h3", {}, "Cajas sin moneda (no suman a la caja)"), tablaHTML([{ t: "Caja", v: r => r.caja }, { t: "Saldo", n: 1, v: r => fNum(r.saldo) }, { t: "Semana", v: r => r.w != null ? semLabel(r.w) : "—" }], csm));
+  const oo = tab(C.operadores_otros);
+  if (oo.length) el.append(h("h3", {}, "Operadores fuera de la lista"), tablaHTML([{ t: "Operador", v: r => r.op }, { t: "Operaciones", n: 1, v: r => fNum(r.n) }], oo));
+  const org = tab(C.origen);
+  if (org.length) el.append(h("details", { class: "mini" }, h("summary", {}, "De qué archivo sale cada semana"),
+    tablaHTML([{ t: "Semana", v: r => r.w != null ? semLabel(r.w) : "—" }, { t: "Archivo", v: r => r.archivo || "—" }, { t: "Estado", v: r => r.estado || "—" }], org.slice().sort((a, b) => (b.w ?? 0) - (a.w ?? 0)))));
+  return el;
+}
+function mRevisar() {
+  const f = ST.foco, cur = !completa(f);
+  const el = modulo("control-revisar", "Para revisar");
+  el.append(h("button", { type: "button", class: "switch", id: "sw-todas", "aria-pressed": String(ST.todasRev), onclick: () => { ST.todasRev = !ST.todasRev; rehacer(mRevisar); } }, h("span", { class: "tr", "aria-hidden": "true" }), "Todas las no revisadas"));
+  const ordenar = l => l.sort((a, b) => (a.sev === "Alta" ? 0 : 1) - (b.sev === "Alta" ? 0 : 1) || b.w - a.w || (a.fila || 0) - (b.fila || 0));
+  if (cur && !ST.todasRev) el.append(h("p", { class: "vacio" }, "Se revisa al cerrar la semana."));
+  else {
+    const filas = ordenar(ST.todasRev ? X.revisar.filter(r => !r.revisada && (r.sev === "Alta" || r.sev === "Media")) : revisarDe(f));
+    const sinRev = filas.filter(r => !r.revisada), a = sinRev.filter(r => r.sev === "Alta").length;
+    el.append(h("p", { class: "mod-sub" }, ST.todasRev ? `${plural(sinRev.length, "fila sin revisar", "filas sin revisar")} en todas las semanas (${plural(a, "grave", "graves")})`
+      : `${semLabel(f)}: ${plural(a, "grave", "graves")} (USD 100 o más) y ${plural(sinRev.length - a, "menor", "menores")} (USD 10 a 100) sin revisar` + (filas.length > sinRev.length ? ` · ${filas.length - sinRev.length} ya revisadas` : "")));
+    if (!filas.length) el.append(h("div", { class: "ok-box" }, icono("ok", 20), h("span", {}, "No hay filas para revisar")));
+    else {
+      let lim = 20;
+      const ul = h("ul", { class: "items" }), mas = h("div");
+      const pintar = () => {
+        ul.replaceChildren(...filas.slice(0, lim).map(r => h("li", { class: r.revisada ? "rev" : null }, h("details", {}, h("summary", {},
+          h("span", { class: "a" }, h("span", { class: "tag " + (r.sev === "Alta" ? "crit" : "warn") }, icono(r.sev === "Alta" ? "critico" : "atencion", 12), SEV_TXT[r.sev] || r.sev), " ",
+            "Fila " + r.fila + " · " + semLabel(r.w) + (r.ope != null ? " · Ope " + r.ope : "")),
+          h("span", { class: "m" }, "≈ " + fUSD(r.dif_usd)),
+          h("span", { class: "b" }, [nomOp(r.op), r.cli_txt || null, r.tipo || null].filter(Boolean).join(" · "), r.revisada ? tagRev(r.revisada_fecha) : null)),
+          h("div", { class: "d" }, h("dl", { class: "det-grid" }, h("dt", {}, "Clave"), h("dd", {}, h("code", {}, r.clave || "—")), h("dt", {}, "Cómo marcarla"), h("dd", {}, `Decile a Claude «la fila ${r.fila} del ${dm(X.S[r.w] ? X.S[r.w].ini : "")} ya está».`)))))));
+        mas.replaceChildren(filas.length > lim ? boton(`Ver todas (${filas.length})`, () => { lim = filas.length; pintar(); }, { cls: "mas", attrs: { id: "rev-mas" } }) : "");
+      };
+      pintar();
+      el.append(ul, mas);
+    }
+  }
+  // calidad por semana
+  const ws = tend().filter(w => completa(w));
+  const cal = w => { const l = X.calidad[w] || []; const o = sum(l.map(r => r.ops)); return o ? sum(l.map(r => (r.alta || 0) + (r.media || 0))) / o * 100 : null; };
+  if (ws.length >= 2 && ws.some(w => (X.calidad[w] || []).length)) {
+    const v = ws.map(cal);
+    const G = lectura(i => { const l = X.calidad[ws[i]] || []; return [h("b", {}, semLabel(ws[i])), " · " + (ok(v[i]) ? sgn(nf(1).format(v[i])) : "—") + " cada 100 filas (" + sum(l.map(r => (r.alta || 0) + (r.media || 0))) + " de " + fNum(sum(l.map(r => r.ops))) + " filas cargadas)"]; }, ws.indexOf(f) >= 0 ? ws.indexOf(f) : ws.length - 1);
+    el.append(h("h3", {}, "Diferencias de carga cada 100 filas"), G.el, lienzo((c, W) => grafico(c, W, { n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, H: 140, nTicks: 3,
+      fmtY: v => sgn(nf(decs(v) ? 1 : 0).format(v)), aria: "Filas con diferencias de carga graves y menores cada 100 filas cargadas, por semana.",
+      capas: [{ tipo: "barras", series: [{ vals: v, fill: i => ws[i] === f ? "var(--dato-foco)" : "var(--dato)" }] }] })),
+      h("p", { class: "nota" }, "Las filas cargadas incluyen los movimientos internos (no solo las operaciones con clientes): por eso son más que las operaciones de la portada."),
+      verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "Cada 100 filas", n: 1, v: i => ok(v[i]) ? sgn(nf(1).format(v[i])) : "—" }], ws.map((_, i) => i).reverse()));
+  }
+  // por operador en el período
+  const R = periodo().filter(completa), por = new Map();
+  for (const w of R) for (const r of (X.calidad[w] || [])) { const o = por.get(r.op) || { op: r.op, alta: 0, media: 0, baja: 0, ops: 0 }; o.alta += r.alta || 0; o.media += r.media || 0; o.baja += r.baja || 0; o.ops += r.ops || 0; por.set(r.op, o); }
+  if (por.size) {
+    const filas = [...por.values()].sort((a, b) => (b.alta + b.media) / (b.ops || 1) - (a.alta + a.media) / (a.ops || 1));
+    el.append(h("h3", {}, "Por operador · " + textoPeriodo()), tablaHTML([{ t: "Operador", v: r => nomOp(r.op) }, { t: "Graves", n: 1, v: r => fNum(r.alta) }, { t: "Menores", n: 1, v: r => fNum(r.media) },
+      { t: "Leves", n: 1, p3: 1, v: r => fNum(r.baja) }, { t: "Filas", n: 1, p3: 1, v: r => fNum(r.ops) }, { t: "Cada 100 filas", n: 1, v: r => r.ops ? sgn(nf(1).format((r.alta + r.media) / r.ops * 100)) : "—" }], filas, { cq: 420 }));
+  }
+  return el;
+}
+function mHojas() {
+  const F = D.frescura || {}, corte = D.fecha_corte;
+  const el = modulo("control-hojas", "Hojas al día", { sub: "Contra la fecha de corte, " + dm(corte) });
+  const umb = U();
+  const fila = (t, fecha, lim) => {
+    const d = fecha && corte ? diasEntre(fecha, corte) : null;
+    const atr = ok(lim) && ok(d) && d > lim;
+    return h("li", {}, h("span", {}, t), h("span", { class: "f" }, fecha ? dm(fecha) : "—"),
+      h("span", { class: "dd" }, !ok(d) ? "Sin fecha" : d <= 0 ? "El día del corte" + (d < 0 ? " o después" : "") : plural(d, "día", "días") + " antes del corte", atr ? [" · ", h("span", { class: "c-warn" }, icono("atencion", 13), " puede estar atrasada")] : null));
+  };
+  el.append(h("ul", { class: "fresca" },
+    fila("Última operación", F.ultima_operacion),
+    fila("Último cheque nuevo (CQ)", F.ultima_alta_cheques, umb.cheques_dias_sin_altas),
+    fila("Último costo fijo", F.ultimo_costo_fijo, umb.costos_fijos_dias)));
+  const fu = D.fuentes || [];
+  if (fu.length || F.base_archivo) el.append(h("h3", {}, "Archivos"), h("ul", { class: "fresca" }, (fu.length ? fu : [{ archivo: F.base_archivo, rol: "base" }]).map(x =>
+    h("li", {}, h("span", { style: "overflow-wrap:anywhere" }, x.archivo || "—"), h("span", { class: "f nota" }, x.rol === "base" ? "base" : "actualización"), x.hojas != null ? h("span", { class: "dd" }, plural(x.hojas, "hoja", "hojas")) : null))));
+  if (D.generado) el.append(h("p", { class: "nota" }, "Tablero generado el " + dm(D.generado) + " a las " + String(D.generado).slice(11, 16) + "."));
+  return el;
+}
+function mNotas() {
+  const N = D.notas || {};
+  const el = modulo("control-notas", "Notas");
+  const hall = (N.hallazgos || []).slice(), preg = (N.preguntas || []).slice();
+  const ab = hall.filter(x => x.estado !== "resuelta").sort((a, b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
+  const re = hall.filter(x => x.estado === "resuelta").sort((a, b) => String(b.fecha_estado || "").localeCompare(String(a.fecha_estado || "")));
+  const pa = preg.filter(x => x.estado !== "respondida"), pr = preg.filter(x => x.estado === "respondida");
+  const itH = x => h("li", {}, h("div", { class: "plain" }, h("span", { class: "a" }, x.texto || ""), h("span", { class: "m" }, ""),
+    h("span", { class: "b" }, [x.semana && X.iniW.has(x.semana) ? "Semana " + semLabel(X.iniW.get(x.semana)) : x.semana ? "Semana del " + dm(x.semana) : null, x.fecha ? "anotado el " + dm(x.fecha) : null,
+      x.estado === "resuelta" ? "resuelto el " + dm(x.fecha_estado) : null].filter(Boolean).join(" · "))));
+  const itP = x => h("li", {}, h("div", { class: "plain" }, h("span", { class: "a" }, x.texto || ""), h("span", { class: "m" }, "")));
+  el.append(h("h3", {}, `Hallazgos abiertos (${ab.length})`), ab.length ? h("ul", { class: "items" }, ab.map(itH)) : h("p", { class: "nota" }, "No hay hallazgos abiertos."));
+  el.append(h("h3", {}, `Preguntas abiertas (${pa.length})`), pa.length ? h("ul", { class: "items" }, pa.map(itP)) : h("p", { class: "nota" }, "No hay preguntas abiertas."));
+  if (re.length) el.append(h("details", { class: "mini" }, h("summary", {}, `Hallazgos resueltos (${re.length})`), h("ul", { class: "items" }, re.map(itH))));
+  if (pr.length) el.append(h("details", { class: "mini" }, h("summary", {}, `Preguntas respondidas (${pr.length})`), h("ul", { class: "items" }, pr.map(itP))));
+  return el;
+}
+function mMetodo() {
+  const el = modulo("control-metodo", "Cómo se calculó", { ancho: true });
+  const met = D.metodo || [];
+  if (met.length) el.append(h("ul", { class: "lista-txt" }, met.map(t => h("li", {}, t))));
+  if (X.primSaldos >= 0 && !met.some(t => /saldos/i.test(t) && /\d{2}\/\d{2}/.test(t))) el.append(h("p", { class: "nota" }, "Primera semana con saldos: " + semLabel(X.primSaldos) + "."));
+  el.append(h("h3", {}, "Glosario"), h("dl", { class: "glos" }, GLOSARIO().map(([t, d]) => [h("dt", {}, t), h("dd", {}, d)])));
+  el.append(h("details", { class: "mini" }, h("summary", {}, "Cotizaciones por semana"),
+    tablaHTML([{ t: "Semana", v: w => semLabel(w) }, { t: "Pesos por USD", n: 1, v: w => ok(X.S[w].ars) ? sgn(nf(2).format(X.S[w].ars)) : "—" },
+      { t: "USD por USDT", n: 1, v: w => ok(X.S[w].usdt) ? sgn(nf(4).format(X.S[w].usdt)) : "—" }, { t: "Saldos", p3: 1, v: w => X.S[w].formato_actual ? "sí" : "no" }], range(0, X.nW - 1).reverse())));
+  return el;
+}
+
+
+/* ---------- P1 ---------- */
+function mAltas() {
+  const f = ST.foco, desde = D.config && ok(D.config.historia_altas_desde_semana) ? D.config.historia_altas_desde_semana : 0;
+  const el = modulo("clientes-altas", "Altas y regresos", { ayuda: "clientes-altas" });
+  const ws = tend();
+  const con = w => w >= desde;
+  const nu = ws.map(w => con(w) ? uSem(w, "nuevos") : null), re = ws.map(w => con(w) ? semVal(w, "recuperados") : null), pi = ws.map(w => con(w) ? -(semVal(w, "pasan_inactivos") || 0) : null);
+  const pr = semVal(f, "pct_recurrente");
+  el.append(h("p", { style: "font-size:15px" }, "Volumen de clientes habituales: ", h("b", {}, con(f) ? fPct(pr) : "—")));
+  if (ws.some(w => !con(w))) el.append(h("p", { class: "nota" }, `Sin historia suficiente antes del ${dm(X.S[Math.min(desde, X.nW - 1)].ini)}: esas semanas van vacías.`));
+  if (ws.length >= 2) {
+    const G = lectura(i => [h("b", {}, semLabel(ws[i])), con(ws[i]) ? ` · ${fNum(nu[i])} nuevos${X.k(ws[i]) > 1 ? " por semana" : ""} · ${fNum(re[i])} regresaron · ${fNum(-pi[i])} pasaron a inactivos` : " · Sin historia suficiente"], ws.indexOf(f));
+    el.append(G.el, lienzo((c, W) => grafico(c, W, { n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, aria: "Clientes nuevos y que regresaron (hacia arriba) y que pasaron a inactivos (hacia abajo), por semana.",
+      fmtY: v => nf(0).format(Math.abs(v)),
+      capas: [{ tipo: "barras", series: [{ vals: nu, fill: () => "var(--ord-2)" }, { vals: re, fill: () => "var(--ord-1)" }, { vals: pi, fill: () => "var(--ink-3)" }] }] })),
+      leyenda([{ t: "Nuevos", color: "var(--ord-2)" }, { t: "Regresaron", color: "var(--ord-1)" }, { t: "Pasaron a inactivos (hacia abajo)", color: "var(--ink-3)" }]),
+      verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "Nuevos", n: 1, v: i => fNum(nu[i]) }, { t: "Regresaron", n: 1, v: i => fNum(re[i]) }, { t: "Inactivos", n: 1, v: i => ok(pi[i]) ? fNum(-pi[i]) : "—" }, { t: "Habituales", n: 1, p3: 1, v: i => con(ws[i]) ? fPct(semVal(ws[i], "pct_recurrente")) : "—" }], ws.map((_, i) => i).reverse(), { cq: 420 }));
+  }
+  const nuevos = [...X.primeraCli.entries()].filter(([, w]) => w === f).map(([c]) => ({ c, u: X.wCli[f].get(c) || 0 })).sort((a, b) => b.u - a.u);
+  el.append(h("h3", {}, `Nuevos de la semana (${nuevos.length})`));
+  if (!con(f)) el.append(h("p", { class: "nota" }, "Sin historia suficiente para esta semana."));
+  else if (!nuevos.length) el.append(h("p", { class: "nota" }, "No hubo clientes nuevos en la semana."));
+  else el.append(listaBarras(nuevos.slice(0, 15).map(r => ({ t: nomCli(r.c), v: r.u, val: fUSD(r.u), abrir: () => hojaCliente(r.c) }))), nuevos.length > 15 ? h("p", { class: "nota" }, `Y ${nuevos.length - 15} más.`) : null);
+  const par = tab(D.parecidos).filter(r => r.w <= f && r.w >= f - 3);
+  if (par.length) el.append(h("details", { class: "mini" }, h("summary", {}, `Nuevos con nombre parecido a otro cliente (${par.length})`),
+    h("ul", { class: "items" }, par.map(r => h("li", {}, h("div", { class: "plain" }, h("span", { class: "a" }, nomCli(r.cli)), h("span", { class: "m" }, fPct(r.ratio)), h("span", { class: "b" }, "Se parece a " + nomCli(r.cli_parecido) + " · " + semLabel(r.w))))))));
+  return el;
+}
+function mUSDTcot() {
+  const el = modulo("operacion-usdt", "USDT");
+  const ws = tend(), f = ST.foco, U2 = tab(D.usdt), por = new Map(U2.map(r => [r.w, r]));
+  const rf = por.get(f);
+  if (!U2.length) { el.append(h("p", { class: "vacio" }, "Sin operaciones de USDT General.")); return el; }
+  el.append(h("p", { style: "font-size:15px" }, rf && ok(rf.paridad) ? ["1 USDT = ", h("b", {}, sgn(nf(3).format(rf.paridad)) + " USD billete")] : "Sin paridad para la semana."),
+    h("p", { class: "nota" }, rf ? `Transferencias cubiertas con USDT: ${fNum(rf.pares)} (${fUSD(rf.usd_pares)}) · ${plural(rf.n || 0, "operación", "operaciones")} de USDT General` : ""));
+  const v = ws.map(w => por.has(w) ? por.get(w).cot_med : null);
+  if (ws.length >= 2 && v.some(ok)) {
+    const lo = Math.min(...v.filter(ok)), hi = Math.max(...v.filter(ok)), pad = Math.max((hi - lo) * 0.1, 1);
+    const G = lectura(i => { const r = por.get(ws[i]); return [h("b", {}, semLabel(ws[i])), r ? ` · ${fPrecio(r.cot_med)} por USDT · 1 USDT = ${sgn(nf(3).format(r.paridad))} USD` : " · sin datos"]; }, ws.indexOf(f));
+    el.append(h("h3", {}, "Pesos por USDT"), G.el, lienzo((c, W) => grafico(c, W, { n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, yMin: lo - pad, yMax: hi + pad, tipoY: "precio",
+      aria: "Cotización promedio del USDT en pesos, por semana.", capas: [{ tipo: "linea", vals: v, color: "var(--dato-foco)", puntos: true }] })),
+      verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "$ por USDT", n: 1, v: i => ok(v[i]) ? sgn(nf(1).format(v[i])) : "—" }, { t: "Paridad", n: 1, v: i => por.has(ws[i]) ? sgn(nf(3).format(por.get(ws[i]).paridad)) : "—" },
+        { t: "Transf. cubiertas", n: 1, p3: 1, v: i => por.has(ws[i]) ? fNum(por.get(ws[i]).pares) : "—" }], ws.map((_, i) => i).reverse()));
+  }
+  return el;
+}
+function mediana(a) { if (!a.length) return null; const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
+function mComisiones() {
+  const el = modulo("operacion-comisiones", "Comisiones pactadas");
+  const R = new Set(periodo()), lista = (D.config && D.config.comisiones_lista) || {};
+  const por = new Map();
+  for (const r of tab(D.comis)) { if (!R.has(r.w) || !ok(r.pct)) continue; const o = por.get(r.tipo_com) || { p: [], usd: 0 }; o.p.push(r.pct); o.usd += r.usd || 0; por.set(r.tipo_com, o); }
+  if (!por.size) { el.append(h("p", { class: "vacio" }, "Sin operaciones con comisión en el período.")); return el; }
+  el.append(h("p", { class: "mod-sub" }, "Mediana del % pactado por tipo · " + textoPeriodo()));
+  const filas = [...por.entries()].map(([t, o]) => {
+    const nom = X.dic.tipo_com[t] ?? "—", m = mediana(o.p), l = ok(lista[nom]) ? lista[nom] : null;
+    const debajo = ok(l) && m < l - 0.1;
+    return { t: nom, v: m, n: o.p.length, usd: o.usd, val: fPct(m / 100) + " · " + plural(o.p.length, "operación", "operaciones"),
+      marca: l, marcaT: ok(l) ? "Lista: " + sgn(nf(2).format(l)) + "%" : null, chip: debajo ? h("span", { class: "tag warn" }, "debajo de la lista") : null };
+  }).sort((a, b) => b.v - a.v);
+  el.append(listaBarras(filas));
+  if (!Object.values(lista).some(ok)) el.append(h("p", { class: "nota" }, "Todavía no se cargó la comisión de lista de cada tipo. Cuando esté, se va a ver si se cobra por debajo."));
+  else el.append(leyenda([{ t: "Valor de lista", color: "var(--ink)", cls: "lin" }]));
+  el.append(verTabla([{ t: "Tipo", v: r => r.t }, { t: "% mediano", n: 1, v: r => fPct(r.v / 100) }, { t: "Operaciones", n: 1, v: r => fNum(r.n) }, { t: "USD de esas operaciones", n: 1, v: r => fNum(r.usd) }], filas));
+  return el;
+}
+const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const diaSem = s => DIAS[new Date(utc(s)).getUTCDay()];
+function mDias() {
+  const f = ST.foco;
+  const el = modulo("operacion-dias", "Días de la semana", { sub: semLabel(f) });
+  const d = tab(D.dia).filter(r => r.w === f).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  if (!d.length) { el.append(h("p", { class: "vacio" }, "Sin operaciones por día para esta semana.")); return el; }
+  const G = lectura(i => [h("b", {}, diaSem(d[i].fecha) + " " + dm(d[i].fecha)), ` · ${fUSD(d[i].usd)} · ${fNum(d[i].n)} ops`, d[i].inferida ? " · fecha aprox." : null], d.length - 1);
+  el.append(G.el, lienzo((c, W) => grafico(c, W, { n: d.length, etiq: i => diaSem(d[i].fecha) + " " + pf(d[i].fecha).d, grupo: G, aria: "Volumen por día de la semana elegida, en USD.",
+    capas: [{ tipo: "barras", series: [{ vals: d.map(r => r.usd), fill: () => "var(--dato)", trama: i => !!d[i].inferida }] }, ...d.map((r, i) => r.inferida ? { tipo: "marca", i, t: "aprox." } : null).filter(Boolean)] })));
+  if (d.some(r => r.inferida)) el.append(leyenda([{ t: "Fecha aproximada (el cierre del día no tiene fecha)", cls: "trama" }]));
+  el.append(verTabla([{ t: "Día", v: r => diaSem(r.fecha) + " " + dm(r.fecha) }, { t: "USD", n: 1, v: r => fNum(r.usd) }, { t: "Ops", n: 1, v: r => fNum(r.n) }, { t: "Fecha", v: r => r.inferida ? "aprox." : "" }], d));
+  return el;
+}
+function mTamano() {
+  const f = ST.foco, R = new Set(periodo());
+  const el = modulo("operacion-tamano", "Tamaño de las operaciones");
+  const tr = new Map();
+  for (const r of tab(D.tramos)) { if (!R.has(r.w)) continue; const o = tr.get(r.tramo) || { n: 0, usd: 0 }; o.n += r.n || 0; o.usd += r.usd || 0; tr.set(r.tramo, o); }
+  const p90 = semVal(f, "ticket_p90");
+  if (ok(p90)) el.append(h("p", { style: "font-size:15px" }, `9 de cada 10 operaciones de ${semLabel(f)} son menores a `, h("b", {}, fUSD(p90)), "."));
+  if (tr.size) {
+    const tn = sum([...tr.values()].map(o => o.n)), tu = sum([...tr.values()].map(o => o.usd));
+    const filas = [...tr.entries()].sort((a, b) => a[0] - b[0]);
+    el.append(h("h3", {}, "Por tramo de USD · " + textoPeriodo()), leyenda([{ t: "% de las operaciones", color: "var(--dato)" }, { t: "% del volumen", color: "var(--dato-foco)" }]),
+      h("div", { class: "pares", role: "img", "aria-label": "Por tramo: " + filas.map(([t, o]) => `${X.dic.tramo[t] ?? t}: ${fPct(o.n / tn)} de las operaciones y ${fPct(o.usd / tu)} del volumen`).join("; ") },
+        filas.map(([t, o]) => h("div", { class: "fila" }, h("span", {}, "USD " + (X.dic.tramo[t] ?? t)), h("span", { class: "nota num" }, fPct(o.n / tn) + " · " + fPct(o.usd / tu)),
+          h("div", { class: "bb" }, h("i", { style: `width:${(o.n / tn * 100).toFixed(1)}%;background:var(--dato)` }), h("i", { style: `width:${(o.usd / tu * 100).toFixed(1)}%;background:var(--dato-foco)` }))))),
+      verTabla([{ t: "Tramo (USD)", v: ([t]) => X.dic.tramo[t] ?? String(t) }, { t: "Ops", n: 1, v: ([, o]) => fNum(o.n) }, { t: "% ops", n: 1, v: ([, o]) => fPct(o.n / tn) }, { t: "% volumen", n: 1, v: ([, o]) => fPct(o.usd / tu) }], filas));
+  }
+  const ws = tend(), med = ws.map(w => semVal(w, "ticket_med")), q = ws.map(w => semVal(w, "ticket_p90"));
+  if (ws.length >= 2) {
+    const G = lectura(i => [h("b", {}, semLabel(ws[i])), ` · Operación típica ${fUSD(med[i])} · 9 de cada 10 debajo de ${fUSD(q[i])}`], ws.indexOf(f));
+    el.append(h("h3", {}, "Semana a semana"), G.el, lienzo((c, W) => grafico(c, W, { n: ws.length, etiq: i => semCorta(ws[i]), grupo: G, aria: "Operación típica (mediana) y percentil 90 por semana, en USD.",
+      capas: [{ tipo: "linea", vals: q, color: "var(--dato)", rot: "9 de 10" }, { tipo: "linea", vals: med, color: "var(--dato-foco)", rot: "Típica" }] })),
+      leyenda([{ t: "Operación típica (mediana)", cls: "lin", color: "var(--dato-foco)" }, { t: "Monto que dejan por debajo 9 de cada 10 operaciones", cls: "lin", color: "var(--dato)" }]),
+      verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "Típica", n: 1, v: i => fNum(med[i]) }, { t: "Percentil 90", n: 1, v: i => fNum(q[i]) }], ws.map((_, i) => i).reverse()));
+  }
+  return el;
+}
+function mInversiones() {
+  const f = ST.foco;
+  const el = modulo("saldos-inversiones", "Inversiones y garantías", { sub: completa(f) ? "Al cierre del " + dm(X.S[f].fin) + " · unidad a confirmar" : "Al inicio de la semana en curso · unidad a confirmar" });
+  const rows = tab(D.invgar), act = rows.filter(r => r.w === f && r.valor), prev = new Map(rows.filter(r => r.w === f - 1).map(r => [r.proyecto, r.valor]));
+  if (!act.length) { el.append(h("p", { class: "vacio" }, "— " + (sinSaldos(f) || "Sin inversiones ni garantías con saldo en esta semana."))); return el; }
+  const tabla = tablaHTML([{ t: "Proyecto", v: r => r.proyecto }, { t: "Valor", n: 1, v: r => fNum(r.valor) },
+    { t: "Cambio", n: 1, v: r => prev.has(r.proyecto) ? (r.valor - prev.get(r.proyecto) === 0 ? "=" : sgn(nf(0).format(r.valor - prev.get(r.proyecto)))) : "—" }], act.sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor)));
+  // mientras no cambie nada (y la unidad siga a confirmar) va plegado
+  const cambio = act.some(r => !prev.has(r.proyecto) || r.valor !== prev.get(r.proyecto));
+  if (cambio) el.append(tabla);
+  else el.append(h("p", { class: "nota" }, `Sin cambios contra la semana anterior (${plural(act.length, "proyecto", "proyectos")}).`), h("details", { class: "vt" }, h("summary", {}, "Ver los valores"), tabla));
+  el.append(h("p", { class: "nota" }, "Valores en la unidad de la planilla; no suman a la caja."));
+  return el;
+}
+function mGastos() {
+  const el = modulo("control-gastos", "Gastos registrados");
+  const g = tab(D.gastos), f = ST.foco, mesF = String(X.S[f].fin).slice(0, 7);
+  el.append(h("p", { class: "nota" }, "Solo Detalle = Gastos; sueldos, alquileres o comisiones con otro detalle no están."));
+  if (!g.length) { el.append(h("p", { class: "vacio" }, "Sin gastos registrados.")); return el; }
+  const meses = [...new Set(g.map(r => r.mes))].filter(m => m <= mesF).sort();
+  const pm = meses.map(m => sum(g.filter(r => r.mes === m).map(r => r.usd)));
+  const pfin = pf(X.S[f].fin), finDeMes = new Date(Date.UTC(pfin.y, pfin.m, 0)).getUTCDate() === pfin.d;
+  const G = lectura(i => [h("b", {}, mesL(meses[i])), " · " + fUSD(pm[i]) + (meses[i] === mesF && !finDeMes ? " (mes en curso)" : "")], meses.length - 1);
+  el.append(h("h3", {}, "Por mes"), G.el, lienzo((c, W) => grafico(c, W, { n: meses.length, etiq: i => mesC(meses[i]), grupo: G, H: 150, aria: "Gastos registrados por mes, en USD.",
+    capas: [{ tipo: "barras", series: [{ vals: pm, fill: i => meses[i] === mesF ? "var(--dato-foco)" : "var(--dato)" }] }] })),
+    verTabla([{ t: "Mes", v: i => mesL(meses[i]) }, { t: "USD", n: 1, v: i => fNum(pm[i]) }], meses.map((_, i) => i).reverse()));
+  const R = new Set(periodo()), pc = new Map();
+  for (const r of g) if (R.has(r.w)) pc.set(r.cat, (pc.get(r.cat) || 0) + (r.usd || 0));
+  const tot = sum([...pc.values()]);
+  el.append(h("h3", {}, "Por categoría · " + textoPeriodo()));
+  if (!pc.size) el.append(h("p", { class: "nota" }, "Sin gastos en el período."));
+  else el.append(listaBarras([...pc.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => ({ t: X.dic.cat[c] ?? "—", v, val: fUSD(v) + " · " + fPct(tot ? v / tot : null) }))));
+  return el;
+}
+/* hoja de cliente (M2.6) */
+function hojaCliente(c) {
+  COLA = [];
+  const f = ST.foco, ws = range(Math.max(0, f - 25), f);
+  const u = ws.map(w => (X.wCli[w].get(c) || 0) / X.k(w));
+  const tot = sum(ws.map(w => X.wCli[w].get(c) || 0));
+  const ops = new Map(); let nops = 0;
+  for (const w of ws) for (const r of X.cubo[w]) if (r.cli === c) { ops.set(r.op, (ops.get(r.op) || 0) + (r.usd || 0)); nops += r.n || 0; }
+  const cuerpo = [h("p", { class: "nota" }, `Últimas ${ws.length} semanas hasta ${semLabel(f)}: ${fUSD(tot)} · ${plural(nops, "operación", "operaciones")}`)];
+  const G = lectura(i => [h("b", {}, semLabel(ws[i])), " · " + fUSD(u[i]) + (X.k(ws[i]) > 1 ? " por semana" : "")], ws.length - 1);
+  cuerpo.push(G.el, lienzo((el, W) => grafico(el, W, { n: ws.length, H: 140, nTicks: 3, etiq: i => semCorta(ws[i]), grupo: G, aria: `Volumen semanal de ${nomCli(c)}, en USD.`,
+    capas: [{ tipo: "barras", series: [{ vals: u, fill: i => ws[i] === f ? "var(--dato-foco)" : "var(--dato)" }] }] })),
+    verTabla([{ t: "Semana", v: i => semLabel(ws[i]) }, { t: "USD", n: 1, v: i => fNum(u[i]) }], ws.map((_, i) => i).reverse()));
+  const to = sum([...ops.values()]);
+  if (ops.size) cuerpo.push(h("p", { class: "grupo-t" }, "Operadores"), listaBarras([...ops.entries()].sort((a, b) => b[1] - a[1]).map(([o, v]) => ({ t: nomOp(o), v, val: fPct(to ? v / to : null) + " · " + fUSD(v), color: colorOp(o) }))));
+  const mom = completa(f) ? 0 : 1, pend = (X.pend[f] || []).filter(r => r.momento === mom && r.cli === c);
+  cuerpo.push(h("p", { class: "grupo-t" }, "Plata afuera"));
+  if (!(X.pend[f] || []).some(r => r.momento === mom)) cuerpo.push(h("p", { class: "nota" }, `El detalle por ítem está para la última semana cerrada (${semLabel(D.foco)}) y para la semana en curso.`));
+  else if (!pend.length) cuerpo.push(h("p", { class: "nota" }, "No tiene ítems abiertos en la foto de la semana."));
+  else cuerpo.push(h("ul", { class: "items" }, pend.sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd)).map(itemPend)));
+  const det = tab(D.det).filter(r => r.cli === c && r.w <= f).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || (b.fila || 0) - (a.fila || 0));
+  cuerpo.push(h("p", { class: "grupo-t" }, "Operaciones de las últimas 8 semanas"));
+  if (!det.length) cuerpo.push(h("p", { class: "nota" }, "Sin operaciones en las últimas 8 semanas de los datos."));
+  else cuerpo.push(tablaHTML([{ t: "Fecha", v: r => dm(r.fecha) }, { t: "Producto", v: r => X.dic.prod[r.prod] ?? "—" }, { t: "Operador", p3: 1, v: r => nomOp(r.op) }, { t: "USD", n: 1, v: r => fNum(r.usd) },
+    { t: "Fila", n: 1, p3: 1, v: r => r.fila != null ? String(r.fila) : "—" }, { t: "Ope", n: 1, p3: 1, v: r => r.ope != null ? String(r.ope) : "—" }], det.slice(0, 40)),
+    det.length > 40 ? h("p", { class: "nota" }, `Y ${det.length - 40} operaciones más.`) : null);
+  abrirHoja(nomCli(c), cuerpo, { ancha: true });
+}
+
+/* ---------- secciones ---------- */
+const BUILD = {
+  semana: [mAlertas, mIndicadores, mVolumen, mMovio, mTop5],
+  clientes: [mRanking, mConcentracion, mAltas, mNoVinieron, mDejaron],
+  operacion: [mOperadores, mProductos, mPrecios, mUSDTcot, mComisiones, mDias, mTamano],
+  saldos: [mCaja, mAfuera, mUSDT, mCheques, mInversores, mInversiones],
+  control: [mControl, mRevisar, mHojas, mGastos, mNotas, mMetodo],
+};
+const IMPL = new Set(["semana-alertas", "semana-indicadores", "semana-volumen", "semana-movio", "semana-top5", "clientes-ranking", "clientes-concentracion",
+  "clientes-novinieron", "clientes-dejaron", "operacion-operadores", "operacion-productos", "operacion-precios", "saldos-caja", "saldos-afuera", "saldos-usdt",
+  "saldos-cheques", "saldos-inversores", "control-semana", "control-revisar", "control-hojas", "control-notas", "control-metodo",
+  "clientes-altas", "operacion-usdt", "operacion-comisiones", "operacion-dias", "operacion-tamano", "saldos-inversiones", "control-gastos"]);
+function construir(sec) {
+  const S = SECS.find(s => s.id === sec), cont = $("#s-" + sec);
+  COLA = []; DIB[sec] = [];
+  const mods = BUILD[sec].map(fn => { try { return fn(); } catch (e) { console.error(e); return h("section", { class: "mod" }, h("p", { class: "vacio" }, "No se pudo mostrar este módulo.")); } });
+  const ids = new Set(mods.map(m => m.id));
+  const anclas = h("nav", { class: "anclas", "aria-label": "Ir a" }, S.anclas.filter(([a]) => ids.has(sec + "-" + a)).map(([a, t]) => h("a", { class: "chip", href: `#${sec}-${a}` }, t)));
+  // En Semana los chips van después de los indicadores en el celular, para que la primera pantalla muestre alertas e indicadores
+  if (sec === "semana") { anclas.classList.add("en-mods"); mods.splice(Math.min(2, mods.length), 0, anclas); }
+  cont.replaceChildren(...limpio([h("h2", { class: "vh" }, S.t), sec === "semana" ? null : anclas, S.per ? lineaPeriodo() : null, h("div", { class: "mods" }, mods)]));
+  SUCIA[sec] = false;
+  dibujarCola();
+}
+function rehacer(fn) {
+  const act = document.activeElement && document.activeElement.id;
+  COLA = [];
+  const nuevo = fn(), viejo = document.getElementById(nuevo.id);
+  if (viejo) viejo.replaceWith(nuevo);
+  dibujarCola();
+  if (act) { const e = document.getElementById(act); if (e) e.focus({ preventScroll: true }); }
+}
+function mostrar(sec) {
+  for (const s of SECS) $("#s-" + s.id).hidden = s.id !== sec;
+  for (const b of document.querySelectorAll("#nav button")) b.setAttribute("aria-current", b.dataset.sec === sec ? "page" : "false");
+  ST.sec = sec; LS.set("rg2.seccion", sec);
+  if (SUCIA[sec] !== false) construir(sec);
+  else redibujar();
+}
+function ir(hash, empujar = true) {
+  const m = /^#([a-z]+)(?:-([a-z0-9]+))?$/.exec(hash || "");
+  if (!m || !SECS.some(s => s.id === m[1])) return false;
+  const sec = m[1];
+  mostrar(sec);
+  if (empujar) { try { history.replaceState(null, "", hash); } catch (e) { /* sin historial */ } }
+  const dest = m[2] ? document.getElementById(sec + "-" + m[2]) : null;
+  if (dest) dest.scrollIntoView({ block: "start", behavior: "auto" });
+  else window.scrollTo({ top: 0, behavior: "auto" });
+  return true;
+}
+function marcarSucias() { for (const s of SECS) SUCIA[s.id] = true; }
+function refrescar() {
+  marcarSucias();
+  pintarCabecera();
+  const y = window.scrollY;
+  construir(ST.sec);
+  window.scrollTo(0, Math.min(y, document.documentElement.scrollHeight));
+}
+function cambiarFoco(w) {
+  if (w == null || w < 0 || w >= X.nW) return;
+  ST.foco = w; refrescar();
+}
+function pintarCabecera() {
+  const f = ST.foco;
+  const estC = completa(f) ? "cerrada" : `en curso · ${X.S[f].dias_ops || 0} d`;
+  $("#chip-sem").replaceChildren(h("span", {}, semLabel(f)), h("span", { class: "est est-l" }, "· " + estadoSem(f)), h("span", { class: "est est-c" }, "· " + estC), icono("abajo", 16));
+  $("#chip-sem").setAttribute("aria-label", `Semana elegida: ${semLabel(f)}, ${estadoSem(f)}. Cambiar semana o período`);
+  const b = $("#banner");
+  const ec = D.en_curso;
+  if (ec != null && X.S[ec] && ec !== f) {
+    // en el celular, una sola línea, para que la primera pantalla siga mostrando los indicadores 1 a 4
+    b.replaceChildren(h("div", { class: "banner", role: "status" }, h("p", {},
+      h("span", { class: "largo" }, "Hay datos de la semana en curso (", h("b", {}, `${semLabel(ec)}, ${plural(X.S[ec].dias_ops || 0, "día", "días")}`), "). Los indicadores muestran la ", ec === f + 1 ? "última cerrada." : "semana elegida."),
+      h("span", { class: "corto" }, "En curso: ", h("b", {}, `${semLabel(ec)}, ${plural(X.S[ec].dias_ops || 0, "día", "días")}`), " ·"),
+      " ", h("button", { type: "button", class: "link", id: "b-ver-curso", onclick: () => cambiarFoco(ec), "aria-label": "Ver la semana en curso" }, "Ver"))));
+  } else b.replaceChildren();
+  const dark = temaOscuro();
+  $("#b-tema").replaceChildren(icono("tema", 20));
+  $("#b-tema").setAttribute("aria-label", dark ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+}
+
+/* ---------- selector ---------- */
+let volverFoco = null;
+function abrirHoja(titulo, cuerpo, o = {}) {
+  const hoja = $("#hoja"), velo = $("#velo");
+  if (hoja.hidden) volverFoco = document.activeElement;
+  hoja.className = "hoja gut" + (o.ancha ? " ancha" : "");
+  hoja.replaceChildren(h("div", { class: "agarre", "aria-hidden": "true" }),
+    h("div", { class: "hoja-h" }, h("h2", { id: "hoja-t" }, titulo), h("button", { type: "button", class: "b-ic", id: "hoja-x", "aria-label": "Cerrar", onclick: cerrarSelector }, icono("cerrar", 20))),
+    ...limpio(cuerpo));
+  velo.hidden = false; hoja.hidden = false; hoja.scrollTop = 0; document.body.classList.add("hoja-abierta");
+  dibujarCola();
+  ((o.foco && $(o.foco)) || $("#hoja-x")).focus();
+}
+function abrirSelector() {
+  const hoja = $("#hoja"), velo = $("#velo");
+  if (hoja.hidden) volverFoco = document.activeElement;
+  hoja.className = "hoja gut";
+  const lista = h("ul", { class: "semanas" });
+  for (let w = X.nW - 1; w >= 0; w--) {
+    lista.append(h("li", {}, h("button", { type: "button", id: "w-" + w, "aria-pressed": w === ST.foco ? "true" : "false", onclick: () => { cerrarSelector(); cambiarFoco(w); } },
+      h("span", { class: "nm" }, semLabel(w)), h("span", { class: "es" }, estadoSem(w)), icono("check", 18, "ck"))));
+  }
+  hoja.replaceChildren(h("div", { class: "agarre", "aria-hidden": "true" }),
+    h("div", { class: "hoja-h" }, h("h2", { id: "hoja-t" }, "Semana y período"), h("button", { type: "button", class: "b-ic", id: "hoja-x", "aria-label": "Cerrar", onclick: cerrarSelector }, icono("cerrar", 20))),
+    h("div", {}, h("p", { class: "grupo-t" }, "Período"), seg("rango", RANGOS, ST.rango, v => { ST.rango = String(v); LS.set("rg2.rango", ST.rango); for (const b of hoja.querySelectorAll("#hoja .seg button")) b.setAttribute("aria-pressed", b.id === "rango-" + v ? "true" : "false"); refrescar(); }, "Período"),
+      h("p", { class: "nota", style: "margin-top:6px" }, "Clientes, Operación y Control usan el período; siempre termina en la semana elegida.")),
+    h("div", {}, h("p", { class: "grupo-t" }, "Semana"), lista));
+  velo.hidden = false; hoja.hidden = false; document.body.classList.add("hoja-abierta");
+  const sel = $("#w-" + ST.foco);
+  (sel || $("#hoja-x")).focus();
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: "center" });
+}
+function cerrarSelector() {
+  $("#hoja").hidden = true; $("#velo").hidden = true; document.body.classList.remove("hoja-abierta");
+  if (volverFoco && volverFoco.isConnected) volverFoco.focus(); else $("#chip-sem").focus();
+}
+
+/* ---------- tema ---------- */
+const temaOscuro = () => { const t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches; };
+(function () { const t = LS.get("rg2.tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); })();
+
+/* ---------- arranque ---------- */
+function armarApp() {
+  const nav = $("#nav");
+  nav.replaceChildren(...SECS.map(s => h("button", { type: "button", "data-sec": s.id, "aria-current": "false", onclick: () => ir("#" + s.id) }, icono(s.ic, 22), h("span", {}, s.t))));
+  $("#secs").replaceChildren(...SECS.map(s => h("section", { id: "s-" + s.id, class: "sec", "aria-label": s.t, hidden: true })));
+  $("#chip-sem").addEventListener("click", abrirSelector);
+  $("#velo").addEventListener("click", cerrarSelector);
+  $("#b-tema").addEventListener("click", () => {
+    const nuevo = temaOscuro() ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", nuevo); LS.set("rg2.tema", nuevo); pintarCabecera();
+  });
+  document.addEventListener("keydown", e => {
+    const hoja = $("#hoja"); if (hoja.hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); cerrarSelector(); return; }
+    if (e.key === "Tab") {
+      const f = [...hoja.querySelectorAll("button, [href], input, [tabindex]:not([tabindex='-1'])")].filter(x => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest("a[href^='#']");
+    if (!a) return;
+    const href = a.getAttribute("href");
+    if (ir(href)) e.preventDefault();
+  });
+  window.addEventListener("hashchange", () => ir(location.hash, false));
+  // si el host cambia data-theme con la página abierta, el rótulo del botón de tema se actualiza
+  try { new MutationObserver(() => { $("#b-tema").setAttribute("aria-label", temaOscuro() ? "Cambiar a tema claro" : "Cambiar a tema oscuro"); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] }); } catch (e) { /* sin MutationObserver */ }
+  let mq = window.matchMedia("(min-width: 960px)"), ult = mq.matches;
+  let t = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(t);
+    t = setTimeout(() => { const m = mq.matches; if (m !== ult) { ult = m; refrescar(); } else redibujar(); }, 120);
+  });
+}
+function iniciar() {
+  if (!D || D.v !== 2) { mensaje("Versión de datos no compatible", "Este tablero espera datos versión 2" + (D && D.v != null ? ` y recibió la versión ${D.v}` : "") + ". Generalo de nuevo con correr.py --tablero-v2."); return; }
+  try { preparar(); } catch (e) { console.error(e); mensaje("No se pudieron leer los datos", "El archivo de datos está incompleto. Generalo de nuevo con correr.py --tablero-v2."); return; }
+  if (!X.nW) { mensaje("Sin semanas", "Los datos no traen ninguna semana."); return; }
+  ST.foco = D.foco != null && D.foco >= 0 && D.foco < X.nW ? D.foco : X.nW - 1;
+  const r = LS.get("rg2.rango"); if (RANGOS.some(x => x[0] === r)) ST.rango = r;
+  $("#pant-clave").hidden = true; $("#pant-msj").hidden = true; $("#app").hidden = false;
+  if (D.titulo) $("#titulo").textContent = D.titulo;
+  armarApp();
+  marcarSucias();
+  pintarCabecera();
+  const guardada = LS.get("rg2.seccion");
+  if (!ir(location.hash, false)) ir("#" + (SECS.some(s => s.id === guardada) ? guardada : "semana"), false);
+}
+function mensaje(t, p) {
+  $("#app").hidden = true; $("#pant-clave").hidden = true; $("#pant-msj").hidden = false;
+  $("#msj-t").textContent = t; $("#msj-p").textContent = p;
+}
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function descifrar(clave) {
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey("raw", enc.encode(clave), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(PAQUETE.s), iterations: PAQUETE.it, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(PAQUETE.iv) }, key, b64(PAQUETE.ct));
+  return JSON.parse(new TextDecoder().decode(plano));
+}
+if (PAQUETE && PAQUETE.plano) {
+  D = PAQUETE.plano; iniciar();
+} else if (PAQUETE && PAQUETE.ct) {
+  $("#pant-clave").hidden = false;
+  $("#form-clave").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const err = $("#err-clave"), go = $("#abrir");
+    if (!window.crypto || !crypto.subtle) { err.textContent = "Este navegador no puede descifrar los datos. Abrilo con Chrome, Edge, Safari o Firefox."; return; }
+    go.disabled = true; go.textContent = "Abriendo…"; err.textContent = "";
+    try { D = await descifrar($("#clave").value); $("#clave").value = ""; iniciar(); }
+    catch (e) { err.textContent = "La clave no es correcta. Revisala y probá de nuevo."; $("#clave").focus(); }
+    finally { go.disabled = false; go.textContent = "Abrir"; }
+  });
+} else {
+  mensaje("Tablero semanal", "Sin datos: generalo con correr.py --tablero-v2.");
+}
+</script>
+</body>
+</html>

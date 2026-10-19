@@ -57,3 +57,13 @@ correr `correr.py`.
 comprometidos. **No** incluye resultados de inversiones, diferencias de cambio sobre la posición,
 spread de euros y reales ni ajustes. Es una aproximación para comparar contra la ganancia
 semanal del archivo de patrimonio, no la reemplaza.
+
+## Tablero v2
+
+El tablero semanal v2 (`registro/tablero_v2.py` y su plantilla) se especifica en
+[`docs/tablero_v2_spec.md`](tablero_v2_spec.md): qué muestra cada módulo, el contrato JSON, las alertas, los chequeos
+de control y el flujo semanal de un paso (`actualizar.py`). Diferencias con estos análisis que conviene tener presentes:
+la caja y la plata afuera son **al cierre** de cada semana (el v1 mostraba el saldo al inicio), la "caja propia" es el
+Balance de cada caja menos la plata de terceros que está en ella (puede dar negativa; al lado va el Balance de la
+planilla), los flujos de la semana doble se dividen por 2 al compararlos, y el tablero no muestra ganancia, resultado ni
+margen.

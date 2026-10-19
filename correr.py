@@ -2,12 +2,17 @@
 
 Uso:
     python correr.py datos/Registro_General_2026.xlsx [--salida salidas/AAAA-MM-DD] [--fecha AAAA-MM-DD]
+                     [--tablero] [--tablero-v2] [--artifact] [--sin-clave | --clave X]
 
 Genera en la carpeta de salida:
     Analisis_Registro_General.xlsx   15 análisis + resultado estimado
     metricas.json                    números clave
     resumen_para_asesor.md           lo que lee el agente asesor
     datos/*.csv                      tablas base (operaciones, saldos, pendientes, cheques)
+Con --tablero-v2 (ver docs/tablero_v2_spec.md):
+    tablero_v2_datos.json            contrato JSON "v": 2, en claro
+    validaciones.json                chequeos de control (C05 en adelante)
+    Tablero_v2_<fecha>.html          (y tablero_v2_artifact_<fecha>.html con --artifact) si existe la plantilla v2
 """
 import argparse
 import datetime as dt
@@ -42,6 +47,8 @@ def main():
     ap.add_argument("--salida")
     ap.add_argument("--fecha", help="fecha de corte (por defecto, la del archivo)")
     ap.add_argument("--tablero", action="store_true", help="genera además el tablero HTML cifrado")
+    ap.add_argument("--tablero-v2", action="store_true",
+                    help="genera además el tablero v2 (datos JSON, validaciones y HTML si existe la plantilla)")
     ap.add_argument("--artifact", action="store_true", help="versión del tablero lista para publicar como Artifact")
     ap.add_argument("--sin-clave", action="store_true", help="tablero sin contraseña (datos en claro)")
     ap.add_argument("--clave", help="contraseña del tablero (si falta, usa CLAVE_TABLERO o genera una)")
@@ -50,10 +57,32 @@ def main():
     cfg = json.load(open(a.config, encoding="utf-8"))
     fecha = a.fecha or dt.date.fromtimestamp(os.path.getmtime(a.excel[-1])).isoformat()
     salida = a.salida or os.path.join("salidas", fecha)
-    os.makedirs(os.path.join(salida, "datos"), exist_ok=True)
+    clave = None
+    if (a.tablero or a.tablero_v2) and not a.sin_clave:
+        from registro import tablero as TB
+        clave = a.clave or os.environ.get("CLAVE_TABLERO") or TB.clave_aleatoria()
+    pipeline(a.excel, fecha, salida, cfg, tablero=a.tablero, tablero_v2=a.tablero_v2, artifact=a.artifact, clave=clave)
+    if clave and not (a.clave or os.environ.get("CLAVE_TABLERO")):
+        print("Contraseña generada (guardala, no se vuelve a mostrar):", clave)
+    print("Listo:", salida)
 
-    print("Leyendo", ", ".join(a.excel))
-    R = Registro(a.excel, cfg)
+
+def pipeline(rutas, fecha, salida, cfg, *, tablero, tablero_v2, artifact, clave, elegir=None, excluir=(), plan=None):
+    """Lee el Registro una sola vez y escribe en `salida` el análisis y, si se piden, los tableros v1 y v2.
+
+    clave: contraseña de los tableros (None = sin contraseña, datos en claro). plan: lo que arma actualizar.py
+    (chequeos del escaneo en plan["control"], origen de las notas en plan["origen_notas"] y, opcional,
+    plan["antes_v2"](R, b, T, M), que corre antes de leer las notas del v2). elegir y excluir son P1:
+    hasta que leer.py los soporte, con valores distintos de los de por defecto se corta con un error.
+    Devuelve un dict con las rutas generadas y, con tablero_v2, los datos y la cantidad de bloqueantes."""
+    rutas = [rutas] if isinstance(rutas, str) else list(rutas)
+    os.makedirs(os.path.join(salida, "datos"), exist_ok=True)
+    out = {"salida": salida}
+
+    print("Leyendo", ", ".join(rutas))
+    if elegir or excluir:
+        raise NotImplementedError("elegir/excluir requieren el cambio P1 de registro/leer.py")
+    R = Registro(rutas, cfg)
     ops = R.operaciones()
     cz = R.cotizaciones(ops)
     cz_usdt = R.paridad_usdt(ops, cz)
@@ -107,14 +136,14 @@ def main():
              "− gastos (Detalle=Gastos) − intereses comprometidos con inversores. No incluye resultados de inversiones "
              "(Polígono, Carbox, etc.), diferencias de cambio ni ajustes. Compararlo con la ganancia semanal del análisis de patrimonio.")
     M["contexto"] = dict(
-        archivo=" + ".join(os.path.basename(x) for x in a.excel), fecha_corte=fecha, semanas=len(R.semanas),
+        archivo=" + ".join(os.path.basename(x) for x in rutas), fecha_corte=fecha, semanas=len(R.semanas),
         primera_semana=R.semanas[0].nombre, semana_actual=R.actual.nombre + (" (cerrada)" if R.actual_cerrada else " (incompleta)"),
         operaciones_finalizadas=int(ops.fin.sum()), operaciones_en_volumen=int(len(b.vol)),
         cotizacion_ars_actual=cz[act], paridad_usdt_actual=round(cz_usdt[act], 4),
         cotizaciones=cfg["cotizaciones"])
 
     notas = {
-        "Archivo": " + ".join(a.excel), "Fecha de corte": fecha,
+        "Archivo": " + ".join(rutas), "Fecha de corte": fecha,
         "Volumen": "Promedio neto = (Debe + Haber)/2 en USD. Solo operaciones finalizadas de Cajas y Recaudadora, sin pendientes, "
                    "sin USDT General ni Cambio General, sin filas de garantías.",
         "Cotizaciones": f"ARS por semana (mediana operada o config.json). USDT: paridad semanal observada vs. billete "
@@ -136,20 +165,43 @@ def main():
     ch.to_csv(os.path.join(salida, "datos", "cheques.csv"), index=False)
     pd.DataFrame({"semana_n": list(cz), "ars_por_usd": list(cz.values()), "usd_por_usdt": [cz_usdt[k] for k in cz]}).to_csv(
         os.path.join(salida, "datos", "cotizaciones.csv"), index=False)
-    if a.tablero:
+    if tablero:
         from registro import tablero as TB
         notas_path = os.path.join(salida, "notas_tablero.json")
         notas = json.load(open(notas_path, encoding="utf-8")) if os.path.exists(notas_path) else {}
         notas.setdefault("metodologia", METODOLOGIA)
         datos = TB.construir_datos(R, b, T, M, cz, cz_usdt, fecha, notas)
-        clave = None if a.sin_clave else (a.clave or os.environ.get("CLAVE_TABLERO") or TB.clave_aleatoria())
-        ruta = TB.generar(datos, clave, os.path.join(salida, f"Tablero_Financiera_{fecha}.html"))
-        if a.artifact:
-            print("Artifact:", TB.generar(datos, clave, os.path.join(salida, f"tablero_artifact_{fecha}.html"), artifact=True))
-        print("Tablero:", ruta)
-        if clave and not (a.clave or os.environ.get("CLAVE_TABLERO")):
-            print("Contraseña generada (guardala, no se vuelve a mostrar):", clave)
-    print("Listo:", salida)
+        out["tablero"] = TB.generar(datos, clave, os.path.join(salida, f"Tablero_Financiera_{fecha}.html"))
+        if artifact:
+            out["artifact"] = TB.generar(datos, clave, os.path.join(salida, f"tablero_artifact_{fecha}.html"), artifact=True)
+            print("Artifact:", out["artifact"])
+        print("Tablero:", out["tablero"])
+    if tablero_v2:
+        from registro import tablero_v2 as TB2
+        plan = plan or {}
+        if callable(plan.get("antes_v2")):
+            plan["antes_v2"](R, b, T, M)  # actualizar.py --sembrar-revisadas: anota las filas a revisar antes de leer las notas
+        manuales, origen_notas = TB2.cargar_notas(salida, [(s.inicio, s.fin) for s in R.semanas])
+        origen_notas = {**origen_notas, **(plan.get("origen_notas") or {})}
+        previo_path = os.path.join(os.path.dirname(os.path.abspath(salida)), "estado_publicacion.json")
+        previo = json.load(open(previo_path, encoding="utf-8")) if os.path.exists(previo_path) else None
+        datos2 = TB2.construir_datos_v2(R, b, T, M, cz, cz_usdt, fecha, {
+            "manuales": manuales, "control": plan.get("control") or [], "fuentes": rutas, "plan": plan,
+            "previo": previo, "origen_notas": origen_notas, "cheques": ch, "inversores": inv})
+        with open(os.path.join(salida, "tablero_v2_datos.json"), "w", encoding="utf-8") as fh:
+            fh.write(TB2.serializar(datos2))
+        val = TB2.validaciones(datos2)
+        with open(os.path.join(salida, "validaciones.json"), "w", encoding="utf-8") as fh:
+            json.dump(val, fh, ensure_ascii=False, indent=1)
+        out.update(datos_v2=datos2, validaciones=val, bloqueantes=val["bloqueantes"])
+        out["tablero_v2"] = TB2.generar_v2(datos2, clave, os.path.join(salida, f"Tablero_v2_{fecha}.html"))
+        if out["tablero_v2"] and artifact:
+            out["artifact_v2"] = TB2.generar_v2(datos2, clave, os.path.join(salida, f"tablero_v2_artifact_{fecha}.html"),
+                                                artifact=True)
+            print("Artifact v2:", out["artifact_v2"])
+        print("Tablero v2:", out["tablero_v2"] or "sin plantilla (registro/tablero_v2_plantilla.html); se generaron los datos")
+        print("Control:", datos2["control"]["resumen"])
+    return out
 
 
 if __name__ == "__main__":
