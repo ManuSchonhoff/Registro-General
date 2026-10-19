@@ -19,7 +19,7 @@ DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Doming
 
 # ----------------------------------------------------------------------------- base
 class Base:
-    def __init__(self, ops, cz, cfg, semana_actual, cz_usdt):
+    def __init__(self, ops, cz, cfg, semana_actual, cz_usdt, actual_cerrada=False):
         self.cfg, self.cz, self.actual, self.cz_usdt = cfg, cz, semana_actual, cz_usdt
         self.mon_caja = cfg["moneda_por_caja"]
         ops = ops.copy()
@@ -38,7 +38,7 @@ class Base:
         self.vol = ops[ops.fin & ops.detalle.isin(cfg["detalles_que_son_volumen"]) & ~ops.cliente.isin(excl)
                        & ops.mon_debe.notna() & ops.mon_haber.notna()
                        & (ops.mon_debe != "Otra") & (ops.mon_haber != "Otra")].copy()
-        self.ultima_completa = semana_actual - 1
+        self.ultima_completa = semana_actual if actual_cerrada else semana_actual - 1
 
     def moneda(self, caja):
         if not isinstance(caja, str) or not caja:
@@ -431,7 +431,7 @@ def tamano(b):
 # ----------------------------------------------------------------------------- 11
 def calidad_carga(b):
     """Diferencias entre lo imputado en las columnas de caja y lo que dicen Debe/Haber."""
-    o = b.ops[(b.ops.semana_n < b.actual)].copy()
+    o = b.ops[(b.ops.semana_n <= b.ultima_completa)].copy()
     fam_ancha = lambda m: "ARS" if m == "ARS" else m
     col_mon = lambda c: ("USD" if c.upper() in USD_FAM or c.upper() == "USD BSAS" else b.moneda(c))
     problemas = []
@@ -476,7 +476,7 @@ def calidad_carga(b):
     reales = p[~p.compensado].copy()
     reales["severidad"] = np.where(reales.dif_usd >= 100, "Alta", np.where(reales.dif_usd >= 10, "Media", "Baja"))
     reales.loc[reales.tipo != "Imputación ≠ Debe/Haber", "severidad"] = "Alta"
-    tot_ops = b.ops[b.ops.fin & (b.ops.semana_n < b.actual)].groupby("operador_g").size()
+    tot_ops = b.ops[b.ops.fin & (b.ops.semana_n <= b.ultima_completa)].groupby("operador_g").size()
     t = reales.pivot_table(index="operador_g" if "operador_g" in reales else "operador", columns="severidad",
                            values="fila", aggfunc="size", fill_value=0)
     t = t.reindex(columns=["Alta", "Media", "Baja"], fill_value=0)
@@ -638,7 +638,7 @@ def gastos(b):
     cat_t["%"] = cat_t.usd / cat_t.usd.sum()
     conc = g.groupby("concepto").gasto_usd.agg(["size", "sum"]).rename(columns={"size": "items", "sum": "usd"}).sort_values("usd", ascending=False).head(40)
     mens = g.groupby("mes").gasto_usd.sum()
-    completas = sem[sem.semana_n < b.actual]
+    completas = sem[sem.semana_n <= b.ultima_completa]
     met = dict(gasto_total_usd=float(g.gasto_usd.sum()), gasto_semanal_promedio_usd=float(completas.Total.mean()),
                gasto_ult4_semanas_promedio_usd=float(completas.Total.tail(4).mean()),
                por_categoria={k: float(v) for k, v in cat_t.usd.items()},

@@ -363,9 +363,9 @@ const TABS = [["resumen", "Resumen"], ["volumen", "Volumen"], ["clientes", "Clie
   ["control", "Control de datos"], ["metodo", "Cómo se calculó"]];
 let tabActual = "resumen";
 function iniciar() {
-  $("#sub").textContent = `Corte ${fmt(D.fecha, "fecha")} · ${D.semanas.length} semanas · semana ${nombreSemana(D.actual)} incompleta`;
+  $("#sub").textContent = `Corte ${fmt(D.fecha, "fecha")} · ${D.semanas.length} semanas · semana ${nombreSemana(D.actual)} ${D.actual_cerrada ? "cerrada" : "incompleta"}`;
   for (const id of ["#wDesde", "#wHasta"]) {
-    const s = $(id); s.replaceChildren(...D.semanas.map(w => h("option", { value: w.n }, w.nombre + (w.n === D.actual ? " (incompleta)" : ""))));
+    const s = $(id); s.replaceChildren(...D.semanas.map(w => h("option", { value: w.n }, w.nombre + (w.n === D.actual && !D.actual_cerrada ? " (incompleta)" : ""))));
     s.addEventListener("change", render);
   }
   $("#wDesde").value = 1; $("#wHasta").value = D.actual;
@@ -390,8 +390,8 @@ function resumen(s) {
     tile("Volumen promedio por semana", fmt(tot / nsem, "usdk"), `${nsem} semanas`),
     tile("Operaciones", fmt(ops, "int"), "finalizadas, sin USDT General"),
     tile("Clientes activos", fmt(cl.rows.length, "int"), cl.rows.length ? `Top 10 = ${fmt(cl.rows.slice(0, 10).reduce((x, r) => x + r[4], 0), "pct")}` : ""),
-    tile("Pendientes: nos deben", fmt(D.pendKpi.nos_deben_usd, "usdk"), "al inicio de la semana actual"),
-    tile("Pendientes: les debemos", fmt(D.pendKpi.les_debemos_usd, "usdk"), "al inicio de la semana actual")));
+    tile("Pendientes: nos deben", fmt(D.pendKpi.nos_deben_usd, "usdk"), D.actual_cerrada ? "al cierre de la última semana" : "al inicio de la semana actual"),
+    tile("Pendientes: les debemos", fmt(D.pendKpi.les_debemos_usd, "usdk"), D.actual_cerrada ? "al cierre de la última semana" : "al inicio de la semana actual")));
   const sem = D.semanas.filter(w => w.n >= a && w.n <= b);
   const series = D.operadores.map(op => ({ name: op, color: colorOp(op), vals: sem.map(w => D.volOps.filter(r => r[0] === w.n && r[1] === op).reduce((x, r) => x + ((r[4] || 0) + (r[5] || 0)) / 2, 0)) }));
   s.append(card("Volumen semanal por operador (USD, promedio neto)", barrasApiladas(sem.map(w => w.nombre), series, { corto, titulo: "Volumen semanal por operador" })));
@@ -467,7 +467,7 @@ function posicion(s) {
     rows: p.semanas.map((w, i) => [w, ...p.monedas.map(m => p.valores[m][i]), p.total[i], p.caja_real[i], p.pendientes[i]]) }, { max: 30 }));
   s.append(h("h2", {}, "Inversiones y garantías (unidad original)"), h("p", { class: "note" }, "Columnas de inversiones y garantías. POLÍGONO está en USD; las demás se muestran en la unidad que tiene la planilla (confirmar)."), tabla(D.invGar, { max: 30 }));
   const k = D.pendKpi, q = D.usdtQ;
-  s.append(h("h2", {}, "Pendientes y cuentas corrientes (semana actual)"),
+  s.append(h("h2", {}, D.actual_cerrada ? "Pendientes y cuentas corrientes (al cierre de la última semana)" : "Pendientes y cuentas corrientes (semana actual)"),
     h("p", { class: "note" }, "Signo: + = la contraparte nos entregó valor (lo debemos) · − = le entregamos valor (nos debe). Convención deducida de la planilla: a confirmar."),
     h("div", { class: "tiles" }, tile("Ítems", fmt(k.items, "int")), tile("Nos deben", fmt(k.nos_deben_usd, "usdk")), tile("Les debemos", fmt(k.les_debemos_usd, "usdk")),
       tile("Abiertos hace más de 4 semanas", fmt(k.items_mas_de_4_semanas, "int")), tile("USDT General con \"?\"", fmt(q.items, "int"), `${fmt(q.mas_de_4_semanas, "int")} con más de 4 semanas · ${fmt(q.usd, "usdk")}`)));

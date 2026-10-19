@@ -65,7 +65,7 @@ def construir_datos(R, b, T, M, cz, cz_usdt, fecha, notas):
     mch = M.get("07_cheques", {})
     d = dict(
         fecha=fecha, archivo=os.path.basename(R.wf.path) if hasattr(R.wf, "path") else "",
-        semanas=semanas, actual=R.actual.idx, operadores=b.cfg["operadores_principales"] + ["Otros"],
+        semanas=semanas, actual=R.actual.idx, actual_cerrada=bool(R.actual_cerrada), operadores=b.cfg["operadores_principales"] + ["Otros"],
         productos=list(v.groupby("producto").prom_usd.sum().sort_values(ascending=False).index),
         volOps=[[int(r.semana_n), r.operador_g, r.producto, int(r.ops), _v(r.debe), _v(r.haber)] for r in vol_ops.itertuples()],
         volCli=[[int(r.semana_n), r.cliente_g, r.operador_g, int(r.ops), _v(r.usd)] for r in vol_cli.itertuples()],

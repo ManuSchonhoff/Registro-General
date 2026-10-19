@@ -63,7 +63,7 @@ def main():
     inv = R.inversores()
     act = R.actual.idx
 
-    b = A.Base(ops, cz, cfg, act, cz_usdt)
+    b = A.Base(ops, cz, cfg, act, cz_usdt, R.actual_cerrada)
     cot_mes = defaultdict(list)
     for s in R.semanas:
         cot_mes[s.inicio.strftime("%Y-%m")].append(cz[s.idx])
@@ -108,7 +108,7 @@ def main():
              "(Polígono, Carbox, etc.), diferencias de cambio ni ajustes. Compararlo con la ganancia semanal del análisis de patrimonio.")
     M["contexto"] = dict(
         archivo=" + ".join(os.path.basename(x) for x in a.excel), fecha_corte=fecha, semanas=len(R.semanas),
-        primera_semana=R.semanas[0].nombre, semana_actual=R.actual.nombre + " (incompleta)",
+        primera_semana=R.semanas[0].nombre, semana_actual=R.actual.nombre + (" (cerrada)" if R.actual_cerrada else " (incompleta)"),
         operaciones_finalizadas=int(ops.fin.sum()), operaciones_en_volumen=int(len(b.vol)),
         cotizacion_ars_actual=cz[act], paridad_usdt_actual=round(cz_usdt[act], 4),
         cotizaciones=cfg["cotizaciones"])

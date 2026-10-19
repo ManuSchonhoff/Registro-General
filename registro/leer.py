@@ -94,6 +94,12 @@ class Semana:
                 d[h] = d.get(h, 0) + x
         return d
 
+    def cerrada(self):
+        """Hoja ya cerrada: tiene abajo el rótulo Apertura Pendientes y después el Cierre Semanal final."""
+        e = self.estructura()
+        aps = [r for r in self.filas("Balance") if _low(self.raw(r, 7)).startswith("apertura") and r > e["primer_cierre"]]
+        return bool(aps) and e["cierre_final"] > aps[-1]
+
     def filas(self, F=None):
         return [r for r in range(self.d0, self.maxr + 1) if F is None or self.raw(r, 6) == F]
 
@@ -149,6 +155,7 @@ class Registro:
         nombres = sorted(hojas, key=inicio)
         self.semanas = [Semana(n, hojas[n][0], hojas[n][1], cfg["anio"], i) for i, n in enumerate(nombres, 1)]
         self.actual = self.semanas[-1]
+        self.actual_cerrada = self.actual.cerrada()
 
     # ------------------------------------------------------------------
     def operaciones(self):
@@ -156,7 +163,7 @@ class Registro:
         out = []
         for s in self.semanas:
             e = s.estructura()
-            fin = s.maxr + 1 if s is self.actual else e["ini_pend"]
+            fin = s.maxr + 1 if (s is self.actual and not self.actual_cerrada) else e["ini_pend"]
             fechas = self._fechas_cierres(s, e)
             for r in range(e["ini_ops"], fin):
                 G, F = s.raw(r, 7), s.raw(r, 6)
@@ -244,15 +251,23 @@ class Registro:
         return pd.DataFrame(out)
 
     def pendientes_actuales(self, ops):
-        """Bloque de pendientes de arriba de la semana actual, con antigüedad por N° de Ope."""
+        """Pendientes vigentes, con antigüedad por N° de Ope: el bloque de arriba de la semana actual o,
+        si la hoja ya está cerrada, el bloque de abajo (lo que pasa a la semana siguiente)."""
         s = self.actual
         e = s.estructura()
-        cp = [r for r in s.filas("Balance") if "cierre" in _low(s.raw(r, 7)) and r < e["primer_cierre"]]
-        fin = cp[0] if cp else e["primer_cierre"]
+        if self.actual_cerrada:
+            ini = e["ini_pend"] + 1
+            cp = [r for r in s.filas("Balance") if "cierre" in _low(s.raw(r, 7)) and r > e["ini_pend"]]
+            fin = cp[0] if cp else e["fin_pend"]
+        else:
+            ini = 7
+            cp = [r for r in s.filas("Balance") if "cierre" in _low(s.raw(r, 7)) and r < e["primer_cierre"]]
+            fin = cp[0] if cp else e["primer_cierre"]
+        idx_ref = s.idx + 1 if self.actual_cerrada else s.idx
         con_ope = ops[ops.ope.notna()].sort_values("semana_n")
         sem_por_ope = dict(zip(con_ope.ope.astype(int)[::-1], con_ope.semana_n[::-1]))  # primera aparición
         out = []
-        for r in range(7, fin):
+        for r in range(ini, fin):
             G, F = s.raw(r, 7), s.raw(r, 6)
             if not G or F in ("Cierre", "Balance"):
                 continue
@@ -261,7 +276,7 @@ class Registro:
             imp = s.imputaciones(r)
             out.append(dict(fila=r, codigo=s.raw(r, 5), detalle=F, cliente=str(G).strip(), ope=ope,
                             semana_origen_n=sn,
-                            semanas_abierto=(s.idx - sn) if sn else None,
+                            semanas_abierto=(idx_ref - sn) if sn else None,
                             con_signo_pregunta=any(str(s.v.cell(r, c).value).strip() == "?" for c in (9, 11)),
                             debe=_num(s.v.cell(r, 9).value), caja_debe=s.etiqueta(r, 10),
                             haber=_num(s.v.cell(r, 12).value), caja_haber=s.etiqueta(r, 13),
