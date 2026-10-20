@@ -72,8 +72,11 @@ def rango_txt(ini, fin):
 
 
 class Modelo:
-    def __init__(self, hojas, archivos, cfg, tenencia=None, signo_pendientes_confirmado=False):
+    def __init__(self, hojas, archivos, cfg, tenencia=None, signo_pendientes_confirmado=False, moneda_por_caja=None):
         self.hojas, self.archivos, self.cfg = hojas, archivos, cfg
+        # moneda de cada caja cuando la hoja no tiene fila de monedas (config.json → moneda_por_caja)
+        abrev = {"USD": "USD", "USD EXTERIOR": "USD", "USDT": "USDT", "ARS": "ARS", "EUR": "EUR", "BRL": "REAL", "GBP": "GBP"}
+        self.moneda_de = {norm(k): abrev.get(norm(v), v) for k, v in (moneda_por_caja or {}).items()}
         self.tenencia = tenencia
         self.signo_ok = signo_pendientes_confirmado
         self.grupo_de = {}
@@ -100,7 +103,8 @@ class Modelo:
                 if n is None:
                     n = f"SIN NOMBRE ({c['col']})"
             g = self.grupo_de.get(n, "otros")
-            cols[c["col"]] = dict(c, n=n, g=g, heredado=heredado)
+            moneda = c["moneda"] or self.moneda_de.get(n) or ("USD" if g in ("proyectos", "flujos") else None)
+            cols[c["col"]] = dict(c, n=n, g=g, heredado=heredado, moneda=moneda)
         return cols
 
     # ------------------------------------------------------------------------------------------- semanas
@@ -204,7 +208,7 @@ class Modelo:
                 lista.append({
                     "n": n, "col": col, "g": c["g"], "mon": c["moneda"], "s": r2(c["saldo"]), "p": r2(c["pendiente"]),
                     "t": r2(c["total"]), "usd": r2(usd) if usd is not None else None,
-                    "usd_prev": r2(prev_cajas_usd.get(n)) if n in prev_cajas_usd else None,
+                    "usd_prev": None if prev is None else r2(prev_cajas_usd.get(n, 0.0)),
                     "suma": usd is not None, "heredado": c["heredado"],
                 })
 
@@ -360,7 +364,7 @@ class Modelo:
             sem = [s["id"] for s in ss if any(c["heredado"] for c in s["cajas"])]
             monto = next(c["usd"] for c in reversed(ss[-1]["cajas"]) if c["heredado"]) if any(c["heredado"] for c in ss[-1]["cajas"]) else None
             ch.append({"nivel": "revisar", "titulo": "Columna sin título",
-                       "texto": f"Una columna con saldo no tiene título en {len(sem)} hojas; se le dio el nombre que tenía antes ({', '.join(her)})"
+                       "texto": f"Desde {next(x['txt'] for x in ss if x['id'] == sem[0])} una columna con saldo no tiene título ({len(sem)} hojas); se le dio el nombre que tenía antes ({', '.join(her)})"
                                 + (f". Hoy suma USD {fmt_usd(monto)} al patrimonio." if monto else "."),
                        "semanas": sem})
         rev = [s for s in ss if any(m["k"] == "rev" for m in s["marcas"])]
@@ -401,7 +405,8 @@ class Modelo:
             for et, it in h["bloque"].items():
                 f = it.get("formula") or ""
                 m = re.fullmatch(r"=\$?([A-Z]+)\$?\d+", f.replace(" ", ""))
-                if m and norm(et) not in (None, nombres.get(m.group(1))) and nombres.get(m.group(1)):
+                leida = nombres.get(m.group(1)) if m else None
+                if m and leida and norm(et) and not norm(et).startswith(leida) and not leida.startswith(norm(et)):
                     corridas.add(f"«{et}» lee la columna {nombres[m.group(1)].title()}")
         if corridas:
             ch.append({"nivel": "info", "titulo": "Renglones del bloque que leen otra columna",

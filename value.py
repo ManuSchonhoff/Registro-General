@@ -57,7 +57,7 @@ def main():
     tenencia = leer_tenencia(libros, [s["nombre"] for s in cfg.get("socios", [])])
     signo_ok = cfg_total.get("tablero_v2", {}).get("signo_pendientes_confirmado", False)
 
-    m = Modelo(hojas, archivos, cfg, tenencia, signo_ok)
+    m = Modelo(hojas, archivos, cfg, tenencia, signo_ok, cfg_total.get("moneda_por_caja"))
     m.archivos_por_hoja = {}
     for p, (wf, _) in libros.items():
         for ws in wf.worksheets:

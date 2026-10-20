@@ -76,7 +76,7 @@
       {"semana": "2026-07-06", "monto": 924.16, "detalle": "Dividendos de junio, cargados dentro de INTERESES", "dentro_de": "INTERESES", "confirmado": false}
     ],
     "semanas_a_revisar": {
-      "2026-08-10": "El pendiente de cheques pasó de −27,2 M a +0,8 M ARS (≈ +18.360 USD) sin aclarar. En la misma hoja sale Almafuerte (50.000) y entra Polígono 20+13 (75.466); su efecto neto es ≈ +130.",
+      "2026-08-10": "El pendiente de cheques pasó de −27,2 M a +0,8 M ARS (≈ +18.360 USD) sin aclarar. En la misma hoja sale Almafuerte (50.000) y entra Polígono 20+13 (75.466): según las operaciones del Registro General, se pagaron con caja y su efecto neto en el patrimonio es ≈ +130.",
       "2026-08-24": "El patrimonio subió 42.940 en una semana sin explicación cargada: los pendientes de la caja USD pasaron de −45.347 a +14.119."
     },
     "socios": [
