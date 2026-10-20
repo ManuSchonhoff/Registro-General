@@ -105,7 +105,12 @@ class Modelo:
             g = self.grupo_de.get(n, "otros")
             moneda = c["moneda"] or self.moneda_de.get(n) or {"pesos": "ARS", "billete": "USD", "cripto": "USD", "proyectos": "USD",
                                                               "flujos": "USD"}.get(g)
-            cols[c["col"]] = dict(c, n=n, g=g, heredado=heredado, moneda=moneda)
+            # un euro que la fórmula del Neto suma 1 a 1 se muestra como USD (así lo cuenta esa hoja)
+            coef = h["coef_neto"].get(c["col"] + "2")
+            eur_1a1 = moneda == "EUR" and coef is not None and abs(coef - 1) < 1e-9
+            if eur_1a1:
+                moneda = "USD"
+            cols[c["col"]] = dict(c, n=n, g=g, heredado=heredado, moneda=moneda, eur_1a1=eur_1a1, coef=coef)
         return cols
 
     # ------------------------------------------------------------------------------------------- semanas
@@ -118,6 +123,7 @@ class Modelo:
         prev = None
         prev_nombres = {}
         prev_cajas_usd = {}
+        prev_coef = {}
         for h in self.hojas:
             cols = self._cajas(h, prev_nombres)
             b = h["bloque"]
@@ -211,7 +217,7 @@ class Modelo:
                     "n": n, "col": col, "g": c["g"], "mon": c["moneda"], "s": r2(c["saldo"]), "p": r2(c["pendiente"]),
                     "t": r2(c["total"]), "usd": r2(usd) if usd is not None else None,
                     "usd_prev": None if prev is None else r2(prev_cajas_usd.get(n, 0.0)),
-                    "suma": usd is not None, "heredado": c["heredado"],
+                    "suma": usd is not None, "heredado": c["heredado"], "eur_1a1": c["eur_1a1"],
                 })
 
             s = {
@@ -231,6 +237,7 @@ class Modelo:
                 "disponible": r2(sum(grupos.get(g, 0.0) for g in DISPONIBLE)),
                 "fijos": r2(sum(grupos.get(g, 0.0) for g in FIJOS)),
                 "ars": r2(ars), "efecto": r2(efecto), "sens10": r2(sens10), "volumen": r2(vol),
+                "refs": [r2(x) for x in h["referencias"]] if h.get("referencias") else None,
                 "por_semana": r2(None if gan is None else gan / sem),
                 "cierre_ok": abs(suma_grupos - neto) <= 0.05,
                 "cajas": sorted(lista, key=lambda x: (GRUPOS_PATRIMONIO.index(x["g"]) if x["g"] in GRUPOS_PATRIMONIO else 99, -(abs(x["usd"] or 0)))),
@@ -242,6 +249,17 @@ class Modelo:
             prev = dict(s, neto=neto, cot=cot, ars=ars)
             prev_nombres = {c["col"]: c["n"] for c in cols.values() if not c["n"].startswith("SIN NOMBRE")}
             prev_cajas_usd = dict(caja_usd)
+            criterio = []
+            for c in cols.values():
+                cp = prev_coef.get(c["n"])
+                uno, uno_p = c["coef"] is not None and abs(c["coef"] - 1) < 1e-9, cp is not None and abs(cp - 1) < 1e-9
+                if cp and c["coef"] and uno != uno_p and abs(c["total"]) > 0.005:
+                    como = "1 a 1 como dólar" if uno else "como euro (× " + f"{c['coef']:.2f}".replace(".", ",") + ")"
+                    d = c["total"] * (c["coef"] - cp)
+                    criterio.append(f"{c['n'].capitalize()} pasa a contarse {como}: {'+' if d > 0 else ''}{fmt_usd(d)} que no son movimiento de plata")
+            if criterio:
+                s["_criterio"] = criterio
+            prev_coef = {c["n"]: c["coef"] for c in cols.values() if c["coef"] is not None and (c["eur_1a1"] or c["moneda"] == "EUR")}
             self._chequeos_hoja(h, s, cols)
 
         self._tipica_y_marcas()
@@ -281,13 +299,15 @@ class Modelo:
             if i > 0 and cots[i] is not None and cots[i] == cots[i - 1]:
                 dud.append(f"cotización igual a la de la semana anterior ($ {cots[i]:,.0f})".replace(",", "."))
             if s.get("gan_planilla_error"):
-                dud.append(f"la celda de ganancia de la planilla da {s['gan_planilla_error']} (se recalculó contra la semana anterior)")
+                dud.append(f"la celda de ganancia de la planilla da error ({s['gan_planilla_error']}); el tablero la calcula con el patrimonio de las dos semanas, así que el número está bien")
             if len(getattr(self, "archivos_por_hoja", {}).get(s["hoja"], [])) > 1:
-                dud.append(f"la hoja está en {len(self.archivos_por_hoja[s['hoja']])} archivos (se usó el más nuevo)")
+                dud.append(f"la hoja llegó en {len(self.archivos_por_hoja[s['hoja']])} archivos y se usó el más nuevo")
             if any(c["heredado"] for c in s["cajas"]):
-                dud.append("una columna sin título (se tomó el nombre de la hoja anterior: " + ", ".join(c["n"] for c in s["cajas"] if c["heredado"]) + ")")
+                dud.append("una columna no tiene título y se le puso el de la hoja anterior (" + ", ".join(c["n"].capitalize() for c in s["cajas"] if c["heredado"]) + "): conviene ponérselo en la planilla")
             if s.get("_sin_suma"):
                 dud.append("valores que no entran en la fórmula: " + ", ".join(s["_sin_suma"]))
+            if s.get("_criterio"):
+                dud.append("; ".join(s["_criterio"]))
             if s["notas"]:
                 dud.append("notas en la hoja: " + "; ".join(s["notas"]))
             if dud:
@@ -296,6 +316,7 @@ class Modelo:
                 m.append({"k": "gastos", "t": f"Semana de costos fijos: se pagaron USD {fmt_usd(s['gas_det']['gastos'])} de gastos. Conviene mirar el mes completo."})
             s["marcas"] = m
             s.pop("_sin_suma", None)
+            s.pop("_criterio", None)
         self.mediana_global = r2(med)
 
     # ------------------------------------------------------------------------------------------- meses
@@ -377,6 +398,15 @@ class Modelo:
         for s in rev:
             ch.append({"nivel": "revisar", "titulo": f"Semana {s['txt']} a revisar",
                        "texto": next(m["t"] for m in s["marcas"] if m["k"] == "rev"), "semanas": [s["id"]]})
+        # reales y libras: la planilla nunca los suma al Neto (el detalle de cada semana los muestra como «no suma»)
+        for nom, sim in (("REALES", "R$"), ("LIBRAS", "£")):
+            con = [(s, c["t"]) for s in ss for c in s["cajas"] if c["n"] == nom and not c["suma"] and abs(c["t"] or 0) > 0.005]
+            if con:
+                s_max, t_max = max(con, key=lambda x: abs(x[1]))
+                ch.append({"nivel": "revisar", "titulo": f"{nom.capitalize()}: la planilla nunca los suma al patrimonio",
+                           "texto": f"Hay saldo en {len(con)} hojas, hasta {sim} {fmt_usd(t_max)} en {s_max['txt']}. No están en el patrimonio ni en la ganancia; "
+                                    "si son de la financiera, falta sumarlos en la fórmula del Neto.",
+                           "semanas": [s_max["id"]]})
         aj = [s for s in ss if s["aj_det"]]
         if aj:
             ch.append({"nivel": "info", "titulo": f"Ajustes a mano en {len(aj)} semanas",
@@ -446,12 +476,12 @@ class Modelo:
             if any(m["k"] == "rev" for m in s["marcas"]):
                 avisos.append({"k": "rev", "semana": s["id"],
                                "t": f"{s['txt'][0].upper() + s['txt'][1:]}: {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)} sin explicar. Conviene aclararlo antes de repartir."})
-        if ten_al:
-            avisos.append({"k": "dudoso", "semana": None,
-                           "t": f"La tenencia de socios está cargada hasta el {dt.date.fromisoformat(ten_al):%d/%m}: lo posterior es una estimación."})
-        rep = [c for c in self.chequeos if c["titulo"].startswith("Cotización repetida")]
-        if rep:
-            avisos.append({"k": "dudoso", "semana": None, "t": rep[0]["titulo"] + ": ver «¿Le creo a estos números?»."})
+        # el resto de lo que hay que revisar va en una sola franja que lleva a «¿Le creo a estos números?»
+        otros = [c["titulo"] for c in self.chequeos if c["nivel"] == "revisar" and not c["titulo"].startswith("Semana ")]
+        if otros:
+            ej = " y ".join(x[0].lower() + x[1:] for x in otros[:2])
+            avisos.append({"k": "dudoso", "semana": None, "ancla": "creo",
+                           "t": f"{len(otros)} {'punto' if len(otros) == 1 else 'puntos'} para revisar en los datos, por ejemplo: {ej}."})
         return {
             "meta": {
                 "generado": generado, "corte": corte or ult["fin"], "ultima": ult["id"], "hojas": len(ss),

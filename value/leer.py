@@ -334,6 +334,14 @@ def leer_hoja(wsf, wsv, origen, anio):
             if isinstance(v, str) and re.search(r"no contar|revisar", v, re.I):
                 notas.append(f"{wsf.cell(r, c).coordinate}: {v.strip()}")
 
+    # referencias que calcula la planilla: 2 %, 1 % y 0,5 % en la columna A, con su monto en la B
+    refs = {}
+    for r in range(6, min(wsf.max_row, 40) + 1):
+        a, b = _num(wsv.cell(r, 1).value), _num(wsv.cell(r, 2).value)
+        if b is not None and a is not None and any(abs(a - x) < 1e-9 for x in (0.02, 0.01, 0.005)):
+            refs.setdefault(round(a, 3), b)
+    referencias = [refs[x] for x in (0.02, 0.01, 0.005)] if len(refs) == 3 else None
+
     chequeos = []
     for et in ("Dolares", "Pesos", "Euros", "Egresos", "Neto", "Bruto"):
         it = bloque.get(et)
@@ -351,7 +359,7 @@ def leer_hoja(wsf, wsv, origen, anio):
         "dias": (fin - ini).days + 1, "fila_suma": fs, "fila_moneda": fm, "cotizacion": cot, "eur_usd": eur,
         "cajas": cajas, "bloque": bloque, "aportes_neto": aportes, "coef_neto": coef_neto,
         "egresos_por_celda": egresos_por_celda, "por_fila": por_fila, "constantes": constantes, "notas": notas,
-        "errores_formula": errores, "chequeos": chequeos,
+        "errores_formula": errores, "chequeos": chequeos, "referencias": referencias,
     }
 
 
