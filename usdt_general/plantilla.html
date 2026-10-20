@@ -153,7 +153,7 @@ input[type="search"] { flex: 1 1 200px; min-width: 0; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
 th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--hair); }
 th { font-weight: 600; color: var(--ink-2); background: var(--surface-2); position: sticky; top: 0; }
-th:first-child, td:first-child { text-align: left; position: sticky; left: 0; z-index: 1; background: var(--surface); }
+th:first-child, td:first-child { text-align: left; position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--hair); }
 th:first-child { z-index: 2; background: var(--surface-2); }
 tr.tot td:first-child { background: var(--surface-2); }
 tr.tot td { font-weight: 700; background: var(--surface-2); }
@@ -519,13 +519,14 @@ function rInicio() {
     <div class="sec panel"><div class="sec-h"><h2>Precio de venta y de compra por mes</h2><span class="xs">$ por USDT</span></div><div id="g-pre" class="chart"></div>
       ${ley([["Venta", cssv("--venta")], ["Compra", cssv("--compra")]])}</div>
     <div class="sec"><div class="sec-h"><h2>Mes por mes</h2><span class="xs">USDT · libro: ${S.libro === "todo" ? "Todo" : nomLibro(S.libro)}</span></div>
-      <div class="tabla-w"><table><thead><tr><th>Mes</th><th>Estado</th><th>Ganancia</th>${S.libro === "todo" ? "<th>Principal</th><th>Coco</th>" : ""}<th>Margen</th><th>USDT vendidos</th>${S.libro === "todo" ? "<th>Vendidos Principal</th><th>Vendidos Coco</th>" : ""}<th>Precio venta</th><th>Precio compra</th><th>Diferencia</th></tr></thead>
+      <div class="tabla-w"><table><thead><tr><th>Mes</th><th>Estado</th><th>Ganancia</th>${S.libro === "todo" ? "<th>Principal</th><th>Coco</th>" : ""}<th>Margen</th><th>USDT vendidos</th>${S.libro === "todo" ? "<th>Vendidos Principal</th><th>Vendidos Coco</th>" : ""}<th>Pesos cobrados</th><th>Precio venta</th><th>Precio compra</th><th>Diferencia</th></tr></thead>
       <tbody>${MESES.map(m => { const x = met(m); if (!x) return ""; const g = l => m.libros[l] ? (m.libros[l].estado === "cerrado" ? n0(m.libros[l].ganancia) : "abierto") : "—";
-        return `<tr><td><button type="button" class="lnk" data-irmes="${m.clave}">${cap(m.larga)}</button></td><td><span class="chip ${x.estado === "cerrado" ? "ok" : "warn"}">${x.estado === "cerrado" ? "Cerrado" : "Abierto"}</span></td>
+        const resto = x.estado === "cerrado" && Math.abs(x.faltan_usdt || 0) >= 1;
+        return `<tr><td><button type="button" class="lnk" data-irmes="${m.clave}">${m.etiqueta}</button></td><td><span class="chip ${x.estado === "cerrado" ? "ok" : "warn"}">${x.estado === "cerrado" ? (resto ? "Cerrado con resto" : "Cerrado") : "Abierto"}</span></td>
         <td>${x.estado === "cerrado" ? n0(x.ganancia) : "—"}</td>${S.libro === "todo" ? `<td>${g("principal")}</td><td>${g("coco")}</td>` : ""}<td>${pct(x.margen)}</td><td>${n0(x.vendidos)}</td>
         ${S.libro === "todo" ? `<td>${m.libros.principal ? n0(m.libros.principal.vendidos) : "—"}</td><td>${m.libros.coco ? n0(m.libros.coco.vendidos) : "—"}</td>` : ""}
-        <td>${precio(x.precio_venta)}</td><td>${precio(x.precio_compra)}</td><td>${precio(x.dif_precio)}</td></tr>`; }).reverse().join("")}</tbody></table></div>
-      <p class="xs">La ganancia de esta tabla sale de sumar las operaciones. La de RESULTADO, con impuestos, gastos y reparto, está en la pestaña Reparto.</p></div>`;
+        <td>${pesos(x.cobrados)}</td><td>${precio(x.precio_venta)}</td><td>${precio(x.precio_compra)}</td><td>${precio(x.dif_precio)}</td></tr>`; }).reverse().join("")}</tbody></table></div>
+      <p class="xs">"Cerrado con resto": quedaron pocos pesos sin recomprar (menos de 50 USDT) y ya están sumados a la ganancia. La ganancia de esta tabla sale de sumar las operaciones. La de RESULTADO, con impuestos, gastos y reparto, está en la pestaña Reparto.</p></div>`;
   const cats = MESES.map(m => ({ c: m.etiqueta.replace(" 20", " "), l: cap(m.larga) }));
   const irMes = i => ir("mes", { mes: MESES[i].clave });
   barras($("#g-gan"), { cats, onClick: irMes,
@@ -691,13 +692,14 @@ function rReparto() {
       <div class="tabla-w"><table><thead><tr><th>Mes</th><th>Bruto (RESULTADO)</th><th>Bruto según operaciones</th><th>Impuestos</th><th>Gastos</th><th>Neto</th>${socios.map(s => `<th>${esc(s)}</th>`).join("")}${socios.map(s => `<th>Retiro ${esc(s)}</th>`).join("")}</tr></thead>
       <tbody>${ms.map(x => filaT(x)).join("")}${filaT(sumaB(ms), true)}</tbody></table></div></div>`; }).join("")}
     ${coco ? `<div class="sec"><div class="sec-h"><h2>Libro Coco y referente ${coco.anio}</h2>${btnAyuda("referente")}<span class="xs">USDT</span></div>
-      <div class="tabla-w"><table><thead><tr><th>Mes</th><th>Bruto</th><th>Bruto según operaciones</th><th>Impuestos</th><th>Gastos</th><th>Neto</th><th>Parte USDT General</th><th>Referente (RESULTADO)</th><th>Referente devengado</th><th>Pagado al referente</th></tr></thead>
+      <div class="tabla-w"><table><thead><tr><th>Mes</th><th>Bruto</th><th>Bruto según operaciones</th><th>Impuestos</th><th>Gastos</th><th>Neto</th><th>Parte USDT General</th><th>Referente (RESULTADO)</th><th>Referente devengado</th><th>Pagado al referente</th><th>Ventas Coco a clientes del referente</th></tr></thead>
       <tbody>${coco.meses.filter(x => x.bruto || x.con_hoja).map(x => { const r = D.referente.find(y => y.clave === x.clave) || {}; return `<tr><td>${cap(x.etiqueta)}</td><td>${n2(x.bruto)}</td>
         <td class="${x.bruto_recalc != null && Math.abs(x.bruto_recalc - x.bruto) >= 2 ? "dif" : ""}">${x.bruto_recalc == null ? (x.estado === "abierto" ? '<span class="chip warn">abierto</span>' : "—") : n0(x.bruto_recalc)}</td>
         <td>${n2(x.impuestos)}</td><td>${n2(x.gastos)}</td><td class="${Math.abs(x.neto - x.neto_formula) >= 0.5 ? "dif" : ""}">${n2(x.neto)}</td><td>${n2(x.partes[0])}</td><td>${n2(x.partes[1])}</td>
-        <td class="${r.devengado != null && Math.abs(r.devengado - x.partes[1]) >= 1 ? "dif" : ""}">${n2(r.devengado)}</td><td>${n2(x.retiros[1])}</td></tr>`; }).join("")}
+        <td class="${r.devengado != null && Math.abs(r.devengado - x.partes[1]) >= 1 ? "dif" : ""}">${n2(r.devengado)}</td><td>${n2(x.retiros[1])}</td><td>${(() => { const cs = D.canales[`${x.clave}|coco|V`] || [], t = cs.reduce((a, c) => a + c[1], 0), rf = cs.filter(c => /referente/i.test(c[0])).reduce((a, c) => a + c[1], 0); return t ? pct(rf / t, 0) : "—"; })()}</td></tr>`; }).join("")}
         <tr class="tot"><td>Total</td>${["bruto"].map(k => `<td>${n2(tot(coco.meses, x => x[k]))}</td>`).join("")}<td></td><td>${n2(tot(coco.meses, x => x.impuestos))}</td><td>${n2(tot(coco.meses, x => x.gastos))}</td><td>${n2(tot(coco.meses, x => x.neto))}</td>
-        <td>${n2(tot(coco.meses, x => x.partes[0]))}</td><td>${n2(tot(coco.meses, x => x.partes[1]))}</td><td>${n2(D.referente.reduce((a, r) => a + (r.devengado || 0), 0))}</td><td>${n2(tot(coco.meses, x => x.retiros[1]))}</td></tr></tbody></table></div>
+        <td>${n2(tot(coco.meses, x => x.partes[0]))}</td><td>${n2(tot(coco.meses, x => x.partes[1]))}</td><td>${n2(D.referente.reduce((a, r) => a + (r.devengado || 0), 0))}</td><td>${n2(tot(coco.meses, x => x.retiros[1]))}</td><td></td></tr></tbody></table></div>
+      <p class="xs">El libro Coco no son solo clientes del referente: la última columna muestra qué parte de sus USDT vendidos fue a esos clientes.</p>
       ${(() => { const b = tot(coco.meses, x => x.bruto), u = tot(coco.meses, x => x.partes[0]), r = tot(coco.meses, x => x.partes[1]), dv = D.referente.reduce((a, x) => a + (x.devengado || 0), 0), pg = tot(coco.meses, x => x.retiros[1]), ig = tot(coco.meses, x => x.impuestos + x.gastos);
         return b ? `<div class="panel small cuenta">
           <div class="r"><span>De la ganancia bruta del libro Coco (${n0(b)} USDT)</span><span></span></div>
@@ -706,13 +708,16 @@ function rReparto() {
           <div class="r"><span class="m">Impuestos y gastos (RESULTADO)</span><span>${n2(ig)} · ${pct(ig / b, 0)}</span></div>
           ${Math.abs(b - u - r - ig) >= 0.5 ? `<div class="r"><span class="m" style="color:var(--crit-ink)">Las partes repartidas suman ${n2(u + r + ig - b)} de más: un NETO que no resta los gastos (ver Diferencias para revisar)</span><span></span></div>` : ""}
           <div class="r tot"><span>Saldo con el referente según RESULTADO</span><span>${n2(r - pg)}</span></div>
-          <p class="xs">${r - pg < 0 ? "Negativo: se le pagó un poco más de lo que figura." : ""} El devengado de la hoja CLIENTES MARIANO (${n2(dv)}) es mayor porque incluye sus ventas cargadas en el libro principal; en agosto, parte se le pagó desde ese libro y no figura en RESULTADO. La hoja CLIENTES MARIANO llega hasta el ${fechaL(D.meta.ultimo_referente || "")}: lo posterior todavía no está calculado.</p></div>` : ""; })()}</div>` : ""}`;
+          <div class="r"><span class="m">Devengado según CLIENTES MARIANO (hasta el ${fechaL(D.meta.ultimo_referente || "")}, los dos libros)</span><span>${n2(dv)}</span></div>
+          <div class="r"><span class="m">Pagado según RESULTADO</span><span>${n2(pg)}</span></div>
+          <div class="r tot"><span>Devengado menos pagado</span><span>${n2(dv - pg)}</span></div>
+          <p class="xs">${r - pg < 0 ? "El saldo según RESULTADO es negativo: se le pagó un poco más de lo que figura en esa hoja. " : ""}La diferencia entre devengado y pagado (${n2(dv - pg)}) es lo máximo que se le podría deber hasta el ${fechaL(D.meta.ultimo_referente || "")}: incluye sus ventas cargadas en el libro principal, y una parte se le pagó desde ese libro (nota de agosto en la hoja CLIENTES MARIANO) sin quedar en RESULTADO. Lo vendido después de esa fecha todavía no está en la hoja. Al referente no le toca la mitad de la ganancia del libro: le toca la mitad de un margen fijo de $30 (o $25) por USDT en sus propias ventas.</p></div>` : ""; })()}</div>` : ""}`;
   $("#sel-rep").onchange = e => { S.repMes = e.target.value; rReparto(); };
 }
 
 /* ---------- Operaciones ---------- */
 const AV_TXT = { incompleta: "Pesos sin USDT", usdt_del_id: "USDT en la columna del ID", sin_formula_neto: "Sin fórmula de USDT neto", fecha_corregida: "Fecha corregida",
-  sin_fecha: "Sin fecha", precio_raro: "Precio raro", bloque_repetido: "Bloque repetido", dos_libros: "En los dos libros", dia_cargado: "Día con muchas filas" };
+  sin_fecha: "Sin fecha", precio_raro: "Precio raro", bloque_repetido: "Bloque repetido", dos_libros: "Posible: en los dos libros", dia_cargado: "Día con muchas filas" };
 function avisosDe(i) { const b = D.ops.av[i]; return D.avisos.filter((a, k) => b & (1 << k)); }
 function parseMonto(q) {
   let s = q.trim().toLowerCase().replace(/\s|\$|usdt/g, ""); let mult = 1;

@@ -18,7 +18,9 @@ registro/
   tablero_v2.py                  tablero v2: contrato JSON, alertas, chequeos de control y notas
   tablero_v2_plantilla.html      interfaz del tablero v2 (sin datos)
   actualizacion.py               plan de archivos, fecha de corte, notas y publicación (lo usa actualizar.py)
+usdt_general/                    tablero del libro "Registro - USDT General" (leer.py, tablero.py, plantilla.html)
 docs/
+  registro_usdt_general.md       cómo funciona el libro de USDT General
   contexto_negocio.md            cómo funciona el negocio y la planilla
   metodologia.md                 cómo se calcula cada número y sus límites
   tablero_v2_spec.md             especificación del tablero v2 y del flujo semanal
@@ -85,6 +87,24 @@ Opciones:
 | `--excluir-hoja "DDMM - DDMM"` | Todavía no disponible |
 
 El detalle de cada módulo, alerta y chequeo del v2 está en `docs/tablero_v2_spec.md`.
+
+## Tablero USDT General (otro Excel)
+
+El libro "Registro - USDT General" (la mesa que compra y vende USDT contra pesos) tiene su propio tablero, en
+`usdt_general/`. La lógica de la planilla está en `docs/registro_usdt_general.md`.
+
+```bash
+python3 -m usdt_general.tablero datos/<archivo>.xlsx    # sin archivo: el .xlsx más reciente de datos/ con hojas "Registro USDT General"
+```
+
+- Escribe `salidas/usdt_general/tablero_usdt.html` (autocontenido, sin librerías externas) y `datos.json`, y muestra en la
+  consola los chequeos de control. Ninguno de los dos archivos se versiona.
+- Para actualizar: copiar el Excel nuevo a `datos/`, correr el comando y republicar el HTML en el mismo Artifact.
+- Recalcula todo desde las filas de cada hoja mensual (no copia los totales de la fila 2). El mes es la hoja; un mes está
+  cerrado cuando los pesos sin recomprar valen menos de 50 USDT al precio de compra. Los saldos de los socios salen de
+  RESULTADO y las diferencias con el recálculo se muestran como "para revisar", sin cambiar esos saldos.
+- Pestañas: Inicio (último mes cerrado, mes en curso, saldos, evolución mensual), Mes (detalle por día, canales y
+  cuentas), Reparto (RESULTADO, diferencias, libro Coco y referente), Operaciones (búsqueda) y Control (chequeos de carga).
 
 ## Uso de `correr.py` (paso a paso)
 
