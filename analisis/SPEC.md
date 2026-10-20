@@ -78,7 +78,7 @@ Notación: *t* = hoja semanal (orden cronológico); *t−1* = la hoja inmediatam
 | **Egresos del negocio** `gas(t)` | Gastos, comisiones pagadas, intereses a inversores e inversión de la semana | `egr(t) − ret_dentro_de_egresos(t)`, desglosado por tipo según el coeficiente de cada columna en la fórmula de Egresos (GASTOS y FIJOS → Gastos; COMISIONES; INTERESES menos lo reclasificado como retiro; INVERSION) |
 | **Antes de gastos** | Lo que dejó la operación antes de pagar gastos, comisiones, intereses e inversión | `gan(t) + gas(t)` (con o sin ajustes según el interruptor) |
 | **Por semana** | Para comparar semanas de distinto largo | valor ÷ (`d(t)` ÷ 7). Solo cambia la hoja doble |
-| **Semana típica** | Referencia para decir si una semana estuvo arriba o abajo de lo habitual | Mediana de la ganancia por semana (sin ajustes) de las **8 hojas anteriores** a la semana foco. La línea del gráfico de ganancia se llama "mediana" (es la del período y sigue los interruptores) para no confundirlas |
+| **Semana típica** | Referencia para decir si una semana estuvo arriba o abajo de lo habitual | Mediana de la misma medida que se muestra (ganancia o antes de gastos, con o sin ajustes, por semana) de las **8 hojas anteriores** a cada semana (con al menos 3). La tarjeta compara la semana foco contra la suya; el gráfico semanal la dibuja como línea escalonada. Es una sola definición |
 
 Control: `gan_con_ajustes(t) + gas(t)` = Ganancia Bruta de la planilla + retiros que no están en Egresos. El auditor lo
 verifica semana por semana.
@@ -130,8 +130,10 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
   muestra con su fecha; **no** se proyecta como Neto × %.
 - **Parte de la ganancia del período** = ganancia del período (según el interruptor de ajustes) × % del socio.
   Responde "¿cuánto gané yo desde tal fecha?". Se avisa que los % suman 100,01 %.
-- **Capital estimado a la última semana** = capital de la Tenencia + % × ganancia con ajustes de las semanas
-  posteriores al cierre de la Tenencia. No descuenta dividendos pagados después (no hay registrados).
+- **Capital estimado a la última semana** = capital de la Tenencia + % × ganancia con ajustes de las semanas cuyo mes
+  (regla del jueves) es posterior al último mes de la Tenencia (hoy, desde 29 jun–5 jul). No descuenta dividendos
+  pagados después (no hay registrados). Su total difiere del patrimonio en lo que la Tenencia descontó por su cuenta;
+  la diferencia se muestra.
 - **Dividendo según la regla de la Tenencia** = 10 % de la ganancia **sin ajustes** de cada mes posterior al último
   cierre de Tenencia (un mes con pérdida no reparte). Los ajustes a mano de esos meses (ganancia de USDT General de
   otros meses cargada de golpe) van en una fila aparte con su 10 %. Rotulado "lo que daría la regla, no lo que se
@@ -175,8 +177,9 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
 2. **Ganancia**
    - Cortes propios: [Por semana | Por mes] y [Después de gastos | Antes de gastos].
    - Barras con base en 0 (un solo color; negativas hacia abajo). Ajuste ◆ como segmento claro apilado (solo con
-     "Con ajustes"; con "Sin ajustes" queda el ícono). Semana doble con doble ancho y alto por semana. Línea fina en la
-     mediana del período ("semana típica"). Mes en curso solo con contorno.
+     "Con ajustes"; con "Sin ajustes" queda el ícono). Semana doble con doble ancho y alto por semana. Línea escalonada
+     con la semana típica (3.2). Mes en curso solo con contorno. Meses con semanas a revisar: contorno punteado y "?".
+   - Promedios "por mes" (rendimiento, gastos): total ÷ (semanas × 12 ÷ 52), nunca por meses calendario.
    - Encabezado de la sección: "En el período: X (Y por semana, N semanas)".
    - **¿De dónde salió el crecimiento del período?** Cascada: patrimonio al inicio + operación antes de gastos − gastos
      (semanas normales) + semanas a revisar + ajustes a mano − retiros = patrimonio al final; rendimiento de la operación
@@ -203,7 +206,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
 
 5. **Socios**
    - Barra de tenencia (4 segmentos) y tabla: socio · % · aporte · capital al 30/06 · parte de la ganancia del período.
-   - "Meses sin repartir": mes · ganancia (con ajustes) · 10 % según la regla · por socio.
+   - "Dividendos sin repartir": total a repartir por socio arriba (y cuánto sale de semanas a revisar); tabla mes ·
+     10 % según la regla · ganancia sin ajustes · por socio, con una fila aparte para los ajustes a mano (3.5).
    - Retiros registrados: fecha, monto, detalle, "a confirmar" cuando corresponde.
 
 6. **Todas las semanas**: tabla (la más nueva arriba): semana · patrimonio · ganancia · antes de gastos · gastos ·
@@ -238,7 +242,7 @@ dólar; lo operado (volumen pegado a mano) contra las referencias 2 % / 1 % / 0,
 | ⧉ Dos semanas | La hoja abarca 14 días | `d(t) = 14` |
 | ▼ Retiro de socios | Hubo retiros | `ret(t) > 0` |
 | ⚠ Dato dudoso | Cotización igual a la de la hoja anterior, columna sin título, valores que no entran en la fórmula, nota "NO CONTAR"/"REVISAR" en el bloque | Chequeos automáticos |
-| • Gastos grandes | Semana de costos fijos | gastos ≥ `config.value.umbral_gastos_grandes` (5.000) |
+| • Gastos grandes | Semana de costos fijos | columnas GASTOS + FIJOS de la semana ≥ `config.value.umbral_gastos_grandes` (5.000) |
 
 Cada marca va con ícono y palabra, nunca solo color. Color de estado (`--warn`) solo para ? y ⚠.
 
@@ -302,7 +306,7 @@ Cambio, TRX, Garantías, Semana doble, Semana típica, Lo operado (Volumen Prom)
 |---|---|---|---|
 | D1 | Qué es "ganancia" | Variación del patrimonio + retiros − ajustes a mano | Así arma la ganancia el Value CG (suma de vuelta los dividendos). Sin sacar los ajustes, la semana del 18/10 parece la mejor desde agosto (riesgo 1, crítico) |
 | D2 | **Ajustes por defecto** (viz: con; usuario y riesgos: sin) | **Sin ajustes** por defecto, con el ajuste siempre visible (ícono ◆ y renglón en la cuenta de la semana) y el interruptor para incluirlo | El error más caro es repartir dividendos sobre una ganancia inflada. "Con ajustes" queda a un toque y la tabla trae la ganancia según la planilla para conciliar |
-| D3 | **Mes de cada semana** (datos/viz/negocio: jueves; riesgos: domingo) | Mes del jueves | Reproduce exacto los meses cerrados del Value CG |
+| D3 | **Mes de cada semana** (datos/viz/negocio: jueves; riesgos: domingo) | Mes del jueves | Agrupa las mismas semanas que los meses cerrados del Value CG (los montos difieren solo por los retiros que el Value CG no sumó; ver 3.3) |
 | D4 | **Veredicto por volumen** (usuario lo pide; datos y riesgos dicen que el volumen es poco confiable) | Sin veredicto en la primera pantalla: se compara con la semana típica. El volumen y las referencias del dueño (2 / 1 / 0,5 %) se muestran en el detalle, rotulados "cargado a mano" | El volumen está copiado en varias hojas y solo existe en la Calculadora desde mayo; un veredicto sobre él daría una conclusión falsa con aspecto de precisa |
 | D5 | **Agrupar el patrimonio** (viz: 6 grupos; usuario: 4 partes; riesgos: por naturaleza) | 7 grupos por caja para la foto y 3 (Disponible · Proyectos · Cargado a mano) para la evolución y la tarjeta | Cubre las tres miradas: dónde está cada peso y cuánto es plata disponible |
 | D6 | **Semanas sin explicar** (usuario: sacarlas del promedio; viz: marcarlas; riesgos: mostrar ambas cifras) | Se marcan con ? y se incluyen en los totales; "Cómo venimos" muestra los tramos con y sin ellas; la semana típica usa mediana | No se puede afirmar que no sean ganancia; tampoco que lo sean |
@@ -324,6 +328,12 @@ las hojas sin fila de monedas, el chequeo de renglones corridos y los textos que
 usuario de prueba: cascada del período (P4), capital estimado y totales en socios (P5), dividendos sin ajustes,
 bloques de Proyectos y USDT General, tabla de semanas ordenable, tablas con primera columna fija en el celular, panel
 de semana que entra en 390 px, filtros fuera del encabezado fijo y los chequeos técnicos en un desplegable aparte.
+
+**Cambios después de la segunda verificación.** El capital estimado de los socios ahora cuenta desde la primera semana
+de julio (29 jun–5 jul); el rendimiento conserva el signo; los promedios por mes usan semanas × 12 ÷ 52; la semana
+típica es una sola (tarjeta y gráfico); los meses con semanas a revisar se marcan; la ⚠ de columna sin título, la
+celda con error y la hoja repetida aparecen en el control de cada semana; los gráficos muestran solo las marcas
+principales (? ◆ ▼ ⧉) y los datos dudosos quedan en la tabla y en el detalle.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de

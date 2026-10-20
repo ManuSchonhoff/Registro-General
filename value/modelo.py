@@ -103,7 +103,8 @@ class Modelo:
                 if n is None:
                     n = f"SIN NOMBRE ({c['col']})"
             g = self.grupo_de.get(n, "otros")
-            moneda = c["moneda"] or self.moneda_de.get(n) or ("USD" if g in ("proyectos", "flujos") else None)
+            moneda = c["moneda"] or self.moneda_de.get(n) or {"pesos": "ARS", "billete": "USD", "cripto": "USD", "proyectos": "USD",
+                                                              "flujos": "USD"}.get(g)
             cols[c["col"]] = dict(c, n=n, g=g, heredado=heredado, moneda=moneda)
         return cols
 
@@ -202,9 +203,10 @@ class Modelo:
 
             # cajas para el detalle
             lista = []
+            en_neto = {re.match(r"([A-Z]+)", x).group(1) for x in h["aportes_neto"]}
             for col, c in cols.items():
                 n = c["n"]
-                usd = caja_usd.get(n, 0.0) if col in {re.match(r"([A-Z]+)", x).group(1) for x in h["aportes_neto"]} else None
+                usd = caja_usd.get(n, 0.0) if col in en_neto and (c["con_suma"] or c["g"] == "flujos") else None
                 lista.append({
                     "n": n, "col": col, "g": c["g"], "mon": c["moneda"], "s": r2(c["saldo"]), "p": r2(c["pendiente"]),
                     "t": r2(c["total"]), "usd": r2(usd) if usd is not None else None,
@@ -269,7 +271,7 @@ class Modelo:
                 m.append({"k": "ret", "t": f"Retiros de socios por USD {fmt_usd(s['ret'])}: {det}. No es una pérdida: se suman de vuelta a la ganancia."})
             if s["aj_det"]:
                 det = "; ".join(f"{'USDT General' if a['grupo'] == 'usdt_general' else 'Deuda a cobrar' if a['grupo'] == 'deuda' else a['renglon']} {'+' if a['monto'] > 0 else ''}{fmt_usd(a['monto'])}" for a in s["aj_det"])
-                m.append({"k": "aj", "t": f"Ajuste a mano de un valor fijo del bloque: {det}. Se muestra aparte de la ganancia de la semana."})
+                m.append({"k": "aj", "t": f"Cambió lo cargado a mano en la planilla: {det}. Se muestra aparte de la ganancia de la semana."})
             z = None if s["por_semana"] is None else (s["por_semana"] - med) / mad
             if s["a_revisar"]:
                 m.append({"k": "rev", "t": s["a_revisar"]})
@@ -278,7 +280,11 @@ class Modelo:
             dud = []
             if i > 0 and cots[i] is not None and cots[i] == cots[i - 1]:
                 dud.append(f"cotización igual a la de la semana anterior ($ {cots[i]:,.0f})".replace(",", "."))
-            if any(c["heredado"] for c in s["cajas"]) and not (i > 0 and any(c["heredado"] for c in self.semanas[i - 1]["cajas"])):
+            if s.get("gan_planilla_error"):
+                dud.append(f"la celda de ganancia de la planilla da {s['gan_planilla_error']} (se recalculó contra la semana anterior)")
+            if len(getattr(self, "archivos_por_hoja", {}).get(s["hoja"], [])) > 1:
+                dud.append(f"la hoja está en {len(self.archivos_por_hoja[s['hoja']])} archivos (se usó el más nuevo)")
+            if any(c["heredado"] for c in s["cajas"]):
                 dud.append("una columna sin título (se tomó el nombre de la hoja anterior: " + ", ".join(c["n"] for c in s["cajas"] if c["heredado"]) + ")")
             if s.get("_sin_suma"):
                 dud.append("valores que no entran en la fórmula: " + ", ".join(s["_sin_suma"]))
@@ -435,17 +441,17 @@ class Modelo:
         avisos = []
         if ult["aj_det"]:
             avisos.append({"k": "aj", "semana": ult["id"],
-                           "t": f"La última semana incluye USD {fmt_usd(ult['aj'])} de ajuste a mano. Sin eso, la semana dio USD {fmt_usd(ult['gan'])}."})
+                           "t": f"La última semana incluye USD {fmt_usd(ult['aj'])} de ajuste a mano (USDT General de meses anteriores). Sin eso dio USD {fmt_usd(ult['gan'])}."})
         for s in reversed(ss):
             if any(m["k"] == "rev" for m in s["marcas"]):
                 avisos.append({"k": "rev", "semana": s["id"],
-                               "t": f"{s['txt'][0].upper() + s['txt'][1:]}: {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)} a revisar. " + next(m["t"] for m in s["marcas"] if m["k"] == "rev")})
+                               "t": f"{s['txt'][0].upper() + s['txt'][1:]}: {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)} sin explicar. Conviene aclararlo antes de repartir."})
         if ten_al:
             avisos.append({"k": "dudoso", "semana": None,
-                           "t": f"La tenencia de socios está cargada hasta el {dt.date.fromisoformat(ten_al):%d/%m}: lo de cada socio después de esa fecha es una estimación."})
+                           "t": f"La tenencia de socios está cargada hasta el {dt.date.fromisoformat(ten_al):%d/%m}: lo posterior es una estimación."})
         rep = [c for c in self.chequeos if c["titulo"].startswith("Cotización repetida")]
         if rep:
-            avisos.append({"k": "dudoso", "semana": rep[0]["semanas"][-1], "t": rep[0]["titulo"] + ". " + rep[0]["texto"]})
+            avisos.append({"k": "dudoso", "semana": None, "t": rep[0]["titulo"] + ": ver «¿Le creo a estos números?»."})
         return {
             "meta": {
                 "generado": generado, "corte": corte or ult["fin"], "ultima": ult["id"], "hojas": len(ss),
