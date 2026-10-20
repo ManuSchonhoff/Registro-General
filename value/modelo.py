@@ -295,9 +295,10 @@ class Modelo:
                 m.append({"k": "rev", "t": s["a_revisar"]})
             elif z is not None and abs(z) > umbral:
                 m.append({"k": "rev", "t": f"Ganancia de USD {fmt_usd(s['gan'])}, muy lejos de lo habitual (mediana USD {fmt_usd(med)} por semana) y sin explicación cargada."})
-            dud = []
+            dud, afecta = [], False
             if i > 0 and cots[i] is not None and cots[i] == cots[i - 1]:
                 dud.append(f"cotización igual a la de la semana anterior ($ {cots[i]:,.0f})".replace(",", "."))
+                afecta = True
             if s.get("gan_planilla_error"):
                 dud.append(f"la celda de ganancia de la planilla da error ({s['gan_planilla_error']}); el tablero la calcula con el patrimonio de las dos semanas, así que el número está bien")
             if len(getattr(self, "archivos_por_hoja", {}).get(s["hoja"], [])) > 1:
@@ -306,12 +307,15 @@ class Modelo:
                 dud.append("una columna no tiene título y se le puso el de la hoja anterior (" + ", ".join(c["n"].capitalize() for c in s["cajas"] if c["heredado"]) + "): conviene ponérselo en la planilla")
             if s.get("_sin_suma"):
                 dud.append("valores que no entran en la fórmula: " + ", ".join(s["_sin_suma"]))
+                afecta = True
             if s.get("_criterio"):
                 dud.append("; ".join(s["_criterio"]))
+                afecta = True
             if s["notas"]:
                 dud.append("notas en la hoja: " + "; ".join(s["notas"]))
+                afecta = True
             if dud:
-                m.append({"k": "dudoso", "t": "Para revisar: " + "; ".join(dud) + "."})
+                m.append({"k": "dudoso", "afecta": afecta, "t": "Para revisar: " + "; ".join(dud) + "."})
             if (s["gas_det"]["gastos"] or 0) >= self.cfg.get("umbral_gastos_grandes", 5000):
                 m.append({"k": "gastos", "t": f"Semana de costos fijos: se pagaron USD {fmt_usd(s['gas_det']['gastos'])} de gastos. Conviene mirar el mes completo."})
             s["marcas"] = m
@@ -481,7 +485,7 @@ class Modelo:
         if otros:
             ej = " y ".join(x[0].lower() + x[1:] for x in otros[:2])
             avisos.append({"k": "dudoso", "semana": None, "ancla": "creo",
-                           "t": f"{len(otros)} {'punto' if len(otros) == 1 else 'puntos'} para revisar en los datos, por ejemplo: {ej}."})
+                           "t": f"Además, {len(otros)} {'punto' if len(otros) == 1 else 'puntos'} para revisar en los datos, por ejemplo: {ej}."})
         return {
             "meta": {
                 "generado": generado, "corte": corte or ult["fin"], "ultima": ult["id"], "hojas": len(ss),
