@@ -248,6 +248,7 @@ def leer_hoja(wsf, wsv, origen, anio):
             "saldo": saldo or 0.0,
             "pendiente": pend or 0.0,
             "total": (saldo or 0.0) + (pend or 0.0),
+            "con_suma": bool(fs and isinstance(wsf.cell(fs, c).value, str) and wsf.cell(fs, c).value.startswith("=")),
         })
 
     # bloque de cálculo: etiquetas de la columna A desde la fila 6
@@ -294,17 +295,22 @@ def leer_hoja(wsf, wsv, origen, anio):
         if "lin" in it:
             it["calculado"] = val(it["lin"])
 
-    # aporte de cada caja al Neto (y al Bruto) en USD; las constantes (Deuda, USDT) quedan como filas propias
+    # aporte de cada celda de caja al Neto, en USD (clave: celda, p. ej. "D2"); las constantes (Deuda, USDT) aparte
     neto = bloque.get("Neto", {})
-    aportes = {}
-    if "lin" in neto:
-        for x, coef in neto["lin"].items():
+
+    def aportes_de(lin):
+        r = {}
+        for x, coef in (lin or {}).items():
             if x == "":
                 continue
-            col = re.match(r"([A-Z]+)", x).group(1)
-            v = _num(wsv[x].value) or 0.0
-            aportes[col] = aportes.get(col, 0.0) + coef * v
-    # filas del bloque que suman al Neto (por fila): se arma desde la fórmula del Neto (SUM sobre la columna B)
+            r[x] = r.get(x, 0.0) + coef * (_num(wsv[x].value) or 0.0)
+        return r
+
+    aportes = aportes_de(neto.get("lin"))
+    coef_neto = {x: c for x, c in (neto.get("lin") or {}).items() if x}
+    # egresos por celda (positivos): lo que el renglón "Egresos" resta de cada columna
+    egresos_por_celda = {x: -v for x, v in aportes_de(bloque.get("Egresos", {}).get("lin")).items()}
+    # filas del bloque que suman al Neto: se arma desde la fórmula del Neto (SUM sobre la columna B)
     filas_neto = []
     if neto.get("formula"):
         for rango in re.findall(r"B(\d+):B(\d+)|B(\d+)", neto["formula"]):
@@ -312,25 +318,39 @@ def leer_hoja(wsf, wsv, origen, anio):
                 filas_neto += list(range(int(rango[0]), int(rango[1]) + 1))
             else:
                 filas_neto.append(int(rango[2]))
-    por_fila = {}
+    por_fila, constantes = {}, {}
     for et, it in bloque.items():
         if it["fila"] in filas_neto and "calculado" in it:
             por_fila[et] = it["calculado"]
+            c = it["lin"].get("", 0.0)
+            if abs(c) > 1e-9:
+                constantes[et] = c
+
+    # notas que contradicen la fórmula ("NO CONTAR", "REVISAR") en el bloque
+    notas = []
+    for r in range(6, min(wsf.max_row, 40) + 1):
+        for c in range(3, min(wsf.max_column, 14) + 1):
+            v = wsf.cell(r, c).value
+            if isinstance(v, str) and re.search(r"no contar|revisar", v, re.I):
+                notas.append(f"{wsf.cell(r, c).coordinate}: {v.strip()}")
 
     chequeos = []
     for et in ("Dolares", "Pesos", "Euros", "Egresos", "Neto", "Bruto"):
         it = bloque.get(et)
         if it and "calculado" in it and it["guardado"] is not None and abs(it["calculado"] - it["guardado"]) > TOL:
             chequeos.append(f"{et}: recalculado {it['calculado']:.2f} ≠ guardado {it['guardado']:.2f}")
-    if "Neto" in bloque and "calculado" in bloque["Neto"] and aportes:
+    if "Neto" in bloque and "calculado" in bloque["Neto"]:
         const = bloque["Neto"]["lin"].get("", 0.0)
         if abs(sum(aportes.values()) + const - bloque["Neto"]["calculado"]) > TOL:
             chequeos.append("los aportes por caja no suman el Neto")
+        if abs(sum(constantes.values()) - const) > TOL:
+            chequeos.append("las constantes por renglón no suman las del Neto")
 
     return {
         "hoja": wsf.title, "origen": os.path.basename(origen), "inicio": ini, "fin": fin, "sufijo": sufijo,
         "dias": (fin - ini).days + 1, "fila_suma": fs, "fila_moneda": fm, "cotizacion": cot, "eur_usd": eur,
-        "cajas": cajas, "bloque": bloque, "aportes_neto": aportes, "por_fila": por_fila,
+        "cajas": cajas, "bloque": bloque, "aportes_neto": aportes, "coef_neto": coef_neto,
+        "egresos_por_celda": egresos_por_celda, "por_fila": por_fila, "constantes": constantes, "notas": notas,
         "errores_formula": errores, "chequeos": chequeos,
     }
 
@@ -351,3 +371,41 @@ def leer_carpeta(carpeta, anio=2026):
     hojas = [leer_hoja(ws, wsv, p, anio) for p, ws, wsv in elegidas.values()]
     hojas.sort(key=lambda h: h["inicio"])
     return hojas, archivos, libros
+
+
+def leer_tenencia(libros, socios):
+    """Capital de cada socio en la hoja Tenencia del Value CG: última fila con número en la columna de cada socio.
+    Devuelve {"capital": {socio: monto}, "etiqueta": texto de la fila, "mes": último mes nombrado, "archivo": ...} o None."""
+    for p, (wf, wv) in sorted(libros.items(), reverse=True):
+        if "Tenencia" not in wf.sheetnames:
+            continue
+        ws, v = wf["Tenencia"], wv["Tenencia"]
+        cols = {}
+        for r in range(1, 5):
+            for c in range(1, ws.max_column + 1):
+                t = ws.cell(r, c).value
+                if isinstance(t, str):
+                    for s in socios:
+                        if t.strip().lower().startswith(s.lower()) and "(" in t:
+                            cols[s] = c
+        if len(cols) != len(socios):
+            continue
+        ultima = None
+        for r in range(1, ws.max_row + 1):
+            if all(_num(v.cell(r, c).value) is not None for c in cols.values()):
+                ultima = r
+        if ultima is None:
+            return None
+        col_et = min(cols.values()) - 3          # la columna de etiquetas ("Junio", "Dividendos") está antes del capital
+        meses = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
+                 "noviembre", "diciembre")
+        mes = None
+        for r in range(ultima, 0, -1):
+            t = ws.cell(r, col_et).value
+            if isinstance(t, str) and t.strip().lower() in meses:
+                mes = meses.index(t.strip().lower()) + 1
+                break
+        return {"capital": {s: _num(v.cell(ultima, c).value) for s, c in cols.items()},
+                "etiqueta": str(ws.cell(ultima, col_et).value or "").strip(), "mes": mes, "fila": ultima,
+                "archivo": os.path.basename(p)}
+    return None

@@ -1,0 +1,1113 @@
+<title>Value Cambio General</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<style>
+/* Una página que se recorre de arriba abajo: resumen, porqué, consulta. Encabezado fijo con la semana foco y los filtros.
+   Misma familia que el Tablero semanal del Registro: tinta para la interfaz, color solo para datos y estados. */
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3; --surface: #fdfdfc; --surface-2: #efeee9;
+  --ink: #121211; --ink-2: #4f4e4a; --ink-3: #6b6a65;
+  --hair: #e3e2db; --axis: #c3c2b7; --focus: #2a78d6;
+  --dato: #848fa3; --dato-foco: #2f4466; --dato-suave: rgba(132,143,163,.38); --area: rgba(47,68,102,.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #199e70;
+  --warn: #8a5a00; --warn-bg: rgba(250,178,25,.14); --ok: #006300; --ok-bg: rgba(12,163,12,.10);
+  --info-bg: rgba(42,120,214,.08); --velo: rgba(18,18,17,.38); --sombra: rgba(18,18,17,.12);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --head-h: 52px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f0f0e; --surface: #1a1a19; --surface-2: #232321;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a3a29b;
+    --hair: #2c2c2a; --axis: #45453f; --focus: #5b9be6;
+    --dato: #6b7890; --dato-foco: #c9d6ea; --dato-suave: rgba(107,120,144,.45); --area: rgba(201,214,234,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --warn: #fab219; --warn-bg: rgba(250,178,25,.14); --ok: #0ca30c; --ok-bg: rgba(12,163,12,.14);
+    --info-bg: rgba(91,155,230,.12); --velo: rgba(0,0,0,.6); --sombra: rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f0f0e; --surface: #1a1a19; --surface-2: #232321;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a3a29b;
+  --hair: #2c2c2a; --axis: #45453f; --focus: #5b9be6;
+  --dato: #6b7890; --dato-foco: #c9d6ea; --dato-suave: rgba(107,120,144,.45); --area: rgba(201,214,234,.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --warn: #fab219; --warn-bg: rgba(250,178,25,.14); --ok: #0ca30c; --ok-bg: rgba(12,163,12,.14);
+  --info-bg: rgba(91,155,230,.12); --velo: rgba(0,0,0,.6); --sombra: rgba(0,0,0,.45);
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + var(--head-h) + 52px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font); }
+body.panel-abierto { overflow: hidden; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.in { max-width: 1160px; margin: 0 auto; min-width: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.neg { white-space: nowrap; }
+
+/* Encabezado */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--hair); }
+.top-1 { min-height: var(--head-h); display: flex; align-items: center; gap: 8px; }
+.top h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+.top h1 span { color: var(--ink-3); font-weight: 500; }
+.sp { flex: 1; }
+.chip-foco { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid var(--axis); border-radius: 20px;
+  background: var(--surface); font-weight: 600; white-space: nowrap; min-width: 0; }
+.chip-foco small { font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.b-ic { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--hair); border-radius: 20px; background: var(--surface); font-weight: 700; color: var(--ink-2); }
+.b-ic:hover { color: var(--ink); border-color: var(--axis); }
+.top-2 { display: flex; gap: 6px 8px; align-items: center; flex-wrap: wrap; padding-block: 0 8px; }
+.corto { display: none; }
+@media (max-width: 599px) { .largo { display: none; } .corto { display: inline; } .top h1 > span:not(.vh) { display: none; } .chip-foco small { display: none; } .lbl { display: none; } }
+.top-2::-webkit-scrollbar { display: none; }
+.seg { display: inline-flex; flex: none; border: 1px solid var(--axis); border-radius: 18px; padding: 2px; background: var(--surface); }
+.seg button { border: 0; background: none; min-height: 32px; padding: 0 11px; border-radius: 15px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
+.lbl { font-size: 12px; color: var(--ink-3); flex: none; }
+.anclas { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 10px 2px; }
+.anclas::-webkit-scrollbar { display: none; }
+.anclas a { flex: none; display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 16px;
+  font-size: 13px; color: var(--ink-2); background: var(--surface); text-decoration: none; }
+.anclas a:hover { color: var(--ink); border-color: var(--axis); }
+
+/* Contenido */
+main { padding-block: 6px 48px; }
+.estado { font-size: 13px; color: var(--ink-2); margin: 6px 0 10px; }
+.estado b { color: var(--ink); font-weight: 600; }
+section.sec { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--head-h) + 52px); margin-top: 28px; display: grid; gap: 12px; }
+section.sec:first-of-type { margin-top: 4px; }
+.sec-h { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.sec-h h2 { font-size: 20px; margin: 0; letter-spacing: -.01em; text-wrap: balance; flex: 1 1 auto; }
+.sec-h .ctl { display: flex; gap: 8px; flex-wrap: wrap; }
+.sub { margin: 0; color: var(--ink-2); font-size: 14px; }
+.grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .g4 { grid-template-columns: 1.35fr 1fr 1fr 1fr; } .g21 { grid-template-columns: 2fr 1fr; } }
+@media (min-width: 720px) and (max-width: 959px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; padding: 14px; position: relative; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.card h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); font-weight: 600; padding-right: 36px; }
+.card .v { font-size: 28px; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; }
+.card.hero .v { font-size: 40px; }
+@media (min-width: 960px) { .card.hero .v { font-size: 48px; } }
+.card .l { font-size: 13px; color: var(--ink-2); }
+.card .l b { color: var(--ink); font-weight: 600; }
+.card.plano { background: none; border: 0; padding: 0; }
+.cuenta { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 13px; color: var(--ink-2); margin: 2px 0 0; }
+.cuenta dt { margin: 0; } .cuenta dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cuenta .tot { border-top: 1px solid var(--hair); padding-top: 3px; font-weight: 600; color: var(--ink); }
+.cuenta .ex { color: var(--ink-3); }
+
+details.ayuda { position: absolute; top: 10px; right: 10px; }
+details.ayuda > summary { width: 28px; height: 28px; border-radius: 14px; border: 1px solid var(--axis); display: grid; place-items: center; list-style: none;
+  cursor: pointer; font-weight: 700; font-size: 13px; color: var(--ink-2); background: var(--surface); position: relative; }
+details.ayuda > summary::after { content: ""; position: absolute; inset: -8px; }
+details.ayuda > summary::-webkit-details-marker { display: none; }
+details.ayuda[open] > summary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+details.ayuda > div { position: absolute; right: 0; top: 34px; z-index: 6; width: min(320px, calc(100vw - 48px)); padding: 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--axis); box-shadow: 0 8px 24px var(--sombra); font-size: 13px; color: var(--ink-2); display: grid; gap: 6px; }
+details.ayuda > div b { color: var(--ink); }
+
+.avisos { display: grid; gap: 6px; }
+.aviso { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; background: var(--warn-bg); font-size: 13px; color: var(--ink); border: 0; text-align: left; width: 100%; }
+.aviso.info { background: var(--info-bg); }
+.aviso .ic { flex: none; font-weight: 700; width: 18px; text-align: center; color: var(--warn); }
+.aviso.info .ic { color: var(--focus); }
+.aviso .ir { flex: none; margin-left: auto; color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+
+/* Gráficos */
+.graf { position: relative; min-width: 0; }
+.graf svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.graf svg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.lectura { min-height: 40px; font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.lectura b { color: var(--ink); font-size: 15px; }
+.lectura .k { color: var(--ink-3); }
+.lectura button { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; color: var(--ink); font-size: 13px; min-height: 32px; }
+.ley { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+.ley span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+.eje { font-size: 11px; fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.rot { font-size: 11px; fill: var(--ink-2); font-variant-numeric: tabular-nums; }
+.rot-f { font-size: 12px; fill: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk { font-size: 10px; fill: var(--ink-3); }
+.mk-w { font-size: 11px; fill: var(--warn); font-weight: 700; }
+
+/* Tablas */
+.tw { overflow-x: auto; min-width: 0; -webkit-overflow-scrolling: touch; }
+table.t { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.t th, table.t td { padding: 7px 8px; border-bottom: 1px solid var(--hair); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.t th { font-weight: 600; color: var(--ink-2); font-size: 12px; position: sticky; top: 0; background: var(--surface); }
+table.t th:first-child, table.t td:first-child { text-align: left; }
+table.t td.izq, table.t th.izq { text-align: left; white-space: normal; }
+table.t tr.fila-click { cursor: pointer; }
+table.t tr.fila-click:hover td { background: var(--surface-2); }
+table.t tr.foco td { background: var(--info-bg); }
+table.t tr.grupo td { background: var(--surface-2); font-weight: 600; color: var(--ink); }
+table.t tfoot td { font-weight: 600; border-top: 1px solid var(--axis); }
+.marcas { color: var(--ink-3); letter-spacing: .08em; }
+.marcas .w { color: var(--warn); font-weight: 700; }
+@media (max-width: 599px) { .solo-ancho { display: none; } }
+details.vt > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); min-height: 32px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 2px; }
+details.vt[open] > summary { margin-bottom: 6px; }
+
+.link { border: 0; background: none; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; font-size: inherit; min-height: 32px; }
+.btn { border: 1px solid var(--axis); background: var(--surface); border-radius: 18px; min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+.btn:hover { border-color: var(--ink-3); }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.tag.w { background: var(--warn-bg); color: var(--ink); }
+.tag.ok { background: var(--ok-bg); color: var(--ink); }
+
+/* Barras horizontales (composición y cascada) */
+.hb { display: grid; gap: 6px; }
+.hb-f { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13px; }
+.hb-f .n { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-f .n b { color: var(--ink); font-weight: 600; }
+.hb-f .val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 5.5em; }
+.hb-f .val small { color: var(--ink-3); }
+.hb-pista { position: relative; height: 18px; }
+.hb-pista .cero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--axis); }
+.hb-pista .b { position: absolute; top: 3px; height: 12px; border-radius: 3px; background: var(--dato); }
+.hb-pista .b.pos { background: var(--dato-foco); }
+.hb-pista .b.aj { background: var(--dato-suave); }
+.hb-f.tot .n, .hb-f.tot .val { font-weight: 650; color: var(--ink); }
+@media (max-width: 420px) { .hb-f { grid-template-columns: minmax(0, 8.4em) minmax(0, 1fr) auto; gap: 8px; } .hb-f .val small { display: none; } .hb-f .val { min-width: 4.5em; } }
+
+/* Chequeos */
+.chq { display: grid; gap: 8px; }
+.chq-i { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--hair); font-size: 13px; }
+.chq-i .tag { grid-row: span 2; align-self: start; }
+.chq-i p { margin: 0; color: var(--ink-2); }
+.chq-i b { font-weight: 600; }
+.glos { display: grid; gap: 6px; }
+.glos dl { margin: 0; display: grid; gap: 8px; }
+.glos dt { font-weight: 600; }
+.glos dd { margin: 0; color: var(--ink-2); font-size: 13px; }
+.glos dd i { color: var(--ink-3); font-style: normal; }
+input.buscar { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--axis); border-radius: 10px; background: var(--surface); }
+
+/* Panel de detalle y hojas */
+.velo { position: fixed; inset: 0; background: var(--velo); z-index: 40; }
+.panel { position: fixed; z-index: 41; background: var(--surface); box-shadow: 0 -8px 32px var(--sombra); display: flex; flex-direction: column;
+  left: 0; right: 0; bottom: 0; max-height: 92vh; border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+@media (min-width: 960px) { .panel { left: auto; top: 0; bottom: 0; width: 460px; max-height: none; border-radius: 0; box-shadow: -8px 0 32px var(--sombra);
+  padding-top: env(safe-area-inset-top, 0px); padding-right: env(safe-area-inset-right, 0px); } }
+.panel-h { display: flex; align-items: center; gap: 6px; padding: 10px max(12px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--hair); }
+.panel-h h2 { margin: 0; font-size: 17px; flex: 1; min-width: 0; }
+.panel-h h2 small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-3); }
+.panel-c { overflow-y: auto; padding: 12px max(16px, env(safe-area-inset-left, 0px)) 24px; display: grid; gap: 16px; overscroll-behavior: contain; }
+.panel-c h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+.tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tres div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; display: grid; gap: 2px; }
+.tres span { font-size: 12px; color: var(--ink-3); }
+.tres b { font-size: 16px; font-variant-numeric: tabular-nums; }
+.lista-sem { display: grid; gap: 2px; }
+.lista-sem button { display: flex; gap: 10px; align-items: center; width: 100%; border: 0; background: none; text-align: left; padding: 10px 6px; border-radius: 8px; min-height: 44px; }
+.lista-sem button:hover, .lista-sem button[aria-current="true"] { background: var(--surface-2); }
+.lista-sem .f { flex: 1; font-weight: 600; }
+.lista-sem .m { color: var(--ink-3); font-size: 13px; }
+.nota { font-size: 12px; color: var(--ink-3); margin: 0; }
+.sel { min-height: 40px; border: 1px solid var(--axis); border-radius: 10px; background: var(--surface); padding: 0 8px; max-width: 100%; }
+.fila-sel { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { .panel { animation: sube .18s ease-out; } @keyframes sube { from { transform: translateY(12px); opacity: .6; } } }
+</style>
+
+<header class="top gut" id="top">
+  <div class="in">
+    <div class="top-1">
+      <h1><span class="vh">Tablero </span>Value <span>· Cambio General</span></h1>
+      <span class="sp"></span>
+      <button type="button" class="chip-foco" id="b-foco" aria-haspopup="dialog"></button>
+      <button type="button" class="b-ic" id="b-ayuda" aria-label="Cómo leer este tablero" title="Cómo leer este tablero">?</button>
+    </div>
+    <div class="top-2" id="filtros"></div>
+  </div>
+</header>
+
+<main class="gut"><div class="in" id="app"></div></main>
+<div id="capa"></div>
+
+<script>
+"use strict";
+const D = /*__DATOS_VALUE__*/null;
+
+// ------------------------------------------------------------------------------------------------ utilidades
+const NB = " ";
+const MC = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const ML = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const ok = v => v !== null && v !== undefined && !Number.isNaN(v);
+function h(tag, a, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(a || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "html") el.innerHTML = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) if (c !== null && c !== undefined && c !== false) el.append(c.nodeType ? c : String(c));
+  return el;
+}
+function poner(el, ...kids) { el.replaceChildren(...kids.flat(Infinity).filter(k => k !== null && k !== undefined && k !== false).map(k => k.nodeType ? k : document.createTextNode(String(k)))); }
+const SVGNS = "http://www.w3.org/2000/svg";
+function sv(tag, a, ...kids) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(a || {})) if (v !== null && v !== undefined && v !== false) el.setAttribute(k, v);
+  for (const c of kids.flat(Infinity)) if (c !== null && c !== undefined && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return el;
+}
+function miles(x, dec = 0) {
+  const s = Math.abs(x).toFixed(dec);
+  const [e, d] = s.split(".");
+  const ee = e.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return d ? ee + "," + d : ee;
+}
+const menos = x => x < -0.0049 ? "−" : "";
+const fN = (x, dec = 0) => ok(x) ? menos(x) + miles(x, dec) : "—";
+const fU = (x, dec = 0) => ok(x) ? menos(x) + "USD" + NB + miles(x, dec) : "—";
+const fS = (x, dec = 0) => ok(x) ? (x > 0.0049 ? "+" : menos(x)) + miles(x, dec) : "—";
+const fSU = x => ok(x) ? (x > 0.0049 ? "+" : menos(x)) + "USD" + NB + miles(x) : "—";
+function fK(x) {
+  if (!ok(x)) return "—";
+  const a = Math.abs(x);
+  if (a >= 1e6) return menos(x) + miles(a / 1e6, 1) + NB + "M";
+  if (a >= 1e5) return menos(x) + miles(a / 1e3, 0) + NB + "k";
+  if (a >= 1e3) return menos(x) + miles(a / 1e3, 1) + NB + "k";
+  return menos(x) + miles(a, 0);
+}
+const fPct = (x, base) => ok(x) && base ? miles(100 * x / base, Math.abs(100 * x / base) < 10 ? 1 : 0) + NB + "%" : "—";
+const fARS = x => ok(x) ? menos(x) + "$" + NB + (Math.abs(x) >= 1e6 ? miles(Math.abs(x) / 1e6, 1) + NB + "M" : miles(x)) : "—";
+const fecha = s => new Date(s + "T12:00:00");
+const dm = s => { const d = fecha(s); return d.getDate() + "/" + String(d.getMonth() + 1).padStart(2, "0"); };
+const dmy = s => { const d = fecha(s); return d.getDate() + " " + MC[d.getMonth()] + " " + d.getFullYear(); };
+const mesNombre = id => { const [a, m] = id.split("-").map(Number); return ML[m - 1] + " " + a; };
+const mesCorto = id => { const [a, m] = id.split("-").map(Number); return MC[m - 1]; };
+const mediana = a => { const b = a.filter(ok).slice().sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const suma = a => a.filter(ok).reduce((x, y) => x + y, 0);
+const plural = (n, a, b) => fN(n, Number.isInteger(n) ? 0 : 1) + " " + (n === 1 ? a : b);
+function guardar(k, v) { try { localStorage.setItem("value_cg_" + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } }
+function leer(k, def) { try { const v = localStorage.getItem("value_cg_" + k); return v === null ? def : JSON.parse(v); } catch (e) { return def; } }
+const sinMov = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const W = D.semanas;
+const IDX = Object.fromEntries(W.map((s, i) => [s.id, i]));
+const MESES = Object.fromEntries(D.meses.map(m => [m.id, m]));
+const GR = {
+  proyectos: { n: "Proyectos", c: "Inmovilizado" }, pesos: { n: "Pesos", c: "Disponible" },
+  billete: { n: "Dólares billete", c: "Disponible" }, cripto: { n: "Cripto", c: "Disponible" },
+  exterior: { n: "Exterior y euros", c: "Disponible" }, usdt_general: { n: "USDT General", c: "Fijo a mano" },
+  deuda: { n: "Deuda a cobrar", c: "Fijo a mano" }, otros: { n: "Otros", c: "Disponible" },
+};
+const ORDEN_GR = ["proyectos", "pesos", "billete", "cripto", "exterior", "usdt_general", "deuda", "otros"];
+const ICO = { aj: "◆", rev: "?", doble: "⧉", ret: "▼", dudoso: "⚠", gastos: "•" };
+const NOM_MARCA = { aj: "Ajuste a mano", rev: "A revisar", doble: "Dos semanas", ret: "Retiro de socios", dudoso: "Dato dudoso", gastos: "Costos fijos" };
+
+// ------------------------------------------------------------------------------------------------ estado
+const ST = {
+  foco: W.length - 1,
+  periodo: leer("periodo", "todo"),
+  desde: 0, hasta: W.length - 1,
+  aj: leer("aj", false),
+  vista: leer("vista", "sem"),
+  base: leer("base", "neto"),
+  mesModo: leer("mesModo", "total"),
+  mesFiltro: null,
+};
+function aplicarPeriodo() {
+  const n = W.length - 1;
+  if (ST.periodo === "8s") { ST.desde = Math.max(0, n - 7); ST.hasta = n; }
+  else if (ST.periodo === "3m") {
+    const ult = fecha(W[n].fin); const lim = new Date(ult); lim.setMonth(lim.getMonth() - 3);
+    ST.desde = W.findIndex(s => fecha(s.fin) > lim); ST.hasta = n;
+  } else if (ST.periodo === "elegido") {
+    const r = leer("rango", null);
+    if (r && IDX[r[0]] !== undefined && IDX[r[1]] !== undefined) { ST.desde = IDX[r[0]]; ST.hasta = IDX[r[1]]; }
+    else { ST.desde = 0; ST.hasta = n; }
+  } else { ST.desde = 0; ST.hasta = n; }
+}
+aplicarPeriodo();
+const RANGO = () => W.slice(ST.desde, ST.hasta + 1);
+const gan = s => ST.aj ? s.gan_con : s.gan;
+const antes = s => ST.aj ? s.antes_con : s.antes;
+const valGan = s => ST.base === "antes" ? antes(s) : gan(s);
+const porSem = (v, s) => ok(v) ? v / (s.dias / 7) : null;
+const tieneMarca = (s, k) => s.marcas.some(m => m.k === k);
+
+// ------------------------------------------------------------------------------------------------ ayuda
+function ayuda(que, como, deDonde) {
+  return h("details", { class: "ayuda" }, h("summary", { "aria-label": "Ayuda" }, "?"),
+    h("div", {}, h("p", { style: "margin:0" }, h("b", {}, "Qué es. "), que), como ? h("p", { style: "margin:0" }, h("b", {}, "Cómo se calcula. "), como) : null,
+      deDonde ? h("p", { style: "margin:0" }, h("b", {}, "De dónde sale. "), deDonde) : null));
+}
+document.addEventListener("click", e => {
+  for (const d of document.querySelectorAll("details.ayuda[open]")) if (!d.contains(e.target)) d.open = false;
+});
+
+// ------------------------------------------------------------------------------------------------ escalas y ejes
+function escala(lo, hi, n = 4) {
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || 10 * p;
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step;
+  const t = []; for (let v = a; v <= b + step / 2; v += step) t.push(Math.abs(v) < step / 1e6 ? 0 : v);
+  return { lo: a, hi: b, t };
+}
+const anchoDe = el => Math.max(280, Math.round((el.clientWidth || el.parentNode.clientWidth || 600)));
+const DIBUJOS = [];
+function lienzo(dibujar) { const el = h("div", { class: "graf" }); DIBUJOS.push({ el, dibujar }); return el; }
+function dibujarTodo() { for (const d of DIBUJOS.splice(0)) if (d.el.isConnected) { d.el.replaceChildren(); d.dibujar(d.el, anchoDe(d.el)); } }
+let tRes = null; let anchoPrevio = window.innerWidth;
+window.addEventListener("resize", () => { if (Math.abs(window.innerWidth - anchoPrevio) < 30) return; anchoPrevio = window.innerWidth; clearTimeout(tRes); tRes = setTimeout(render, 150); });
+
+// Ejes de tiempo: x por fecha (inicio de la semana al fin + 1 día)
+function ejeTiempo(ss, x0, x1) {
+  const t0 = fecha(ss[0].ini).getTime(), t1 = fecha(ss[ss.length - 1].fin).getTime() + 864e5;
+  const x = t => x0 + (t - t0) / (t1 - t0) * (x1 - x0);
+  return { x, ini: s => x(fecha(s.ini).getTime()), fin: s => x(fecha(s.fin).getTime() + 864e5), mid: s => (x(fecha(s.ini).getTime()) + x(fecha(s.fin).getTime() + 864e5)) / 2 };
+}
+function marcasMes(svg, ss, et, y, x0, x1) {
+  let prev = null;
+  const minGap = 34;
+  let ultX = -1e9;
+  for (const s of ss) {
+    const m = s.mes;
+    if (m !== prev) {
+      const px = et.ini(s);
+      if (px - ultX >= minGap && px <= x1 - 10) {
+        svg.append(sv("line", { x1: px, x2: px, y1: y - 4, y2: y, stroke: "var(--axis)", "stroke-width": 1 }));
+        svg.append(sv("text", { x: px + 3, y: y + 12, class: "eje" }, mesCorto(m)));
+        ultX = px;
+      }
+      prev = m;
+    }
+  }
+}
+function filaMarcas(svg, ss, et, y, x0, angosto) {
+  const orden = angosto ? ["rev", "aj", "ret", "doble"] : ["rev", "aj", "ret", "doble", "dudoso", "gastos"];
+  for (const s of ss) {
+    const ks = s.marcas.map(m => m.k);
+    const pri = orden.find(k => ks.includes(k));
+    if (!pri) continue;
+    svg.append(sv("text", { x: et.mid(s), y, "text-anchor": "middle", class: pri === "rev" || pri === "dudoso" ? "mk-w" : "mk" }, ICO[pri]));
+  }
+}
+
+// Interacción común: la semana más cercana al puntero, lectura fija y clic para cambiar la foco
+function interactivo(svg, ss, et, alMover, alElegir) {
+  const local = ev => { const r = svg.getBoundingClientRect(); const vb = svg.viewBox.baseVal; return (ev.clientX - r.left) * vb.width / r.width; };
+  const cercana = px => { let best = 0, bd = 1e9; ss.forEach((s, i) => { const d = Math.abs(et.mid(s) - px); if (d < bd) { bd = d; best = i; } }); return best; };
+  svg.addEventListener("pointermove", ev => alMover(cercana(local(ev))));
+  svg.addEventListener("pointerleave", () => alMover(null));
+  svg.addEventListener("click", ev => alElegir(cercana(local(ev))));
+  svg.setAttribute("tabindex", "0");
+  svg.addEventListener("keydown", ev => {
+    if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") { ev.preventDefault(); moverFoco(ev.key === "ArrowLeft" ? -1 : 1); }
+    else if (ev.key === "Enter") { ev.preventDefault(); abrirSemana(ST.foco); }
+  });
+}
+function moverFoco(d) { const n = Math.min(Math.max(ST.foco + d, 0), W.length - 1); if (n !== ST.foco) { ST.foco = n; render(true); } }
+
+// ------------------------------------------------------------------------------------------------ gráfico: patrimonio
+function grafPatrimonio(el, Wd) {
+  const ss = RANGO();
+  const H = Wd < 600 ? 190 : 230, mL = 44, mR = 12, mT = 14, mB = 34;
+  const vals = ss.map(s => s.neto);
+  const sc = escala(0, Math.max(...vals) * 1.06, 4);
+  const y = v => mT + (H - mT - mB) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  const et = ejeTiempo(ss, mL, Wd - mR);
+  const px = s => et.x(fecha(s.fin).getTime() + 864e5 / 2);
+  const svg = sv("svg", { viewBox: `0 0 ${Wd} ${H}`, role: "img", "aria-label": "Patrimonio neto al cierre de cada semana" });
+  for (const t of sc.t) {
+    svg.append(sv("line", { x1: mL, x2: Wd - mR, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--hair)", "stroke-width": 1 }));
+    svg.append(sv("text", { x: mL - 6, y: y(t) + 4, "text-anchor": "end", class: "eje" }, fK(t)));
+  }
+  const pts = ss.map(s => [px(s), y(s.neto)]);
+  svg.append(sv("path", { d: "M" + pts.map(p => p.join(",")).join("L") + `L${pts[pts.length - 1][0]},${y(sc.lo)}L${pts[0][0]},${y(sc.lo)}Z`, fill: "var(--area)" }));
+  svg.append(sv("path", { d: "M" + pts.map(p => p.join(",")).join("L"), fill: "none", stroke: "var(--dato-foco)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  marcasMes(svg, ss, et, H - mB + 4, mL, Wd - mR);
+  filaMarcas(svg, ss, et, H - 4, mL, Wd < 600);
+  // rótulos: inicio, fin
+  const a = ss[0], b = ss[ss.length - 1];
+  svg.append(sv("text", { x: px(a) + 2, y: y(a.neto) - 8, class: "rot" }, fK(a.neto)));
+  svg.append(sv("text", { x: px(b), y: y(b.neto) - 10, "text-anchor": "end", class: "rot-f" }, fK(b.neto)));
+  const guia = sv("line", { y1: mT, y2: H - mB, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" });
+  const punto = sv("circle", { r: 5, fill: "var(--dato-foco)", stroke: "var(--surface)", "stroke-width": 2 });
+  svg.append(guia, punto);
+  const lec = h("div", { class: "lectura", "aria-live": "polite" });
+  const pintar = i => {
+    const s = i === null ? W[ST.foco] : ss[i];
+    const enRango = ss.includes(s);
+    if (enRango) { punto.setAttribute("cx", px(s)); punto.setAttribute("cy", y(s.neto)); punto.setAttribute("visibility", "visible"); }
+    else punto.setAttribute("visibility", "hidden");
+    guia.setAttribute("visibility", i === null ? "hidden" : "visible");
+    if (i !== null) { guia.setAttribute("x1", px(s)); guia.setAttribute("x2", px(s)); }
+    poner(lec, h("span", { class: "k" }, s.txt), h("b", {}, fU(s.neto)),
+      ok(s.var) ? h("span", {}, fS(s.var) + " vs. semana anterior") : null,
+      h("button", { type: "button", onclick: () => abrirSemana(IDX[s.id]) }, "Ver semana"));
+  };
+  interactivo(svg, ss, et, pintar, i => { ST.foco = IDX[ss[i].id]; render(true); });
+  pintar(null);
+  el.append(lec, svg);
+}
+
+// ------------------------------------------------------------------------------------------------ gráfico: ganancia
+function datosGanancia() {
+  const ss = RANGO().filter(s => ok(s.gan));
+  if (ST.vista === "mes") {
+    const por = new Map();
+    for (const s of ss) { if (!por.has(s.mes)) por.set(s.mes, []); por.get(s.mes).push(s); }
+    return [...por.entries()].map(([id, l]) => {
+      const m = MESES[id];
+      const sem = suma(l.map(s => s.dias / 7));
+      const parcial = !m.completo || l.length < m.hojas.length;
+      const base = suma(l.map(s => ST.base === "antes" ? s.antes : s.gan));
+      const ajm = suma(l.map(s => s.aj));
+      const div = ST.mesModo === "sem" ? sem : 1;
+      return { id, txt: mesNombre(id), l, sem, esperadas: m.esperadas, parcial, base: base / div, aj: ST.aj ? ajm / div : 0, ajm, total: (base + (ST.aj ? ajm : 0)) / div };
+    });
+  }
+  return ss.map(s => {
+    const base = porSem(ST.base === "antes" ? s.antes : s.gan, s);
+    const ajs = porSem(s.aj, s);
+    return { id: s.id, s, txt: s.txt, base, aj: ST.aj ? ajs : 0, total: base + (ST.aj ? ajs : 0) };
+  });
+}
+function grafGanancia(el, Wd) {
+  const d = datosGanancia();
+  if (!d.length) { el.append(h("p", { class: "sub" }, "No hay semanas con ganancia en el período elegido.")); return; }
+  const H = Wd < 600 ? 210 : 250, mL = 44, mR = 12, mT = 18, mB = 34;
+  const tops = d.map(x => Math.max(x.base, x.base + x.aj, 0)), bots = d.map(x => Math.min(x.base, x.base + x.aj, 0));
+  const sc = escala(Math.min(0, ...bots), Math.max(0, ...tops) * 1.08, 4);
+  const y = v => mT + (H - mT - mB) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  const svg = sv("svg", { viewBox: `0 0 ${Wd} ${H}`, role: "img", "aria-label": ST.vista === "mes" ? "Ganancia por mes" : "Ganancia por semana" });
+  for (const t of sc.t) {
+    svg.append(sv("line", { x1: mL, x2: Wd - mR, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--hair)", "stroke-width": 1 }));
+    svg.append(sv("text", { x: mL - 6, y: y(t) + 4, "text-anchor": "end", class: "eje" }, fK(t)));
+  }
+  const barra = (x, w, v0, v1, fill, extra = {}) => {
+    const ya = y(Math.max(v0, v1)), yb = y(Math.min(v0, v1));
+    const hh = Math.max(yb - ya, 0.8), r = Math.min(4, w / 2, hh);
+    const arriba = v1 >= v0;
+    // extremo redondeado del lado del dato, base recta
+    const p = arriba
+      ? `M${x},${yb}V${ya + r}Q${x},${ya} ${x + r},${ya}H${x + w - r}Q${x + w},${ya} ${x + w},${ya + r}V${yb}Z`
+      : `M${x},${ya}V${yb - r}Q${x},${yb} ${x + r},${yb}H${x + w - r}Q${x + w},${yb} ${x + w},${yb - r}V${ya}Z`;
+    return sv("path", Object.assign({ d: p, fill }, extra));
+  };
+  const lec = h("div", { class: "lectura", "aria-live": "polite" });
+  let lecturaDe;
+  if (ST.vista === "mes") {
+    const slot = (Wd - mL - mR) / d.length, bw = Math.min(40, slot * 0.6);
+    const et = { mid: x => mL + slot * (d.indexOf(x) + 0.5) };
+    d.forEach((m, i) => {
+      const cx = mL + slot * (i + 0.5), x = cx - bw / 2;
+      const esFoco = m.id === W[ST.foco].mes;
+      if (m.parcial) svg.append(barra(x + 1, bw - 2, 0, m.base, "none", { stroke: esFoco ? "var(--dato-foco)" : "var(--dato)", "stroke-width": 2 }));
+      else svg.append(barra(x, bw, 0, m.base, esFoco ? "var(--dato-foco)" : "var(--dato)"));
+      if (m.aj) svg.append(barra(x, bw, m.base, m.base + m.aj, "var(--dato-suave)"));
+      const top = Math.max(m.base, m.base + m.aj);
+      svg.append(sv("text", { x: cx, y: (m.total >= 0 ? y(top) - 5 : y(Math.min(m.base, m.total)) + 13), "text-anchor": "middle", class: esFoco ? "rot-f" : "rot" }, fK(m.total)));
+      svg.append(sv("text", { x: cx, y: H - mB + 16, "text-anchor": "middle", class: "eje" }, mesCorto(m.id)));
+      if (m.parcial) svg.append(sv("text", { x: cx, y: H - 4, "text-anchor": "middle", class: "mk" }, `${miles(m.sem, m.sem % 1 ? 1 : 0)}/${m.esperadas} sem.`));
+    });
+    lecturaDe = i => {
+      const m = i === null ? (d.find(x => x.id === W[ST.foco].mes) || d[d.length - 1]) : d[i];
+      poner(lec, h("span", { class: "k" }, m.txt + (m.parcial ? ` (${miles(m.sem, m.sem % 1 ? 1 : 0)} de ${m.esperadas} semanas)` : ` (${plural(m.sem, "semana", "semanas")})`)),
+        h("b", {}, fU(m.total)), ST.mesModo === "sem" ? h("span", {}, "por semana") : null,
+        m.ajm && !ST.aj ? h("span", {}, `sin ${fSU(m.ajm)} de ajustes`) : null,
+        h("button", { type: "button", onclick: () => { ST.mesFiltro = m.id; ST.vista = "sem"; guardar("vista", "sem"); render(); } }, "Ver sus semanas"));
+    };
+    const local = ev => { const r = svg.getBoundingClientRect(); return (ev.clientX - r.left) * Wd / r.width; };
+    const idx = px => Math.min(d.length - 1, Math.max(0, Math.floor((px - mL) / slot)));
+    svg.addEventListener("pointermove", ev => lecturaDe(idx(local(ev))));
+    svg.addEventListener("pointerleave", () => lecturaDe(null));
+    svg.addEventListener("click", ev => { const m = d[idx(local(ev))]; const i = W.findIndex(s => s.id === m.l[m.l.length - 1].id); ST.foco = i; render(true); });
+  } else {
+    let dd = d;
+    if (ST.mesFiltro) dd = d.map(x => Object.assign({}, x, { gris: x.s.mes !== ST.mesFiltro }));
+    const ss = dd.map(x => x.s);
+    const et = ejeTiempo(ss, mL, Wd - mR);
+    const med = mediana(dd.map(x => x.total));
+    dd.forEach(x => {
+      const s = x.s, x0 = et.ini(s), x1 = et.fin(s), slot = x1 - x0;
+      const bw = Math.min(s.dias === 14 ? 40 : 22, slot * 0.72), bx = (x0 + x1) / 2 - bw / 2;
+      const esFoco = IDX[s.id] === ST.foco;
+      const fill = x.gris ? "var(--hair)" : esFoco ? "var(--dato-foco)" : "var(--dato)";
+      const g = sv("g", {});
+      g.append(barra(bx, bw, 0, x.base, fill));
+      if (x.aj) g.append(barra(bx, bw, x.base, x.base + x.aj, x.gris ? "var(--hair)" : "var(--dato-suave)"));
+      if (tieneMarca(s, "rev")) g.append(sv("rect", { x: bx - 2, y: y(Math.max(0, x.total)) - 2, width: bw + 4, height: Math.abs(y(0) - y(x.total)) + 4, fill: "none", stroke: "var(--warn)", "stroke-width": 1.2, "stroke-dasharray": "3 2", rx: 3 }));
+      svg.append(g);
+    });
+    if (ok(med)) {
+      svg.append(sv("line", { x1: mL, x2: Wd - mR, y1: y(med), y2: y(med), stroke: "var(--ink-2)", "stroke-width": 1 }));
+      svg.append(sv("text", { x: mL + 4, y: y(med) - 4, class: "rot" }, "semana típica " + fK(med)));
+    }
+    // rótulo del extremo y del final
+    const ext = dd.reduce((a, b) => (Math.abs(b.total) > Math.abs(a.total) ? b : a));
+    for (const x of new Set([ext, dd[dd.length - 1]])) {
+      const top = Math.max(x.base, x.base + x.aj);
+      svg.append(sv("text", { x: et.mid(x.s), y: x.total >= 0 ? y(top) - 5 : y(Math.min(x.base, x.total)) + 13, "text-anchor": "middle", class: "rot" }, fK(x.total)));
+    }
+    marcasMes(svg, ss, et, H - mB + 4, mL, Wd - mR);
+    filaMarcas(svg, ss, et, H - 4, mL, Wd < 600);
+    lecturaDe = i => {
+      const x = i === null ? (dd.find(z => IDX[z.s.id] === ST.foco) || dd[dd.length - 1]) : dd[i];
+      const s = x.s;
+      const marcas = s.marcas.filter(m => ["rev", "aj", "ret", "doble"].includes(m.k)).map(m => h("span", { class: "tag" + (m.k === "rev" ? " w" : "") }, ICO[m.k] + " " + NOM_MARCA[m.k]));
+      poner(lec, h("span", { class: "k" }, s.txt), h("b", {}, fU(x.total)),
+        s.dias === 14 ? h("span", {}, `por semana (total ${fU(x.total * 2)})`) : null,
+        h("span", {}, (ST.base === "antes" ? "después de gastos " + fU(porSem(gan(s), s)) : "gastos " + fU(s.gas))), marcas,
+        h("button", { type: "button", onclick: () => abrirSemana(IDX[s.id]) }, "Ver semana"));
+    };
+    interactivo(svg, ss, et, lecturaDe, i => { ST.foco = IDX[ss[i].id]; render(true); });
+  }
+  lecturaDe(null);
+  el.append(lec, svg);
+}
+
+// ------------------------------------------------------------------------------------------------ gráfico: disponible / proyectos / fijos
+function grafEvolucion(el, Wd) {
+  const ss = RANGO();
+  const H = Wd < 600 ? 190 : 220, mL = 44, mR = 12, mT = 14, mB = 34;
+  const series = [
+    { k: "disponible", n: "Disponible", c: "var(--s1)", v: s => s.disponible },
+    { k: "proyectos", n: "Proyectos", c: "var(--s2)", v: s => s.grupos.proyectos },
+    { k: "fijos", n: "Fijos a mano", c: "var(--s3)", v: s => s.fijos },
+  ];
+  const apilable = ss.every(s => series.every(se => se.v(s) >= -0.5));
+  const et = ejeTiempo(ss, mL, Wd - mR);
+  const px = s => et.x(fecha(s.fin).getTime() + 864e5 / 2);
+  const max = apilable ? Math.max(...ss.map(s => s.neto)) : Math.max(...ss.flatMap(s => series.map(se => se.v(s))));
+  const min = apilable ? 0 : Math.min(0, ...ss.flatMap(s => series.map(se => se.v(s))));
+  const sc = escala(min, max * 1.06, 4);
+  const y = v => mT + (H - mT - mB) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  const svg = sv("svg", { viewBox: `0 0 ${Wd} ${H}`, role: "img", "aria-label": "Disponible, proyectos y fijos a mano por semana" });
+  for (const t of sc.t) {
+    svg.append(sv("line", { x1: mL, x2: Wd - mR, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--hair)", "stroke-width": 1 }));
+    svg.append(sv("text", { x: mL - 6, y: y(t) + 4, "text-anchor": "end", class: "eje" }, fK(t)));
+  }
+  if (apilable) {
+    let base = ss.map(() => 0);
+    for (const se of series) {
+      const top = ss.map((s, i) => base[i] + Math.max(0, se.v(s)));
+      const d = "M" + ss.map((s, i) => `${px(s)},${y(top[i])}`).join("L") + "L" + ss.map((s, i) => `${px(s)},${y(base[i])}`).reverse().join("L") + "Z";
+      svg.append(sv("path", { d, fill: se.c, "fill-opacity": 0.85, stroke: "var(--surface)", "stroke-width": 1 }));
+      base = top;
+    }
+  } else {
+    for (const se of series) svg.append(sv("path", { d: "M" + ss.map(s => `${px(s)},${y(se.v(s))}`).join("L"), fill: "none", stroke: se.c, "stroke-width": 2 }));
+  }
+  marcasMes(svg, ss, et, H - mB + 4, mL, Wd - mR);
+  const guia = sv("line", { y1: mT, y2: H - mB, stroke: "var(--ink)", "stroke-width": 1, visibility: "hidden" });
+  svg.append(guia);
+  const lec = h("div", { class: "lectura", "aria-live": "polite" });
+  const pintar = i => {
+    const s = i === null ? W[ST.foco] : ss[i];
+    guia.setAttribute("visibility", i === null ? "hidden" : "visible");
+    if (i !== null) { guia.setAttribute("x1", px(s)); guia.setAttribute("x2", px(s)); }
+    poner(lec, h("span", { class: "k" }, s.txt), ...series.map(se => h("span", {}, h("span", { class: "sw", style: `background:${se.c};margin-right:4px;vertical-align:-1px` }), se.n + " ", h("b", { style: "font-size:13px" }, fK(se.v(s))))));
+  };
+  interactivo(svg, ss, et, pintar, i => { ST.foco = IDX[ss[i].id]; render(true); });
+  pintar(null);
+  el.append(lec, svg, h("div", { class: "ley" }, series.map(se => h("span", {}, h("span", { class: "sw", style: `background:${se.c}` }), se.n))));
+}
+
+// ------------------------------------------------------------------------------------------------ gráfico: gastos por mes
+function grafGastos(el, Wd, meses) {
+  if (!meses.length) { el.append(h("p", { class: "sub" }, "No hay meses con datos en el período.")); return; }
+  const H = Wd < 600 ? 200 : 230, mL = 44, mR = 12, mT = 18, mB = 34;
+  const vals = meses.flatMap(m => [m.antes, m.gas]);
+  const sc = escala(Math.min(0, ...vals), Math.max(...vals) * 1.1, 4);
+  const y = v => mT + (H - mT - mB) * (1 - (v - sc.lo) / (sc.hi - sc.lo));
+  const svg = sv("svg", { viewBox: `0 0 ${Wd} ${H}`, role: "img", "aria-label": "Antes de gastos y gastos por mes" });
+  for (const t of sc.t) {
+    svg.append(sv("line", { x1: mL, x2: Wd - mR, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--hair)", "stroke-width": 1 }));
+    svg.append(sv("text", { x: mL - 6, y: y(t) + 4, "text-anchor": "end", class: "eje" }, fK(t)));
+  }
+  const slot = (Wd - mL - mR) / meses.length, bw = Math.min(20, slot * 0.32);
+  meses.forEach((m, i) => {
+    const cx = mL + slot * (i + 0.5);
+    const par = [[m.antes, "var(--s1)"], [m.gas, "var(--s2)"]];
+    par.forEach(([v, c], j) => {
+      const x = cx + (j ? 1 : -bw - 1);
+      const ya = y(Math.max(0, v)), yb = y(Math.min(0, v));
+      svg.append(sv("rect", { x, y: ya, width: bw, height: Math.max(yb - ya, 0.8), rx: 3, fill: m.parcial ? "none" : c, stroke: m.parcial ? c : "none", "stroke-width": m.parcial ? 2 : 0 }));
+    });
+    svg.append(sv("text", { x: cx, y: H - mB + 16, "text-anchor": "middle", class: "eje" }, mesCorto(m.id)));
+    if (m.parcial) svg.append(sv("text", { x: cx, y: H - 4, "text-anchor": "middle", class: "mk" }, "parcial"));
+  });
+  const lec = h("div", { class: "lectura", "aria-live": "polite" });
+  const pintar = i => {
+    const m = meses[i === null ? meses.length - 1 : i];
+    poner(lec, h("span", { class: "k" }, mesNombre(m.id) + (m.parcial ? " (parcial)" : "")),
+      h("span", {}, "antes de gastos ", h("b", { style: "font-size:13px" }, fU(m.antes))), h("span", {}, "gastos ", h("b", { style: "font-size:13px" }, fU(m.gas))),
+      h("span", {}, "ganancia ", h("b", { style: "font-size:13px" }, fU(m.antes - m.gas))));
+  };
+  const local = ev => { const r = svg.getBoundingClientRect(); return (ev.clientX - r.left) * Wd / r.width; };
+  const idx = px => Math.min(meses.length - 1, Math.max(0, Math.floor((px - mL) / slot)));
+  svg.addEventListener("pointermove", ev => pintar(idx(local(ev))));
+  svg.addEventListener("pointerleave", () => pintar(null));
+  pintar(null);
+  el.append(lec, svg, h("div", { class: "ley" }, h("span", {}, h("span", { class: "sw", style: "background:var(--s1)" }), "Lo que dejó la operación (antes de gastos)"),
+    h("span", {}, h("span", { class: "sw", style: "background:var(--s2)" }), "Gastos, comisiones, intereses e inversión")));
+}
+
+// ------------------------------------------------------------------------------------------------ barras horizontales
+function barrasH(filas, o = {}) {
+  const conBarra = filas.filter(f => !f.tot && !f.sinBarra);
+  const base = o.sinCero ? [] : [0];
+  const lo = Math.min(...base, ...conBarra.map(f => Math.min(f.a ?? 0, f.b))), hi = Math.max(...base, ...conBarra.map(f => Math.max(f.a ?? 0, f.b)));
+  const pos = v => (v - lo) / ((hi - lo) || 1) * 100;
+  return h("div", { class: "hb" }, filas.map(f => {
+    const a = f.a ?? 0, b = f.b;
+    const l = pos(Math.min(a, b)), w = Math.max(pos(Math.max(a, b)) - l, 0.4);
+    return h("div", { class: "hb-f" + (f.tot ? " tot" : "") },
+      h("span", { class: "n", title: f.n }, f.n),
+      f.tot || f.sinBarra ? h("span", { class: "hb-pista" }) : h("span", { class: "hb-pista" }, o.sinCero ? null : h("span", { class: "cero", style: `left:${pos(0)}%` }),
+        h("span", { class: "b" + (f.cls ? " " + f.cls : ""), style: `left:${l}%;width:${w}%` })),
+      h("span", { class: "val" }, f.v, f.sub ? h("small", {}, " " + f.sub) : null));
+  }));
+}
+
+// ------------------------------------------------------------------------------------------------ secciones
+const app = document.getElementById("app");
+function seccion(id, titulo, sub, ...kids) {
+  return h("section", { class: "sec", id }, h("div", { class: "sec-h" }, h("h2", {}, titulo), kids.length && kids[0] && kids[0].classList && kids[0].classList.contains("ctl") ? kids.shift() : null),
+    sub ? h("p", { class: "sub" }, sub) : null, ...kids);
+}
+function seg(id, opciones, actual, alElegir, etiqueta) {
+  return h("div", { class: "seg", role: "group", "aria-label": etiqueta, id },
+    opciones.map(([v, t]) => h("button", { type: "button", "aria-pressed": String(v === actual), onclick: () => alElegir(v) }, t)));
+}
+
+function cuentaSemana(s) {
+  const filas = [];
+  if (!ok(s.var)) return h("p", { class: "nota" }, "Primera hoja: no tiene semana anterior para comparar.");
+  filas.push(["Antes de gastos", fN(s.antes)], ["Gastos, comisiones, intereses e inversión", fS(-s.gas)]);
+  filas.push(["Ganancia de la semana", fN(s.gan), "tot"]);
+  if (Math.abs(s.aj) > 0.005) filas.push(["Ajuste a mano (" + s.aj_det.map(a => a.grupo === "usdt_general" ? "USDT General" : a.grupo === "deuda" ? "Deuda" : a.renglon).join(", ") + ")", fS(s.aj), "ex"]);
+  if (s.ret > 0.005) filas.push(["Retiros de socios (no es pérdida)", fS(-s.ret), "ex"]);
+  filas.push(["El patrimonio " + (s.var >= 0 ? "subió" : "bajó"), fS(s.var), "tot"]);
+  return h("dl", { class: "cuenta" }, filas.flatMap(([a, b, c]) => [h("dt", { class: c || "" }, a), h("dd", { class: c || "" }, b)]));
+}
+
+function comparaTipica(s) {
+  const g = s.por_semana;
+  if (!ok(g) || !ok(s.tipica)) return null;
+  const dif = g - s.tipica, tol = Math.max(1000, Math.abs(s.tipica) * 0.25);
+  const palabra = dif > tol ? "por encima de lo habitual" : dif < -tol ? "por debajo de lo habitual" : "en línea con lo habitual";
+  return h("span", { class: "l" }, h("b", {}, palabra[0].toUpperCase() + palabra.slice(1)), ` · semana típica ${fU(s.tipica)} (mediana de las ${s.tipica_n} anteriores)`);
+}
+
+function resumen() {
+  const s = W[ST.foco], s0 = W[0];
+  const crec = s.neto - s0.neto;
+  const veces = s.neto / D.socios.aportes;
+  const g = gan(s);
+  const m = MESES[s.mes];
+  const mesSem = W.filter(x => x.mes === s.mes && ok(x.gan) && IDX[x.id] <= ST.foco);
+  const ganMes = suma(mesSem.map(gan));
+  const semMes = suma(mesSem.map(x => x.dias / 7));
+  const enCurso = !m.completo || mesSem.length < m.hojas.length;
+  const mesAnt = D.meses[D.meses.findIndex(x => x.id === s.mes) - 1];
+  const ganAnt = mesAnt && ok(mesAnt.gan) ? (ST.aj ? mesAnt.gan_con : mesAnt.gan) : null;
+  const kpis = h("div", { class: "grid g4" },
+    h("div", { class: "card hero" }, h("h3", {}, "Patrimonio neto"), ayuda(
+      "Lo que vale Cambio General al cierre del domingo, todo pasado a dólares: cajas con sus pendientes, proyectos al costo, la parte de USDT General y lo que nos deben. No es todo plata disponible.",
+      "Pesos ÷ cotización de la semana; euros × " + miles(s.eur || 1.25, 2) + ". Es el mismo número de la planilla, recalculado celda por celda.",
+      `Calculadora Semanal, hoja ${s.hoja}, celda ${s.celda_neto} ("Neto"). En el Value CG se llama CAPITAL.`),
+      h("div", { class: "v num" }, fU(s.neto)),
+      h("div", { class: "l" }, h("b", {}, fS(crec)), ` desde el ${dm(s0.fin)} · ${miles(veces, 2)} veces lo aportado (${fU(D.socios.aportes)})`),
+      h("div", { class: "l" }, `Al ${dmy(s.fin)}. La mitad no es plata para operar: ver Disponible.`)),
+    h("div", { class: "card" }, h("h3", {}, "Ganancia de la semana"), ayuda(
+      "Cuánto ganó el negocio en la semana: lo que creció el patrimonio contra el domingo anterior, sumando lo que retiraron los socios (no es una pérdida)" + (ST.aj ? " e incluyendo los ajustes a mano." : " y sin los ajustes a mano (valores fijos cambiados en la planilla, como la ganancia de USDT General de meses anteriores).") + " No es plata que entró: también la mueven el dólar y los pendientes.",
+      "Patrimonio − patrimonio anterior + retiros" + (ST.aj ? "." : " − ajustes a mano."),
+      `Calculadora, hoja ${s.hoja}${s.celda_gan ? ", celda " + s.celda_gan + ' ("Ganancia Neta")' : ""}; retiros en config.json.`),
+      h("div", { class: "v num" }, ok(g) ? fU(g) : "—"),
+      s.dias === 14 && ok(g) ? h("div", { class: "l" }, `Dos semanas: ${fU(g / 2)} por semana.`) : null,
+      comparaTipica(s), cuentaSemana(s)),
+    h("div", { class: "card" }, h("h3", {}, "Ganancia de " + ML[Number(s.mes.slice(5)) - 1]), ayuda(
+      "La suma de la ganancia de las semanas del mes" + (ST.aj ? ", con los ajustes a mano." : ", sin los ajustes a mano."),
+      "Cada semana se cuenta en el mes de su jueves (el mes que tiene más días de esa semana), como en el Value CG.", "Calculadora Semanal."),
+      h("div", { class: "v num" }, mesSem.length ? fU(ganMes) : "—"),
+      h("div", { class: "l" }, enCurso ? `${plural(semMes, "semana", "semanas")} de ${m.esperadas} · mes en curso` : plural(semMes, "semana", "semanas") + " · mes completo"),
+      semMes ? h("div", { class: "l" }, h("b", {}, fU(ganMes / semMes)), " por semana", ok(ganAnt) && mesAnt ? ` · ${ML[Number(mesAnt.id.slice(5)) - 1]}: ${fU(ganAnt / mesAnt.semanas)} por semana` : "") : null),
+    h("div", { class: "card" }, h("h3", {}, "Disponible"), ayuda(
+      "Pesos, dólares billete, cripto y cuentas del exterior, con sus pendientes. Sin proyectos (que están al costo) ni los valores fijos escritos a mano.",
+      "Suma de lo que aporta cada caja al patrimonio, agrupada por su nombre.", "Calculadora, filas 1 a 4 de cada caja."),
+      h("div", { class: "v num" }, fU(s.disponible)),
+      h("div", { class: "l" }, h("b", {}, fPct(s.disponible, s.neto)), " del patrimonio"),
+      h("div", { class: "l" }, `Proyectos ${fU(s.grupos.proyectos)} (${fPct(s.grupos.proyectos, s.neto)}) · fijos a mano ${fU(s.fijos)} (${fPct(s.fijos, s.neto)})`)));
+  const avisos = h("div", { class: "avisos", role: "list", "aria-label": "Para tener en cuenta" },
+    D.avisos.slice(0, window.innerWidth >= 960 ? 5 : 3).map(a => h(a.semana ? "button" : "div", Object.assign({ class: "aviso" + (a.k === "aj" ? " info" : ""), role: "listitem" },
+      a.semana ? { type: "button", onclick: () => abrirSemana(IDX[a.semana]) } : {}),
+      h("span", { class: "ic", "aria-hidden": "true" }, ICO[a.k] || "!"), h("span", {}, a.t), a.semana ? h("span", { class: "ir" }, "Ver") : null)));
+  const linea = h("div", { class: "card" }, h("h3", {}, "Patrimonio semana a semana"),
+    ayuda("El patrimonio neto al cierre de cada domingo. El eje empieza en 0, así el crecimiento se ve en su tamaño real.", "Neto de cada hoja de la Calculadora.", "Calculadora Semanal, una hoja por semana."),
+    lienzo(grafPatrimonio), leyendaMarcas());
+  return seccion("resumen", "Resumen", null,
+    h("p", { class: "estado" }, "Cierre del domingo ", h("b", {}, dmy(W[W.length - 1].fin)), ` · Dólar $${NB}${miles(W[W.length - 1].cot)} · Euro USD${NB}${miles(W[W.length - 1].eur || 0, 2)} · Tenencia de socios al ${D.socios.tenencia_al ? dm(D.socios.tenencia_al) : "—"}`,
+      ST.foco !== W.length - 1 ? h("span", {}, " · ", h("button", { type: "button", class: "link", onclick: () => { ST.foco = W.length - 1; render(); } }, "Volver a la última semana")) : null),
+    kpis, avisos, linea);
+}
+function leyendaMarcas() {
+  return h("div", { class: "ley" }, ["rev", "aj", "ret", "doble", "dudoso", "gastos"].map(k => h("span", {}, h("b", { style: k === "rev" || k === "dudoso" ? "color:var(--warn)" : "color:var(--ink-3)" }, ICO[k]), NOM_MARCA[k])));
+}
+
+function seccionGanancia() {
+  const ss = RANGO().filter(s => ok(s.gan));
+  const tot = suma(ss.map(valGan));
+  const sem = suma(ss.map(s => s.dias / 7));
+  const ctl = h("div", { class: "ctl" },
+    seg("s-vista", [["sem", "Por semana"], ["mes", "Por mes"]], ST.vista, v => { ST.vista = v; ST.mesFiltro = null; guardar("vista", v); render(); }, "Vista"),
+    seg("s-base", [["neto", "Después de gastos"], ["antes", "Antes de gastos"]], ST.base, v => { ST.base = v; guardar("base", v); render(); }, "Medida"),
+    ST.vista === "mes" ? seg("s-mes", [["total", "Total del mes"], ["sem", "Por semana"]], ST.mesModo, v => { ST.mesModo = v; guardar("mesModo", v); render(); }, "Meses") : null);
+  const resumenTxt = h("p", { class: "sub" }, `En el período (${RANGO()[0].txt} a ${W[ST.hasta].txt}): `, h("b", {}, fU(tot)), ` · ${fU(sem ? tot / sem : null)} por semana · ${plural(sem, "semana", "semanas")}`,
+    ST.aj ? " · incluye ajustes a mano" : ` · sin ${fSU(suma(ss.map(s => s.aj)))} de ajustes a mano`,
+    ST.mesFiltro ? h("span", {}, ` · resaltado: ${mesNombre(ST.mesFiltro)} `, h("button", { type: "button", class: "link", onclick: () => { ST.mesFiltro = null; render(); } }, "Quitar")) : null);
+  const tabla = verComoTabla(ST.vista === "mes"
+    ? [["Mes", "Semanas", "Ganancia", "Ajustes a mano", "Retiros", "Gastos"], datosGanancia().map(m => [m.txt + (m.parcial ? " (parcial)" : ""), miles(m.sem, m.sem % 1 ? 1 : 0), fN(m.total), fN(m.ajm), fN(suma(m.l.map(s => s.ret))), fN(suma(m.l.map(s => s.gas)))])]
+    : [["Semana", "Ganancia", "Por semana", "Ajustes a mano", "Retiros", "Gastos"], ss.slice().reverse().map(s => [s.txt, fN(valGan(s)), fN(porSem(valGan(s), s)), fN(s.aj), fN(s.ret), fN(s.gas)])]);
+  return seccion("ganancia", "Ganancia", null, ctl, resumenTxt,
+    h("div", { class: "card" }, h("h3", {}, ST.vista === "mes" ? "Ganancia por mes" : "Ganancia por semana"),
+      ayuda(ST.base === "antes" ? "Lo que dejó la operación antes de pagar gastos, comisiones, intereses a inversores e inversión." : "Lo que creció el patrimonio, más los retiros de los socios" + (ST.aj ? ", con los ajustes a mano." : ", sin los ajustes a mano."),
+        (ST.vista === "mes" ? "Suma de las semanas de cada mes (mes del jueves). Los meses sin terminar se dibujan solo con el contorno." : "La hoja de dos semanas se dibuja con el doble de ancho y su alto es el promedio por semana. La línea fina es la semana típica (mediana) del período.") + (ST.aj ? " La parte clara es el ajuste a mano." : ""),
+        "Calculadora Semanal y retiros cargados en config.json."),
+      lienzo(grafGanancia), ST.vista === "sem" ? leyendaMarcas() : null, tabla),
+    comoVenimos());
+}
+function comoVenimos() {
+  const ss = RANGO().filter(s => ok(s.gan));
+  if (ss.length < 10) return null;
+  const ult = ss.slice(-8), ant = ss.slice(0, -8);
+  const fila = (n, l) => {
+    const sem = suma(l.map(s => s.dias / 7)), t = suma(l.map(gan));
+    const lim = l.filter(s => !tieneMarca(s, "rev")), semL = suma(lim.map(s => s.dias / 7)), tL = suma(lim.map(gan));
+    return h("tr", {}, h("td", { class: "izq" }, n, h("br"), h("small", { class: "nota" }, `${l[0].txt} a ${l[l.length - 1].txt}`)), h("td", {}, fN(sem ? t / sem : null)), h("td", {}, fN(semL ? tL / semL : null)), h("td", { class: "solo-ancho" }, fN(sem, 0)));
+  };
+  return h("div", { class: "card" }, h("h3", {}, "Cómo venimos (ganancia por semana)"),
+    ayuda("Compara las últimas 8 semanas con las anteriores del período, con y sin las semanas marcadas para revisar (saltos que no están explicados).",
+      "Ganancia del tramo ÷ semanas del tramo" + (ST.aj ? ", con ajustes a mano." : ", sin ajustes a mano."), null),
+    h("div", { class: "tw" }, h("table", { class: "t" }, h("thead", {}, h("tr", {}, h("th", {}, "Tramo"), h("th", {}, "Por semana"), h("th", {}, "Sin semanas a revisar"), h("th", { class: "solo-ancho" }, "Semanas"))),
+      h("tbody", {}, fila("Últimas 8 semanas", ult), fila("Antes", ant)))));
+}
+function verComoTabla([cols, filas]) {
+  return h("details", { class: "vt" }, h("summary", {}, "Ver como tabla"), h("div", { class: "tw" }, h("table", { class: "t" },
+    h("thead", {}, h("tr", {}, cols.map(c => h("th", {}, c)))), h("tbody", {}, filas.map(f => h("tr", {}, f.map(c => h("td", {}, c))))))));
+}
+
+function seccionPlata() {
+  const s = W[ST.foco], p = IDX[s.id] > 0 ? W[IDX[s.id] - 1] : null;
+  const filas = ORDEN_GR.filter(g => Math.abs(s.grupos[g]) > 0.5).map(g => ({
+    n: GR[g].n, b: s.grupos[g], v: fN(s.grupos[g]), sub: s.grupos[g] < 0 ? "(debemos)" : fPct(s.grupos[g], s.neto), cls: s.grupos[g] >= 0 ? "pos" : "",
+  }));
+  filas.push({ n: "Patrimonio neto", b: s.neto, v: fN(s.neto), tot: true, cls: "pos" });
+  const ars = s.ars, rango = RANGO();
+  const efecto = suma(rango.map(x => x.efecto));
+  return seccion("plata", "¿Dónde está la plata?", `Semana ${s.txt}. Todo en USD; los pesos, a $${NB}${miles(s.cot || 0)}.`,
+    h("div", { class: "grid g21" },
+      h("div", { class: "card" }, h("h3", {}, "Por tipo de caja"),
+        ayuda("Cuánto aporta cada tipo de caja al patrimonio. Las cajas incluyen sus pendientes, por eso alguna puede dar negativa (debemos).",
+          "Cada caja se asigna a un grupo por su nombre en la fila 1 de la hoja. Las garantías y los gastos de la semana suman cero y no se dibujan.",
+          `Calculadora, hoja ${s.hoja}.`),
+        barrasH(filas), h("button", { type: "button", class: "link", onclick: () => abrirSemana(ST.foco) }, "Ver cada caja")),
+      h("div", { class: "card" }, h("h3", {}, "Pesos y dólar"),
+        ayuda("Cuánto del patrimonio está en pesos y cuánto lo mueve el dólar. El efecto del dólar es una estimación: supone que los pesos quedaron quietos toda la semana.",
+          "Pesos en USD × cotización = pesos. Efecto de una semana = pesos de la semana anterior × (1/cotización nueva − 1/cotización anterior).", "Calculadora, cotización C8."),
+        h("div", { class: "v num", style: "font-size:24px" }, fARS(ars)),
+        h("div", { class: "l" }, `≈ ${fU(s.grupos.pesos)} · ${fPct(s.grupos.pesos, s.neto)} del patrimonio`),
+        h("div", { class: "l" }, "Si el dólar sube $10, el patrimonio baja ≈ ", h("b", {}, fU(s.sens10))),
+        h("div", { class: "l" }, "Efecto estimado del dólar en el período: ", h("b", {}, fSU(efecto))),
+        p && p.cot === s.cot ? h("div", { class: "l" }, h("span", { class: "tag w" }, "⚠ cotización igual a la semana anterior")) : null)),
+    h("div", { class: "card" }, h("h3", {}, "Disponible, proyectos y fijos a mano"),
+      ayuda("Cómo se reparte el patrimonio en el tiempo. Cuando la plata pasa de una caja a un proyecto, el disponible baja y los proyectos suben, pero el patrimonio queda igual.",
+        "Disponible = pesos + dólares billete + cripto + exterior y euros. Fijos a mano = participación en USDT General + deuda a cobrar.", "Calculadora Semanal."),
+      lienzo(grafEvolucion)));
+}
+
+function mesesRango() {
+  const por = new Map();
+  for (const s of RANGO()) { if (!ok(s.gan)) continue; if (!por.has(s.mes)) por.set(s.mes, []); por.get(s.mes).push(s); }
+  return [...por.entries()].map(([id, l]) => {
+    const m = MESES[id];
+    const det = { gastos: 0, comisiones: 0, intereses: 0, inversion: 0, otros: 0 };
+    for (const s of l) for (const k in det) det[k] += s.gas_det[k] || 0;
+    return { id, l, parcial: !m.completo || l.length < m.hojas.length, antes: suma(l.map(antes)), gas: suma(l.map(s => s.gas)), det, ret: suma(l.map(s => s.ret)), ingresos: suma(l.map(s => s.ingresos || 0)) };
+  });
+}
+function seccionGastos() {
+  const ms = mesesRango();
+  const tot = { antes: suma(ms.map(m => m.antes)), gas: suma(ms.map(m => m.gas)) };
+  return seccion("gastos", "Gastos", "¿La operación cubre los costos? Por mes, porque los costos fijos se pagan juntos una semana de cada mes.",
+    h("div", { class: "card" }, h("h3", {}, "Antes de gastos y gastos, por mes"),
+      ayuda("Lo que dejó la operación antes de pagar (azul) y lo que se pagó en gastos, comisiones, intereses a inversores e inversión (naranja). La diferencia es la ganancia del mes. Los retiros de socios no son gastos y no están acá.",
+        "Antes de gastos = ganancia + gastos" + (ST.aj ? " (con ajustes a mano)." : " (sin ajustes a mano)."), "Calculadora: columnas GASTOS, FIJOS, COMISIONES, INTERESES e INVERSION."),
+      lienzo((el, w) => grafGastos(el, w, ms)),
+      h("div", { class: "tw" }, h("table", { class: "t" },
+        h("thead", {}, h("tr", {}, ["Mes", "Antes de gastos", "Gastos", "Comisiones", "Intereses", "Inversión", "Total pagado", "Ganancia", "Retiros (no es gasto)"].map((c, i) => h("th", { class: (i >= 2 && i <= 5) || i === 8 ? "solo-ancho" : "" }, c)))),
+        h("tbody", {}, ms.map(m => h("tr", {}, h("td", {}, mesNombre(m.id) + (m.parcial ? " (parcial)" : "")), h("td", {}, fN(m.antes)), h("td", { class: "solo-ancho" }, fN(m.det.gastos)),
+          h("td", { class: "solo-ancho" }, fN(m.det.comisiones)), h("td", { class: "solo-ancho" }, fN(m.det.intereses)), h("td", { class: "solo-ancho" }, fN(m.det.inversion)),
+          h("td", {}, fN(m.gas)), h("td", {}, fN(m.antes - m.gas)), h("td", { class: "solo-ancho" }, fN(m.ret))))),
+        h("tfoot", {}, h("tr", {}, h("td", {}, "Período"), h("td", {}, fN(tot.antes)), h("td", { class: "solo-ancho" }, fN(suma(ms.map(m => m.det.gastos)))), h("td", { class: "solo-ancho" }, fN(suma(ms.map(m => m.det.comisiones)))),
+          h("td", { class: "solo-ancho" }, fN(suma(ms.map(m => m.det.intereses)))), h("td", { class: "solo-ancho" }, fN(suma(ms.map(m => m.det.inversion)))), h("td", {}, fN(tot.gas)), h("td", {}, fN(tot.antes - tot.gas)), h("td", { class: "solo-ancho" }, fN(suma(ms.map(m => m.ret))))))))),
+      h("p", { class: "nota" }, "Retiros de socios del período: ", h("b", {}, fU(suma(ms.map(m => m.ret)))), " (no son gastos del negocio)."));
+}
+
+function seccionSocios() {
+  const S = D.socios;
+  const ss = RANGO().filter(s => ok(s.gan));
+  const ganPer = suma(ss.map(s => s.gan_con));
+  const ganPerSin = suma(ss.map(s => s.gan));
+  const colores = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--dato)"];
+  const barra = h("div", { style: "display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px", role: "img", "aria-label": "Tenencia de cada socio" },
+    S.lista.map((so, i) => h("span", { style: `flex:${so.pct};background:${colores[i]}` })));
+  const tenAl = S.tenencia_al;
+  const pend = D.meses.filter(m => tenAl && m.id > tenAl.slice(0, 7) && ok(m.gan_con));
+  const regla = D.config.regla_dividendo;
+  return seccion("socios", "Socios", `Tenencia según la hoja Tenencia del Value CG${tenAl ? ", cargada hasta el " + dm(tenAl) : ""}. Lo posterior es una cuenta sobre la ganancia, no el capital oficial.`,
+    h("div", { class: "card" }, h("h3", {}, "Quién tiene qué y cuánto le toca"),
+      ayuda("La parte de cada socio de la ganancia del período elegido arriba (con los ajustes a mano, porque la ganancia de USDT General también es de la sociedad).",
+        "Ganancia del período × % del socio. Los % de la hoja Tenencia suman " + miles(S.suma_pct, 2) + "%.", "Hoja Tenencia del Value CG y Calculadora Semanal."),
+      barra, h("div", { class: "ley" }, S.lista.map((so, i) => h("span", {}, h("span", { class: "sw", style: `background:${colores[i]}` }), `${so.nombre} ${miles(so.pct, 2)}%`))),
+      h("p", { class: "sub" }, `Ganancia del período (${RANGO()[0].txt} a ${W[ST.hasta].txt}): `, h("b", {}, fU(ganPer)), ` con ajustes a mano (${fU(ganPerSin)} sin ellos).`),
+      h("div", { class: "tw" }, h("table", { class: "t" },
+        h("thead", {}, h("tr", {}, h("th", {}, "Socio"), h("th", { class: "solo-ancho" }, "%"), h("th", { class: "solo-ancho" }, "Aporte"), h("th", {}, `Capital al ${tenAl ? dm(tenAl) : "—"}`), h("th", {}, "Su parte del período"))),
+        h("tbody", {}, S.lista.map(so => h("tr", {}, h("td", {}, so.nombre, h("span", { class: "nota" }, " " + miles(so.pct, 2) + "%")), h("td", { class: "solo-ancho" }, miles(so.pct, 2)), h("td", { class: "solo-ancho" }, fN(so.aporte)), h("td", {}, fN(so.capital)), h("td", {}, fN(ganPer * so.pct / 100))))),
+        h("tfoot", {}, h("tr", {}, h("td", {}, "Total"), h("td", { class: "solo-ancho" }, miles(S.suma_pct, 2)), h("td", { class: "solo-ancho" }, fN(S.aportes)), h("td", {}, fN(suma(S.lista.map(x => x.capital)))), h("td", {}, fN(ganPer * S.suma_pct / 100))))))),
+    pend.length ? h("div", { class: "card" }, h("h3", {}, "Meses sin repartir"),
+      ayuda(`La hoja Tenencia reparte como dividendo el ${miles(regla * 100)}% de la ganancia de cada mes. Estos meses no tienen el reparto cargado: es lo que daría la regla, no lo que se pagó.`,
+        `${miles(regla * 100)}% de la ganancia del mes con ajustes a mano, por el % de cada socio.`, "Hoja Tenencia (regla) y Calculadora Semanal (ganancia)."),
+      h("div", { class: "tw" }, h("table", { class: "t" },
+        h("thead", {}, h("tr", {}, h("th", {}, "Mes"), h("th", {}, "Ganancia"), h("th", {}, `${miles(regla * 100)}% según la regla`), S.lista.map(so => h("th", { class: "solo-ancho" }, so.nombre)))),
+        h("tbody", {}, pend.map(m => h("tr", {}, h("td", {}, mesNombre(m.id) + (m.completo ? "" : " (en curso)") + (m.hojas.some(id => tieneMarca(W[IDX[id]], "rev")) ? " ?" : "")),
+          h("td", {}, fN(m.gan_con)), h("td", {}, fN(m.gan_con * regla)), S.lista.map(so => h("td", { class: "solo-ancho" }, fN(m.gan_con * regla * so.pct / 100)))))))),
+      pend.some(m => m.hojas.some(id => tieneMarca(W[IDX[id]], "rev"))) ? h("p", { class: "nota" }, "? = el mes tiene semanas a revisar: conviene aclararlas antes de repartir.") : null) : null,
+    h("div", { class: "card" }, h("h3", {}, "Retiros registrados"),
+      h("div", { class: "tw" }, h("table", { class: "t" }, h("thead", {}, h("tr", {}, h("th", {}, "Semana"), h("th", {}, "Monto"), h("th", { class: "izq" }, "Detalle"))),
+        h("tbody", {}, W.flatMap(s => s.ret_det.map(r => h("tr", { class: "fila-click", onclick: () => abrirSemana(IDX[s.id]) }, h("td", {}, s.txt), h("td", {}, fN(r.monto, r.monto % 1 ? 2 : 0)),
+          h("td", { class: "izq" }, r.detalle, r.confirmado ? null : [" ", h("span", { class: "tag w" }, "a confirmar")])))))))));
+}
+
+function seccionSemanas() {
+  const ss = RANGO().slice().reverse();
+  const cols = ["Semana", "Patrimonio", "Ganancia", "Antes de gastos", "Gastos", "Retiros", "Ajustes a mano", "Según la planilla", "Cotización", "Marcas"];
+  const ancho = i => (i >= 3 && i <= 8 ? "solo-ancho" : "");
+  const fila = s => {
+    const celdas = [
+      s.txt, fN(s.neto), fN(gan(s)), fN(antes(s)), fN(s.gas), s.ret ? fN(s.ret) : "", s.aj ? fS(s.aj) : "",
+      s.gan_planilla_error ? s.gan_planilla_error : fN(s.gan_planilla), ok(s.cot) ? miles(s.cot) : "",
+      s.marcas.map(m => h("span", { class: m.k === "rev" || m.k === "dudoso" ? "w" : "", title: NOM_MARCA[m.k] }, ICO[m.k])),
+    ];
+    const abrir = () => abrirSemana(IDX[s.id]);
+    return h("tr", { class: "fila-click" + (IDX[s.id] === ST.foco ? " foco" : ""), onclick: abrir, tabindex: "0", onkeydown: e => { if (e.key === "Enter") abrir(); } },
+      celdas.map((c, i) => h("td", { class: (ancho(i) + (i === 9 ? " marcas" : "")).trim() }, c)));
+  };
+  const tabla = h("table", { class: "t" },
+    h("thead", {}, h("tr", {}, cols.map((c, i) => h("th", { class: ancho(i) }, c)))),
+    h("tbody", {}, ss.map(fila)));
+  return seccion("semanas", "Todas las semanas", "La más nueva arriba. Tocá una fila para ver el detalle. «Según la planilla» es la celda Ganancia Neta de cada hoja, para comparar.",
+    h("div", { class: "card", style: "padding:0" }, h("div", { class: "tw", style: "max-height:70vh" }, tabla)));
+}
+
+const GLOSARIO = [
+  ["Patrimonio neto", "Lo que vale Cambio General al cierre del domingo, todo en dólares.", "Neto (Calculadora), CAPITAL (Value CG)"],
+  ["Ganancia de la semana", "Cuánto creció el patrimonio contra el domingo anterior, más los retiros de los socios y sin los ajustes a mano.", "Ganancia Neta (Calculadora), GANxCORTE (Value CG)"],
+  ["Antes de gastos", "Lo que dejó la operación antes de pagar gastos, comisiones, intereses e inversión.", "Ganancia Bruta, BRUTOxSEM"],
+  ["Gastos", "Gastos, comisiones pagadas, intereses a inversores e inversión de la semana. Se pagan casi todos juntos una semana por mes.", "Egresos, columnas GASTOS, FIJOS, COMISIONES, INTERESES, INVERSION"],
+  ["Retiros de socios", "Dividendos y la liquidación de un ex socio. Bajan el patrimonio pero no son una pérdida del negocio.", "Columna DIVIDENDOS; filas «Dividendos» del Value CG"],
+  ["Ajuste a mano", "Un cambio en los valores fijos que se escriben a mano en el bloque: la participación en USDT General y la deuda a cobrar. Suele ser ganancia de otro período cargada de golpe.", "Renglones USDT y Deuda del bloque"],
+  ["Participación USDT General", "La parte de Cambio General (2/3) en el negocio USDT General. Es un valor escrito a mano; no es la caja USDT.", "Renglón USDT del bloque (B13)"],
+  ["Caja USDT", "Saldo de USDT de la financiera, con sus pendientes. Puede ser negativo.", "Columna USDT"],
+  ["Deuda a cobrar", "Plata que le deben a la financiera, cargada como valor fijo.", "Renglón Deuda del bloque"],
+  ["Pendientes", "Operaciones abiertas al cierre. Se suman a cada caja tal como vienen del Registro General; su signo está a confirmar.", "Fila 3 de cada caja"],
+  ["Disponible", "Pesos, dólares billete, cripto y cuentas del exterior, con sus pendientes.", "—"],
+  ["Proyectos", "Polígono, Polígono 20+13 y Almafuerte, valuados por lo que se pagó.", "Columnas POLIGONO, ALMAFUERTE y una columna sin título"],
+  ["Cotización", "Pesos por dólar que se usaron para pasar los pesos a USD esa semana. Se escribe a mano.", "C8"],
+  ["Cara chica, Malos, Cambio", "Billetes de dólar viejos, dañados y chicos. Se suman a valor nominal.", "Columnas CARA CHICA, MALOS, CAMBIO"],
+  ["TRX", "Saldo en TRX (la red que se usa para mandar USDT). Se suma 1 a 1 como dólar.", "Columna TRX"],
+  ["Garantías", "Bienes tomados en garantía (Millamapu, Charcas, Promar…). Entran con +X y −X: no suman al patrimonio.", "Columnas MILLAMAPU, CHARCAS, PROMAR, JEEP, GOL TREND"],
+  ["Semana típica", "La mediana de la ganancia de las 8 semanas anteriores: la mitad ganó más y la mitad menos. Una semana extraordinaria no la mueve.", "—"],
+  ["Dos semanas", "La hoja 10–23 ago abarca dos semanas: para comparar se divide por dos.", "1008 - 2308 (Dos Semanas)"],
+  ["Lo operado", "Volumen de la semana pegado a mano en la Calculadora. Hay semanas copiadas: se muestra solo como referencia.", "Volumen Prom"],
+];
+function seccionCreo() {
+  const nivel = { ok: ["ok", "OK"], revisar: ["w", "Revisar"], info: ["", "Info"] };
+  const orden = { revisar: 0, ok: 1, info: 2 };
+  const ch = D.chequeos.slice().sort((a, b) => orden[a.nivel] - orden[b.nivel]);
+  const buscador = h("input", { class: "buscar", type: "search", id: "glos-q", placeholder: "Buscar un término (por ejemplo «Neto» o «GANxCORTE»)", "aria-label": "Buscar en el glosario" });
+  const dl = h("dl", {});
+  const pintarGlos = () => {
+    const q = buscador.value.trim().toLowerCase();
+    dl.replaceChildren(...GLOSARIO.filter(g => !q || g.join(" ").toLowerCase().includes(q)).flatMap(([t, d, p]) => [h("dt", {}, t), h("dd", {}, d, " ", h("i", {}, "En la planilla: " + p + "."))]));
+  };
+  buscador.addEventListener("input", pintarGlos);
+  pintarGlos();
+  return seccion("creo", "¿Le creo a estos números?", `Datos de ${D.meta.hojas} hojas (${W[0].txt} a ${W[W.length - 1].txt}). Generado el ${D.meta.generado}.`,
+    h("div", { class: "chq" }, ch.map(c => h("div", { class: "chq-i" }, h("span", { class: "tag " + nivel[c.nivel][0] }, nivel[c.nivel][1]), h("b", {}, c.titulo),
+      h("p", {}, c.texto || "", c.semanas && c.semanas.length && c.semanas.length <= 3 ? c.semanas.map(id => [" ", h("button", { type: "button", class: "link", onclick: () => abrirSemana(IDX[id]) }, "Ver " + W[IDX[id]].txt)]) : null)))),
+    h("div", { class: "card" }, h("h3", {}, "Cómo se calcula"),
+      h("dl", { class: "cuenta", style: "grid-template-columns:1fr" },
+        ["Patrimonio neto: el Neto de cada hoja de la Calculadora, recalculado desde las cajas.",
+          "Ganancia de la semana: patrimonio − patrimonio de la hoja anterior + retiros de socios − ajustes a mano.",
+          "Antes de gastos: ganancia + gastos, comisiones, intereses e inversión de la semana.",
+          "Por semana: la hoja de dos semanas se divide por dos.",
+          "Mes: cada semana va al mes de su jueves. Un mes está completo cuando se cargó la semana de su último jueves.",
+          "Grupos de cajas: por el nombre de la fila 1 de cada hoja (lista en config.json).",
+          "Efecto del dólar: pesos de la semana anterior × (1/cotización nueva − 1/cotización anterior). Es una estimación."].map(t => h("dd", { style: "text-align:left;color:var(--ink-2)" }, t)))),
+    h("div", { class: "card glos" }, h("h3", {}, "Glosario"), buscador, dl));
+}
+
+// ------------------------------------------------------------------------------------------------ detalle de una semana
+const capa = document.getElementById("capa");
+let volverA = null;
+function cerrarCapa() {
+  capa.replaceChildren(); document.body.classList.remove("panel-abierto");
+  if (location.hash.startsWith("#semana-")) history.replaceState(null, "", location.pathname + location.search);
+  if (volverA && volverA.isConnected) volverA.focus();
+}
+function abrirCapa(titulo, sub, contenido, nav) {
+  volverA = document.activeElement;
+  const panel = h("div", { class: "panel", role: "dialog", "aria-modal": "true", "aria-label": titulo },
+    h("div", { class: "panel-h" }, nav ? nav[0] : null, h("h2", {}, titulo, sub ? h("small", {}, sub) : null), nav ? nav[1] : null,
+      h("button", { type: "button", class: "b-ic", "aria-label": "Cerrar", onclick: cerrarCapa }, "✕")),
+    h("div", { class: "panel-c" }, contenido));
+  capa.replaceChildren(h("div", { class: "velo", onclick: cerrarCapa }), panel);
+  document.body.classList.add("panel-abierto");
+  panel.querySelector(".panel-c").focus?.();
+  (panel.querySelector(".panel-h .b-ic:last-child") || panel).focus();
+}
+document.addEventListener("keydown", e => {
+  if (!capa.childElementCount) return;
+  if (e.key === "Escape") cerrarCapa();
+  const det = capa.querySelector("[data-semana]");
+  if (det && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.target.closest("input,select")) {
+    const i = Number(det.dataset.semana) + (e.key === "ArrowLeft" ? -1 : 1);
+    if (i >= 0 && i < W.length) abrirSemana(i);
+  }
+});
+
+function abrirSemana(i) {
+  if (i === undefined || i < 0) return;
+  ST.foco = i; render(true);
+  const s = W[i], p = i > 0 ? W[i - 1] : null;
+  try { history.replaceState(null, "", "#semana-" + s.id); } catch (e) { /* sin URL */ }
+  const nav = [h("button", { type: "button", class: "b-ic", "aria-label": "Semana anterior", disabled: i === 0 ? true : null, onclick: () => abrirSemana(i - 1) }, "‹"),
+    h("button", { type: "button", class: "b-ic", "aria-label": "Semana siguiente", disabled: i === W.length - 1 ? true : null, onclick: () => abrirSemana(i + 1) }, "›")];
+  const c = h("div", { style: "display:grid;gap:16px", "data-semana": String(i) });
+  c.append(h("div", { class: "tres" },
+    h("div", {}, h("span", {}, "Patrimonio"), h("b", {}, fK(s.neto))),
+    h("div", {}, h("span", {}, "Ganancia"), h("b", {}, fK(gan(s)))),
+    h("div", {}, h("span", {}, "Gastos"), h("b", {}, fK(s.gas)))));
+  c.append(h("div", {}, h("h3", {}, "La cuenta de la semana"), cuentaSemana(s), s.dias === 14 && ok(s.gan) ? h("p", { class: "nota" }, `Son dos semanas: ${fU(s.gan / 2)} por semana.`) : null));
+  if (s.marcas.length) c.append(h("div", {}, h("h3", {}, "Marcas"), h("div", { class: "avisos" }, s.marcas.map(m => h("div", { class: "aviso" + (m.k === "rev" || m.k === "dudoso" ? "" : " info") }, h("span", { class: "ic" }, ICO[m.k]), h("span", {}, h("b", {}, NOM_MARCA[m.k] + ". "), m.t))))));
+  if (p) {
+    const filas = [{ n: "Semana anterior", a: p.neto, b: p.neto, v: fN(p.neto), sinBarra: true }];
+    let acc = p.neto;
+    for (const g of ORDEN_GR) {
+      const d = (s.grupos[g] || 0) - (p.grupos[g] || 0);
+      if (Math.abs(d) < 0.5) continue;
+      filas.push({ n: GR[g].n, a: acc, b: acc + d, v: fS(d), cls: d >= 0 ? "pos" : "" });
+      acc += d;
+    }
+    filas.push({ n: "Esta semana", a: s.neto, b: s.neto, v: fN(s.neto), tot: true });
+    const dPend = suma(ORDEN_GR.map(g => (s.pend[g] || 0) - (p.pend[g] || 0)));
+    c.append(h("div", {}, h("h3", {}, "¿De dónde salió? (cambio por tipo de caja)"), barrasH(filas, { sinCero: true }),
+      h("p", { class: "nota" }, "Si una caja sube y otra baja casi lo mismo, es plata que se movió de una a otra (por ejemplo, se compraron pesos con dólares): no es ganancia. ",
+        `De la variación total (${fS(s.var)}), ${fS(dPend)} vino de pendientes (fila 3) y ${fS(s.var - dPend)} de saldos.`)));
+  }
+  // cajas
+  const visibles = s.cajas.filter(x => x.suma && (Math.abs(x.usd || 0) > 0.5 || (x.usd_prev !== null && Math.abs(x.usd_prev) > 0.5)));
+  const ocultas = s.cajas.length - visibles.length;
+  const tabla = (lista) => h("div", { class: "tw" }, h("table", { class: "t" },
+    h("thead", {}, h("tr", {}, h("th", {}, "Caja"), h("th", {}, "En su moneda"), h("th", {}, "USD"), h("th", {}, "Cambio"))),
+    h("tbody", {}, ORDEN_GR.concat(["garantias", "flujos"]).flatMap(g => {
+      const l = lista.filter(x => x.g === g);
+      if (!l.length) return [];
+      return [h("tr", { class: "grupo" }, h("td", { colspan: "4" }, (GR[g] || { n: g === "garantias" ? "Garantías (no suman)" : "Gastos e ingresos de la semana (netean en el patrimonio)" }).n)),
+        ...l.map(x => h("tr", {}, h("td", {}, x.n.charAt(0) + x.n.slice(1).toLowerCase(), x.heredado ? [" ", h("span", { class: "tag w" }, "sin título")] : null, !x.suma ? [" ", h("span", { class: "tag" }, "no suma")] : null),
+          h("td", {}, x.mon === "ARS" ? fARS(x.t) : x.mon === "EUR" ? "€" + NB + fN(x.t) : x.mon === "REAL" ? "R$" + NB + fN(x.t) : fN(x.t)),
+          h("td", {}, x.suma ? fN(x.usd) : "—"), h("td", {}, x.suma && x.usd_prev !== null ? fS((x.usd || 0) - x.usd_prev) : "")))];
+    }))));
+  const cont = h("div", {}, tabla(visibles));
+  c.append(h("div", {}, h("h3", {}, "Cajas"), cont,
+    ocultas ? h("button", { type: "button", class: "link", onclick: ev => { cont.replaceChildren(tabla(s.cajas)); ev.target.remove(); } }, `Ver todas (${ocultas} más, en cero o que no suman)`) : null,
+    h("p", { class: "nota" }, "Cada caja incluye sus pendientes. Un saldo negativo quiere decir que, según el cierre del Registro General, salió más de lo que había (pendientes o plata de terceros).")));
+  // cotización y operado
+  c.append(h("div", {}, h("h3", {}, "Cotización y lo operado"),
+    h("dl", { class: "cuenta" },
+      h("dt", {}, "Dólar usado"), h("dd", {}, ok(s.cot) ? "$" + NB + miles(s.cot) + (p && p.cot === s.cot ? " ⚠ igual a la anterior" : p && ok(p.cot) ? ` (antes ${miles(p.cot)})` : "") : "—"),
+      h("dt", {}, "Euro usado"), h("dd", {}, ok(s.eur) ? "USD" + NB + miles(s.eur, 2) : "—"),
+      h("dt", {}, "Efecto estimado del dólar"), h("dd", {}, fS(s.efecto)),
+      h("dt", {}, "Si el dólar sube $10"), h("dd", {}, fS(-(s.sens10 || 0))),
+      h("dt", {}, "Lo operado (cargado a mano)"), h("dd", {}, fN(s.volumen)),
+      ok(s.volumen) && ok(antes(s)) ? [h("dt", {}, "Antes de gastos sobre lo operado"), h("dd", {}, miles(100 * antes(s) / s.volumen, 2) + "%")] : null,
+      ok(s.volumen) ? [h("dt", {}, "Tus referencias (2% · 1% · 0,5%)"), h("dd", {}, [0.02, 0.01, 0.005].map(f => fN(s.volumen * f)).join(" · "))] : null),
+    h("p", { class: "nota" }, "El volumen se pega a mano y hay semanas copiadas: tomalo como referencia.")));
+  c.append(h("p", { class: "nota" }, `Ver en la planilla: Calculadora, hoja «${s.hoja}», celda ${s.celda_neto} (patrimonio)${s.celda_gan ? " y " + s.celda_gan + " (ganancia)" : ""}. Archivo: ${s.origen}.`));
+  abrirCapa(s.txt, `${dmy(s.ini)} al ${dmy(s.fin)} · hoja ${s.hoja}`, c, nav);
+}
+
+function abrirListaSemanas() {
+  const l = h("div", { class: "lista-sem" }, W.slice().reverse().map(s => h("button", { type: "button", "aria-current": String(IDX[s.id] === ST.foco), onclick: () => { ST.foco = IDX[s.id]; cerrarCapa(); render(); } },
+    h("span", { class: "f" }, s.txt), h("span", { class: "m num" }, fK(s.neto) + " · " + (ok(gan(s)) ? fS(gan(s)) : "—")), h("span", { class: "marcas" }, s.marcas.map(m => h("span", { class: m.k === "rev" || m.k === "dudoso" ? "w" : "" }, ICO[m.k]))))));
+  abrirCapa("Elegir semana", "Cambia las tarjetas, la composición y el detalle", l);
+}
+function abrirPeriodo() {
+  const opts = W.map((s, i) => [i, s.txt]);
+  const d = h("select", { class: "sel", id: "p-desde", "aria-label": "Desde" }, opts.map(([i, t]) => h("option", { value: i, selected: i === ST.desde ? true : null }, t)));
+  const a = h("select", { class: "sel", id: "p-hasta", "aria-label": "Hasta" }, opts.map(([i, t]) => h("option", { value: i, selected: i === ST.hasta ? true : null }, t)));
+  const aplicar = () => {
+    let x = Number(d.value), y = Number(a.value);
+    if (x > y) [x, y] = [y, x];
+    ST.periodo = "elegido"; guardar("periodo", "elegido"); guardar("rango", [W[x].id, W[y].id]);
+    aplicarPeriodo(); cerrarCapa(); render();
+  };
+  abrirCapa("Elegir período", "Desde qué semana y hasta cuál", h("div", { style: "display:grid;gap:12px" },
+    h("label", { class: "fila-sel" }, "Desde ", d), h("label", { class: "fila-sel" }, "Hasta ", a),
+    h("div", {}, h("button", { type: "button", class: "btn", onclick: aplicar }, "Aplicar"))));
+}
+function abrirAyuda() {
+  abrirCapa("Cómo leer este tablero", null, h("div", { style: "display:grid;gap:10px;font-size:14px" },
+    h("p", { style: "margin:0" }, h("b", {}, "1. Patrimonio neto. "), "Lo que vale Cambio General, todo pasado a dólares. No es todo plata disponible: la mitad está en proyectos."),
+    h("p", { style: "margin:0" }, h("b", {}, "2. Ganancia de la semana. "), "Cuánto creció el patrimonio, sumando los retiros de los socios. Por defecto no incluye los ajustes a mano (por ejemplo, la ganancia de USDT General de varios meses cargada de golpe). El botón «Con ajustes» los incluye."),
+    h("p", { style: "margin:0" }, h("b", {}, "3. Marcas. "), "◆ ajuste a mano · ? a revisar (salto sin explicar) · ▼ retiro de socios · ⧉ dos semanas · ⚠ dato dudoso · • costos fijos. Tocá una semana para ver su explicación."),
+    h("p", { style: "margin:0" }, h("b", {}, "4. Período. "), "Arriba elegís qué semanas mirar (todo, últimos 3 meses, últimas 8 semanas o un rango). La semana foco (el botón con la fecha) define las tarjetas y la composición."),
+    h("p", { style: "margin:0" }, h("b", {}, "5. ¿De dónde sale? "), "De la Calculadora Semanal, hoja por hoja. Los socios, de la hoja Tenencia del Value CG. Al final están los chequeos y el glosario.")));
+}
+
+// ------------------------------------------------------------------------------------------------ armado
+function filtros() {
+  const f = document.getElementById("filtros");
+  const pres = [["todo", "Todo", "Todo"], ["3m", "Últimos 3 meses", "3 meses"], ["8s", "Últimas 8 semanas", "8 semanas"]];
+  f.replaceChildren(
+    h("span", { class: "lbl" }, "Período"),
+    h("div", { class: "seg", role: "group", "aria-label": "Período" },
+      pres.map(([v, t, c]) => h("button", { type: "button", "aria-pressed": String(ST.periodo === v), onclick: () => { ST.periodo = v; guardar("periodo", v); aplicarPeriodo(); render(); } }, h("span", { class: "largo" }, t), h("span", { class: "corto" }, c))),
+      h("button", { type: "button", "aria-pressed": String(ST.periodo === "elegido"), onclick: abrirPeriodo }, ST.periodo === "elegido" ? `${W[ST.desde].txt} → ${W[ST.hasta].txt}` : "Elegir…")),
+    seg("s-aj", [[false, "Sin ajustes"], [true, "Con ajustes"]], ST.aj, v => { ST.aj = v; guardar("aj", v); render(); }, "Ajustes a mano"));
+  const s = W[ST.foco];
+  document.getElementById("b-foco").replaceChildren(h("span", {}, s.txt), h("small", {}, ST.foco === W.length - 1 ? "última" : "▾"));
+}
+function render(conservarScroll) {
+  const y = window.scrollY;
+  filtros();
+  app.replaceChildren(
+    h("nav", { class: "anclas", "aria-label": "Secciones" }, [["resumen", "Resumen"], ["ganancia", "Ganancia"], ["plata", "¿Dónde está la plata?"], ["gastos", "Gastos"], ["socios", "Socios"], ["semanas", "Semanas"], ["creo", "¿Le creo?"]]
+      .map(([id, t]) => h("a", { href: "#" + id, onclick: e => { e.preventDefault(); document.getElementById(id).scrollIntoView({ behavior: sinMov() ? "auto" : "smooth" }); } }, t))),
+    resumen(), seccionGanancia(), seccionPlata(), seccionGastos(), seccionSocios(), seccionSemanas(), seccionCreo());
+  requestAnimationFrame(() => { dibujarTodo(); if (conservarScroll) window.scrollTo(0, y); });
+}
+document.getElementById("b-foco").addEventListener("click", abrirListaSemanas);
+document.getElementById("b-ayuda").addEventListener("click", abrirAyuda);
+render();
+const m0 = /^#semana-(\d{4}-\d{2}-\d{2})$/.exec(location.hash);
+if (m0 && IDX[m0[1]] !== undefined) abrirSemana(IDX[m0[1]]);
+else if (/^#(resumen|ganancia|plata|gastos|socios|semanas|creo)$/.test(location.hash)) requestAnimationFrame(() => document.querySelector(location.hash)?.scrollIntoView());
+</script>

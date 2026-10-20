@@ -50,5 +50,41 @@
       {"tipo": "Garantías y dividendos", "detalle": ["Garantias", "Dividendos"]},
       {"tipo": "Inversores", "inversores": true},
       {"tipo": "Clientes y cuentas corrientes", "resto": true}]
+  },
+  "value": {
+    "_nota": "Tablero Value · Cambio General (analisis/SPEC.md). Lo que la Calculadora Semanal no tiene se carga acá: grupos de cajas, alias de encabezados, retiros que no están en la columna DIVIDENDOS, semanas a revisar y socios. Montos en USD; semanas por su lunes de inicio (AAAA-MM-DD).",
+    "carpeta": "datos/value",
+    "anio": 2026,
+    "umbral_gastos_grandes": 5000,
+    "umbral_desvio_revisar": 2.5,
+    "semanas_tipicas": 8,
+    "grupos": {
+      "proyectos": ["POLIGONO", "POLIGONO 20+13", "ALMAFUERTE"],
+      "pesos": ["PESOS", "TRANSFER", "CHEQUES", "RECAUDACION BX", "BX", "DEUDA PESOS"],
+      "billete": ["CARA CHICA", "CAMBIO", "MALOS", "USD", "USD BSAS", "DEUDA USD"],
+      "cripto": ["USDT", "TRX", "USDT GENERAL"],
+      "exterior": ["LLC", "GRABRFY MANUEL", "GRABIFY", "GRABIFY JOSE", "GRABIFY BORRAR", "GRABIFI", "PAYPAL RUSO", "CITY BANK", "WISE US", "PAYONEER", "WISE", "EUROS", "REALES", "LIBRAS"],
+      "garantias": ["MILLAMAPU", "JEEP", "GOL TREND", "CHARCAS", "PROMAR"],
+      "flujos": ["GASTOS", "FIJOS", "COMISIONES", "INVERSION", "INTERESES", "DIVIDENDOS", "ALQUILERES"]
+    },
+    "alias": {"1": "CARA CHICA", "BSAS": "USD BSAS"},
+    "tipo_egreso": {"GASTOS": "gastos", "FIJOS": "gastos", "COMISIONES": "comisiones", "INTERESES": "intereses", "INVERSION": "inversion", "DIVIDENDOS": "retiros", "ALQUILERES": "ingresos"},
+    "renglones_fijos": {"USDT": "usdt_general", "DEUDA": "deuda"},
+    "retiros": [
+      {"semana": "2026-03-16", "monto": 22672, "detalle": "Dividendos (6.450) y liquidación de un ex socio (16.222)", "dentro_de": null, "confirmado": true},
+      {"semana": "2026-04-27", "monto": 3573, "detalle": "Dividendos de marzo, cargados dentro de INTERESES", "dentro_de": "INTERESES", "confirmado": false},
+      {"semana": "2026-07-06", "monto": 924.16, "detalle": "Dividendos de junio, cargados dentro de INTERESES", "dentro_de": "INTERESES", "confirmado": false}
+    ],
+    "semanas_a_revisar": {
+      "2026-08-10": "El pendiente de cheques pasó de −27,2 M a +0,8 M ARS (≈ +18.360 USD) sin aclarar. En la misma hoja sale Almafuerte (50.000) y entra Polígono 20+13 (75.466); su efecto neto es ≈ +130.",
+      "2026-08-24": "El patrimonio subió 42.940 en una semana sin explicación cargada: los pendientes de la caja USD pasaron de −45.347 a +14.119."
+    },
+    "socios": [
+      {"nombre": "Manuel", "pct": 28.13, "aporte": 20000},
+      {"nombre": "Francisco", "pct": 28.13, "aporte": 20000},
+      {"nombre": "Jose", "pct": 28.13, "aporte": 20000},
+      {"nombre": "Alejo", "pct": 15.62, "aporte": 11111.11}
+    ],
+    "regla_dividendo": 0.10
   }
 }

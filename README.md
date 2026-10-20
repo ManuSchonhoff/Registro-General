@@ -23,6 +23,13 @@ docs/
   metodologia.md                 cómo se calcula cada número y sus límites
   tablero_v2_spec.md             especificación del tablero v2 y del flujo semanal
   notas_duenos.md                (opcional) respuestas de los dueños a preguntas del asesor
+value.py                         tablero Value · Cambio General (patrimonio y ganancia) desde la Calculadora Semanal
+value/
+  leer.py                        lectura de la Calculadora: evalúa las fórmulas del bloque caja por caja
+  modelo.py                      ganancia, retiros, ajustes a mano, grupos, meses, marcas y chequeos
+  tablero.py                     inserta los datos en la plantilla
+  tablero_plantilla.html         interfaz del tablero Value (sin datos)
+analisis/                        inventario, informes de interpretación y SPEC del tablero Value
 .claude/agents/asesor-financiero.md   definición del agente asesor
 .claude/skills/informe-semanal/       rutina semanal (pipeline + asesor)
 datos/      (no se versiona)     Excels del registro
@@ -85,6 +92,32 @@ Opciones:
 | `--excluir-hoja "DDMM - DDMM"` | Todavía no disponible |
 
 El detalle de cada módulo, alerta y chequeo del v2 está en `docs/tablero_v2_spec.md`.
+
+## Tablero Value · Cambio General (patrimonio y ganancia)
+
+Lee la **Calculadora Semanal** (una hoja por semana, `DDMM - DDMM`) y arma un tablero interactivo para los socios:
+patrimonio neto, ganancia de la semana y del mes (con y sin ajustes a mano), dónde está la plata, gastos, la parte de
+cada socio y los chequeos de los datos. Las definiciones y las decisiones están en `analisis/SPEC.md`.
+
+```bash
+python3 value.py                     # lee datos/value/ y escribe salidas/value/
+python3 value.py --guardar-url <URL> # recuerda la URL del Artifact publicado
+```
+
+- **Datos:** los Excel van en `datos/value/` (no en `datos/`, que es del Registro), con la fecha adelante
+  (`AAAA-MM-DD_<nombre>.xlsx`). Puede ser la Calculadora completa o una hoja suelta: cada hoja semanal sale del archivo
+  más nuevo (por nombre) que la trae. El Value CG va en la misma carpeta: de su hoja Tenencia sale el capital de cada
+  socio.
+- **Salidas:** `salidas/value/<fecha>/tablero_value.html` (abrir en el navegador), `tablero_value_datos.json` (todos
+  los números) y la ruta fija `salidas/value/tablero_value_artifact.html` para republicar el mismo Artifact. La URL
+  queda en `salidas/value/estado_publicacion.json`.
+- **Lo que la planilla no tiene** va en `config.json` → `value`: grupos de cajas, alias de encabezados, retiros que no
+  están en la columna DIVIDENDOS (por ejemplo, los cargados dentro de INTERESES), semanas a revisar con su
+  explicación, socios y la regla del dividendo. Cuando el dueño explica una semana, se borra de `semanas_a_revisar`.
+- **Control:** el patrimonio se recalcula evaluando las fórmulas de cada hoja y se compara con el valor guardado. Si
+  alguna hoja no cierra, el código de salida es 2 y el tablero lo muestra en "¿Le creo a estos números?".
+- `analisis/inventario.py` regenera `analisis/00_inventario.md` (inventario factual de las planillas, sin nombres de
+  clientes; los nombres de terceros a ocultar van en `datos/value/nombres_a_ocultar.txt`).
 
 ## Uso de `correr.py` (paso a paso)
 
