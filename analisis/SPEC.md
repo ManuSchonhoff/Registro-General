@@ -106,12 +106,12 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
 | Dólares billete | CARA CHICA, CAMBIO, MALOS, USD, USD BsAs | Disponible |
 | Cripto | USDT (caja), TRX, USDT General (columna) | Disponible |
 | Exterior y euros | LLC, Grabify y variantes, PayPal Ruso, CITY BANK, WISE US, PAYONEER, WISE, EUROS, REALES, LIBRAS | Disponible |
-| Participación USDT General | renglón "USDT" del bloque (valor fijo a mano) | Fijo a mano |
-| Deuda a cobrar | renglón "Deuda" del bloque (valor fijo a mano) | Fijo a mano |
+| Participación USDT General | renglón "USDT" del bloque (valor fijo a mano) | Cargado a mano |
+| Deuda a cobrar | renglón "Deuda" del bloque (valor fijo a mano) | Cargado a mano |
 | Garantías | MILLAMAPU, JEEP, GOL TREND, CHARCAS, PROMAR | Netean 0: no se dibujan |
 | Egresos e ingresos de la semana | GASTOS, FIJOS, COMISIONES, INVERSION, INTERESES, DIVIDENDOS, ALQUILERES | Netean 0 en el Neto: no se dibujan |
 
-- **Disponible** = Pesos + Dólares billete + Cripto + Exterior y euros. **Inmovilizado** = Proyectos. **Fijo a mano** =
+- **Disponible** = Pesos + Dólares billete + Cripto + Exterior y euros. **Inmovilizado** = Proyectos. **Cargado a mano** =
   USDT General + Deuda. Las tres suman el patrimonio.
 - **Columna sin título:** hereda el nombre de la misma columna de la hoja anterior si allí tenía uno (hoy `AH` →
   "POLIGONO 20+13") y queda marcada para revisar. Si no tiene de dónde heredar, va a "Sin nombre" (Disponible) y
@@ -165,7 +165,7 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
        debajo de lo habitual"), sin rojo ni verde.
      - Ganancia del mes: total del mes de la foco, "N de M semanas" si está en curso, y "por semana" contra el mes
        anterior por semana.
-     - Disponible: monto y % del patrimonio; "Proyectos X (al costo) · Fijos a mano X".
+     - Disponible: monto y % del patrimonio; "Proyectos X (al costo) · Cargado a mano X".
    - **Franja "Para tener en cuenta"**: hasta 3 avisos (5 en escritorio), con ícono, frase y número, cada uno abre su
      semana. Se arman solos con los chequeos y las marcas.
    - **Patrimonio semana a semana**: línea con área suave, eje en 0, eje X de tiempo real. Rótulos solo en el inicio,
@@ -189,7 +189,7 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
 3. **¿Dónde está la plata?** (semana foco)
    - Barras horizontales divergentes por grupo (orden fijo de 3.4), con monto y %. Las negativas, a la izquierda con
      "(debemos)".
-   - Evolución: área apilada de 3 series (Disponible · Proyectos · Fijos a mano). Si en alguna semana una serie es
+   - Evolución: área apilada de 3 series (Disponible · Proyectos · Cargado a mano). Si en alguna semana una serie es
      negativa, se dibujan líneas en vez de área apilada.
    - **Pesos y dólar**: "$ 180,1 M ≈ USD 117.360 (33 %) · si el dólar sube $ 10, el patrimonio baja ≈ USD 760 · efecto
      estimado del dólar en el período: X".
@@ -264,7 +264,7 @@ base (el código los completa con los números):
 - **Semana típica.** La mediana de la ganancia de las 8 semanas anteriores: la mitad de las semanas ganó más y la mitad
   menos. No la mueve una semana extraordinaria.
 - **Disponible.** Pesos, dólares billete, cripto y cuentas del exterior, con sus pendientes. Sin proyectos ni valores
-  fijos a mano.
+  cargado a mano.
 - **Mes.** Cada semana se cuenta en el mes de su jueves (el que tiene más días de esa semana), como en el Value CG.
 
 **Glosario** (en "¿Le creo…?", con buscador; cada término dice cómo aparece en la planilla): Patrimonio neto (Neto,
@@ -304,7 +304,7 @@ Cambio, TRX, Garantías, Semana doble, Semana típica, Lo operado (Volumen Prom)
 | D2 | **Ajustes por defecto** (viz: con; usuario y riesgos: sin) | **Sin ajustes** por defecto, con el ajuste siempre visible (ícono ◆ y renglón en la cuenta de la semana) y el interruptor para incluirlo | El error más caro es repartir dividendos sobre una ganancia inflada. "Con ajustes" queda a un toque y la tabla trae la ganancia según la planilla para conciliar |
 | D3 | **Mes de cada semana** (datos/viz/negocio: jueves; riesgos: domingo) | Mes del jueves | Reproduce exacto los meses cerrados del Value CG |
 | D4 | **Veredicto por volumen** (usuario lo pide; datos y riesgos dicen que el volumen es poco confiable) | Sin veredicto en la primera pantalla: se compara con la semana típica. El volumen y las referencias del dueño (2 / 1 / 0,5 %) se muestran en el detalle, rotulados "cargado a mano" | El volumen está copiado en varias hojas y solo existe en la Calculadora desde mayo; un veredicto sobre él daría una conclusión falsa con aspecto de precisa |
-| D5 | **Agrupar el patrimonio** (viz: 6 grupos; usuario: 4 partes; riesgos: por naturaleza) | 7 grupos por caja para la foto y 3 (Disponible · Proyectos · Fijos a mano) para la evolución y la tarjeta | Cubre las tres miradas: dónde está cada peso y cuánto es plata disponible |
+| D5 | **Agrupar el patrimonio** (viz: 6 grupos; usuario: 4 partes; riesgos: por naturaleza) | 7 grupos por caja para la foto y 3 (Disponible · Proyectos · Cargado a mano) para la evolución y la tarjeta | Cubre las tres miradas: dónde está cada peso y cuánto es plata disponible |
 | D6 | **Semanas sin explicar** (usuario: sacarlas del promedio; viz: marcarlas; riesgos: mostrar ambas cifras) | Se marcan con ? y se incluyen en los totales; "Cómo venimos" muestra los tramos con y sin ellas; la semana típica usa mediana | No se puede afirmar que no sean ganancia; tampoco que lo sean |
 | D7 | Efecto del dólar (riesgos: barra aparte; viz: solo detalle) | Solo en el detalle y en "Pesos y dólar", rotulado "estimado" | Es una aproximación: restarlo de la ganancia mezclaría un número estimado con los de la planilla |
 | D8 | Retiros dentro de INTERESES (3.573 el 27/04–03/05; 924,16 el 06–12/07) | Se tratan como retiros, marcados "a confirmar" | Coinciden exacto con los dividendos del Value CG (`T25`, `T39`) |
