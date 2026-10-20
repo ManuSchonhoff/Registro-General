@@ -78,7 +78,7 @@ Notación: *t* = hoja semanal (orden cronológico); *t−1* = la hoja inmediatam
 | **Egresos del negocio** `gas(t)` | Gastos, comisiones pagadas, intereses a inversores e inversión de la semana | `egr(t) − ret_dentro_de_egresos(t)`, desglosado por tipo según el coeficiente de cada columna en la fórmula de Egresos (GASTOS y FIJOS → Gastos; COMISIONES; INTERESES menos lo reclasificado como retiro; INVERSION) |
 | **Antes de gastos** | Lo que dejó la operación antes de pagar gastos, comisiones, intereses e inversión | `gan(t) + gas(t)` (con o sin ajustes según el interruptor) |
 | **Por semana** | Para comparar semanas de distinto largo | valor ÷ (`d(t)` ÷ 7). Solo cambia la hoja doble |
-| **Semana típica** | Referencia para decir si una semana estuvo arriba o abajo de lo habitual | Mediana de la ganancia por semana (sin ajustes) de las **8 hojas anteriores** a la semana foco |
+| **Semana típica** | Referencia para decir si una semana estuvo arriba o abajo de lo habitual | Mediana de la ganancia por semana (sin ajustes) de las **8 hojas anteriores** a la semana foco. La línea del gráfico de ganancia se llama "mediana" (es la del período y sigue los interruptores) para no confundirlas |
 
 Control: `gan_con_ajustes(t) + gas(t)` = Ganancia Bruta de la planilla + retiros que no están en Egresos. El auditor lo
 verifica semana por semana.
@@ -86,8 +86,9 @@ verifica semana por semana.
 ### 3.3 Mes
 
 - **Regla de mes:** cada hoja va al mes de su **jueves** (= el mes con más días de la semana). Para la hoja doble, el
-  jueves de su segunda semana (20/08 → agosto). Reproduce los meses cerrados del Value CG (abril 52.366,61 y mayo
-  29.747,29 de variación + dividendos de la columna).
+  jueves de su segunda semana (20/08 → agosto). Agrupa las mismas semanas que los meses cerrados del Value CG. Los
+  montos difieren donde la definición de 3.2 suma retiros que el Value CG no sumó (abril: +3.573 de INTERESES; julio:
+  +924,16): con ajustes, abril da 55.939,62 (Value CG 52.366,61) y mayo 29.747,29 (igual).
 - **Ganancia del mes** = `Σ gan(t)` de las hojas del mes (o con ajustes). **Semanas del mes** = `Σ d(t)/7`.
 - **Mes completo** si está cargada la hoja que contiene el último jueves del mes. Si no, el mes es "en curso": barra
   solo con contorno y "N de M semanas"; se compara por semana, nunca el total.
@@ -127,10 +128,14 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
   Alejo 15,62 % y 11.111,11).
 - **Capital al último cierre de Tenencia** (30/06): se lee de la hoja Tenencia (última fila con capital por socio). Se
   muestra con su fecha; **no** se proyecta como Neto × %.
-- **Parte de la ganancia del período** = ganancia del período (con ajustes, porque la ganancia de USDT General es de la
-  sociedad) × % del socio. Responde "¿cuánto gané yo desde tal fecha?". Se avisa que los % suman 100,01 %.
-- **Dividendo según la regla de la Tenencia** = 10 % de la ganancia del mes (con ajustes), para los meses posteriores al
-  último cierre de Tenencia. Rotulado "sugerido por la regla; no registrado".
+- **Parte de la ganancia del período** = ganancia del período (según el interruptor de ajustes) × % del socio.
+  Responde "¿cuánto gané yo desde tal fecha?". Se avisa que los % suman 100,01 %.
+- **Capital estimado a la última semana** = capital de la Tenencia + % × ganancia con ajustes de las semanas
+  posteriores al cierre de la Tenencia. No descuenta dividendos pagados después (no hay registrados).
+- **Dividendo según la regla de la Tenencia** = 10 % de la ganancia **sin ajustes** de cada mes posterior al último
+  cierre de Tenencia (un mes con pérdida no reparte). Los ajustes a mano de esos meses (ganancia de USDT General de
+  otros meses cargada de golpe) van en una fila aparte con su 10 %. Rotulado "lo que daría la regla, no lo que se
+  pagó". Así octubre no sugiere repartir una ganancia que es de mayo a septiembre.
 
 ---
 
@@ -173,8 +178,12 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      "Con ajustes"; con "Sin ajustes" queda el ícono). Semana doble con doble ancho y alto por semana. Línea fina en la
      mediana del período ("semana típica"). Mes en curso solo con contorno.
    - Encabezado de la sección: "En el período: X (Y por semana, N semanas)".
-   - **Cómo venimos**: tabla corta que compara tramos por semana: últimas 8 semanas, el resto del período, y lo mismo
-     sin las semanas a revisar.
+   - **¿De dónde salió el crecimiento del período?** Cascada: patrimonio al inicio + operación antes de gastos − gastos
+     (semanas normales) + semanas a revisar + ajustes a mano − retiros = patrimonio al final; rendimiento de la operación
+     sobre el patrimonio inicial (total y por mes) y el efecto estimado del dólar (que ya está dentro de la operación).
+     No depende del interruptor de ajustes. Responde P4 de un vistazo.
+   - **Cómo venimos**: tabla corta que compara tramos por semana (todas y sin las semanas a revisar). Con 10 semanas o
+     más en el período: últimas 8 contra el resto; si no, el período contra todas las semanas anteriores.
    - Tocar un mes filtra las barras semanales a ese mes.
 
 3. **¿Dónde está la plata?** (semana foco)
@@ -182,8 +191,10 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      "(debemos)".
    - Evolución: área apilada de 3 series (Disponible · Proyectos · Fijos a mano). Si en alguna semana una serie es
      negativa, se dibujan líneas en vez de área apilada.
-   - **Pesos y dólar**: "$ 180,1 M ≈ USD 117.360 (33 %) · si el dólar sube $ 10, el patrimonio baja ≈ USD 765 · efecto
+   - **Pesos y dólar**: "$ 180,1 M ≈ USD 117.360 (33 %) · si el dólar sube $ 10, el patrimonio baja ≈ USD 760 · efecto
      estimado del dólar en el período: X".
+   - **Proyectos** (monto, composición y semanas en que cambiaron) y **USDT General** (monto y semanas en que se cargó;
+     la planilla no tiene lo invertido ni fechas de liquidación, así que no se calcula rendimiento).
 
 4. **Gastos**
    - Barras por mes agrupadas, mismo eje: "Antes de gastos" y "Gastos" (gastos + comisiones + intereses + inversión).
@@ -304,6 +315,15 @@ Cambio, TRX, Garantías, Semana doble, Semana típica, Lo operado (Volumen Prom)
 | D13 | Socios | Capital solo de Tenencia (al 30/06); la parte de cada socio se calcula sobre la ganancia del período, no sobre el Neto | El capital por socio no es Neto × % (riesgo 16) |
 | D14 | Pendientes | Se suman como los suma la planilla; nota fija de que su signo está a confirmar; el detalle muestra cuánto de la variación vino de pendientes | No hay base para corregirlos (`signo_pendientes_confirmado: false`) |
 | D15 | Ganancias de las primeras hojas | Se recalculan como diferencia de Netos (la celda guardada medía otra cosa) | Una sola definición para toda la serie |
+
+**Cambios después de la primera verificación (fase 5).** El auditor no encontró montos mal calculados (2.845 números
+comparados). Se corrigieron: la tarjeta del mes con una semana foco que no es la última (sumaba hasta la foco), las dos
+"ganancias" de la tarjeta con ajustes (ahora "sin ajustes" y "con ajustes"), el reparto saldos / pendientes / cargado a
+mano del detalle, el cambio de las cajas que no estaban en la fórmula de la semana anterior, la moneda de las cajas en
+las hojas sin fila de monedas, el chequeo de renglones corridos y los textos que no seguían los interruptores. Por el
+usuario de prueba: cascada del período (P4), capital estimado y totales en socios (P5), dividendos sin ajustes,
+bloques de Proyectos y USDT General, tabla de semanas ordenable, tablas con primera columna fija en el celular, panel
+de semana que entra en 390 px, filtros fuera del encabezado fijo y los chequeos técnicos en un desplegable aparte.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de
