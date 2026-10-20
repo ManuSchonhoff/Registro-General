@@ -47,7 +47,7 @@ def _norm(x, tabla):
         return ""
     k = " ".join(x.strip().lower().split())
     if "mariano" in k:
-        return "Cliente del referente"
+        return "Cliente del referente (Mariano)"
     return tabla.get(k, x.strip() if not x.strip().islower() else x.strip().title())
 
 

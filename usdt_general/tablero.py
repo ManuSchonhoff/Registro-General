@@ -20,7 +20,8 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 TOL_CERRADO_USDT = 50        # |pesos sin recomprar| / precio de compra por debajo de esto = mes cerrado
 DIA_CARGADO = 150            # filas de un mismo lado en un día: la fecha probablemente quedó arrastrada
 BLOQUE_MIN = 4               # filas consecutivas repetidas para marcar un bloque
-TASA_BINANCE_MIN = 0.001     # comisión registrada en Binance por debajo del 0,10%
+TASA_BINANCE_MIN = 0.001
+DOS_LIBROS_DIAS = 5          # misma operación en los dos libros: mismos USDT y pesos, fechas a 5 días o menos     # comisión registrada en Binance por debajo del 0,10%
 IMPUESTO = 0.15
 DIF_MIN = 2                  # diferencia de BRUTO (USDT) a partir de la cual se marca: RESULTADO trunca o redondea
 AVISOS = ["incompleta", "usdt_del_id", "sin_formula_neto", "fecha_corregida", "sin_fecha", "precio_raro",
@@ -131,11 +132,15 @@ def construir(ruta):
     idx = defaultdict(list)
     for f in filas:
         if f["usdt"] and f["ars"]:
-            idx[(f["mes"], f["lado"], f["fecha"], round(f["usdt"], 2), round(f["ars"]))].append(f)
+            idx[(f["mes"], f["lado"], round(f["usdt"], 2), round(f["ars"]))].append(f)
     for grupo in idx.values():
-        if len({f["libro"] for f in grupo}) > 1:
-            for f in grupo:
-                f["avisos"].append("dos_libros")
+        for a in grupo:
+            for b in grupo:
+                if a["libro"] == "principal" and b["libro"] == "coco" and (
+                        not a["fecha"] or not b["fecha"] or abs((a["fecha"] - b["fecha"]).days) <= DOS_LIBROS_DIAS):
+                    for f in (a, b):
+                        if "dos_libros" not in f["avisos"]:
+                            f["avisos"].append("dos_libros")
 
     # ---- métricas por mes y libro
     meses = []
@@ -199,7 +204,11 @@ def construir(ruta):
                 efecto = d_bruto * (1 - IMPUESTO) + d_neto
                 motivo = []
                 if abs(d_bruto) >= DIF_MIN:
-                    motivo.append(f"la hoja de operaciones da {fila['bruto_recalc']:,} y RESULTADO tiene {mm['bruto']:,.0f}".replace(",", "."))
+                    v2 = met["v2_hoja"]
+                    extra = (f" (la fila 2 de la hoja dice {v2:,.0f})".replace(",", ".")
+                             if v2 is not None and abs(round(v2) - fila["bruto_recalc"]) >= DIF_MIN else "")
+                    motivo.append(f"RESULTADO tiene {mm['bruto']:,.0f} y sumando las operaciones de la hoja da "
+                                  f"{fila['bruto_recalc']:,}".replace(",", ".") + extra)
                 if abs(d_neto) >= 0.5:
                     motivo.append(f"el NETO no resta los gastos ({mm['gastos']:,.2f})".replace(",", "X").replace(".", ",").replace("X", "."))
                 ajustes.append({"clave": mm["clave"], "etiqueta": etiqueta(mm["clave"], True), "libro": b["libro"],
@@ -237,9 +246,12 @@ def construir(ruta):
 
     chequeos = []
 
-    def chk(cid, titulo, que, filas_c=None, detalle=None, grave=True):
-        chequeos.append({"id": cid, "titulo": titulo, "que": que, "filas": ref(filas_c or []),
-                         "detalle": detalle or [], "estado": "revisar" if (filas_c or detalle) else "ok", "grave": grave})
+    def chk(cid, titulo, que, filas_c=None, detalle=None, grave=True, unidad=None):
+        filas_c, detalle = filas_c or [], detalle or []
+        n = len(detalle) if unidad == "día" else (len(filas_c) or len(detalle))
+        chequeos.append({"id": cid, "titulo": titulo, "que": que, "filas": ref(filas_c), "detalle": detalle, "n": n,
+                         "unidades": {"día": "días", None: None}.get(unidad) or ("operaciones" if filas_c else "casos"),
+                         "estado": "revisar" if n else "ok", "grave": grave})
 
     abiertos = [f"{m['larga']} ({'principal' if lib == 'principal' else 'Coco'}): faltan recomprar "
                 f"$ {met['sin_recomprar']:,.0f} ≈ {met['faltan_usdt']:,.0f} USDT".replace(",", ".")
@@ -262,11 +274,16 @@ def construir(ruta):
         "contra la ganancia recalculada y NETO que no resta los gastos.",
         detalle=[f"{a['etiqueta']} ({'principal' if a['libro'] == 'principal' else 'Coco'}, fila {a['fila']}): {a['motivo']}" for a in ajustes])
     chk("fecha_corregida", "Fechas corregidas", "La fecha cargada cae en otro mes (día y mes invertidos o mes "
-        "equivocado). El tablero usa el mismo día en el mes de la hoja.", sel("fecha_corregida"))
+        "equivocado). El tablero usa el mismo día en el mes de la hoja. Solo afecta el detalle por día.", sel("fecha_corregida"), grave=False)
     chk("sin_fecha", "Operaciones sin fecha", "Están antes de la primera fecha de su columna. Cuentan en el mes, pero no "
         "en ningún día.", sel("sin_fecha"), grave=False)
+    dias_c = defaultdict(int)
+    for f in sel("dia_cargado"):
+        dias_c[(f["hoja"], f["lado"], f["fecha"])] += 1
     chk("dia_cargado", f"Días con más de {DIA_CARGADO} operaciones", "Probablemente la fecha no se actualizó y quedó "
-        "arrastrada: el detalle por día de esas fechas no es confiable.", sel("dia_cargado"), grave=False)
+        "arrastrada: el detalle por día de esas fechas no es confiable.", sel("dia_cargado"),
+        detalle=[f"{h}: {d.strftime('%d/%m/%Y')}, {n} {'ventas' if l == 'V' else 'compras'}" for (h, l, d), n in sorted(dias_c.items(), key=lambda x: x[0][2])],
+        grave=False, unidad="día")
     chk("precio_raro", "Precios raros", "Precio a más de 4% del de las operaciones vecinas. Puede ser un error de tipeo "
         "en USDT o en pesos.", sel("precio_raro"))
     chk("bloque_repetido", "Bloques de filas repetidos", f"{BLOQUE_MIN} o más filas seguidas con los mismos USDT y pesos, "
@@ -274,8 +291,9 @@ def construir(ruta):
         sel("bloque_repetido"),
         detalle=[f"{f['hoja']}: filas {f['bloque']['orig'][0]}–{f['bloque']['orig'][1]} = {f['bloque']['copia'][0]}–{f['bloque']['copia'][1]}"
                  for f in filas if f.get("bloque")])
-    chk("dos_libros", "Operaciones cargadas en los dos libros", "Misma fecha, mismos USDT y mismos pesos en el libro "
-        "principal y en Coco. En \"Todo\" se cuentan dos veces.", sel("dos_libros"))
+    chk("dos_libros", "Posibles operaciones cargadas en los dos libros", "Mismos USDT y mismos pesos en el libro principal "
+        f"y en Coco, en el mismo mes y con fechas a {DOS_LIBROS_DIAS} días o menos. Si es la misma operación, en \"Todo\" se "
+        "cuenta dos veces. Puede ser una coincidencia con montos redondos.", sel("dos_libros"))
     tasas = [f"{m['larga']} ({'principal' if lib == 'principal' else 'Coco'}): {met['tasa_binance'] * 100:.3f}%".replace(".", ",")
              for m in meses for lib, met in m["libros"].items() if met["tasa_binance"] is not None and met["tasa_binance"] < TASA_BINANCE_MIN]
     chk("comision", "Comisión de Binance baja", "Comisión registrada sobre las operaciones de Binance por debajo de "
@@ -347,8 +365,7 @@ def main():
     m = datos["meses"]
     print(f"Libro: {ruta} · corte {datos['meta']['corte']} · {len(m)} meses · {len(datos['ops']['fila'])} operaciones")
     for c in datos["chequeos"]:
-        n = len(c["filas"]) or len(c["detalle"])
-        print(f"  [{'OK' if c['estado'] == 'ok' else 'REVISAR'}] {c['titulo']}: {n}")
+        print(f"  [{'OK' if c['estado'] == 'ok' else 'REVISAR'}] {c['titulo']}: {c['n']} {c['unidades']}")
     print(f"Tablero: {os.path.join(a.salidas, 'tablero_usdt.html')}")
 
 
