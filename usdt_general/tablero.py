@@ -206,7 +206,8 @@ def construir(ruta):
                 if abs(d_bruto) >= DIF_MIN:
                     v2 = met["v2_hoja"]
                     extra = (f" (la fila 2 de la hoja dice {v2:,.0f})".replace(",", ".")
-                             if v2 is not None and abs(round(v2) - fila["bruto_recalc"]) >= DIF_MIN else "")
+                             if v2 is not None and abs(round(v2) - fila["bruto_recalc"]) >= DIF_MIN
+                             and abs(round(v2) - mm["bruto"]) >= DIF_MIN else "")
                     motivo.append(f"RESULTADO tiene {mm['bruto']:,.0f} y sumando las operaciones de la hoja da "
                                   f"{fila['bruto_recalc']:,}".replace(",", ".") + extra)
                 if abs(d_neto) >= 0.5:

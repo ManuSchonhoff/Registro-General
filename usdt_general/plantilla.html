@@ -698,12 +698,13 @@ function rReparto() {
         <td class="${r.devengado != null && Math.abs(r.devengado - x.partes[1]) >= 1 ? "dif" : ""}">${n2(r.devengado)}</td><td>${n2(x.retiros[1])}</td></tr>`; }).join("")}
         <tr class="tot"><td>Total</td>${["bruto"].map(k => `<td>${n2(tot(coco.meses, x => x[k]))}</td>`).join("")}<td></td><td>${n2(tot(coco.meses, x => x.impuestos))}</td><td>${n2(tot(coco.meses, x => x.gastos))}</td><td>${n2(tot(coco.meses, x => x.neto))}</td>
         <td>${n2(tot(coco.meses, x => x.partes[0]))}</td><td>${n2(tot(coco.meses, x => x.partes[1]))}</td><td>${n2(D.referente.reduce((a, r) => a + (r.devengado || 0), 0))}</td><td>${n2(tot(coco.meses, x => x.retiros[1]))}</td></tr></tbody></table></div>
-      ${(() => { const b = tot(coco.meses, x => x.bruto), u = tot(coco.meses, x => x.partes[0]), r = tot(coco.meses, x => x.partes[1]), dv = D.referente.reduce((a, x) => a + (x.devengado || 0), 0), pg = tot(coco.meses, x => x.retiros[1]);
+      ${(() => { const b = tot(coco.meses, x => x.bruto), u = tot(coco.meses, x => x.partes[0]), r = tot(coco.meses, x => x.partes[1]), dv = D.referente.reduce((a, x) => a + (x.devengado || 0), 0), pg = tot(coco.meses, x => x.retiros[1]), ig = tot(coco.meses, x => x.impuestos + x.gastos);
         return b ? `<div class="panel small cuenta">
           <div class="r"><span>De la ganancia bruta del libro Coco (${n0(b)} USDT)</span><span></span></div>
           <div class="r"><span class="m">Queda para USDT General</span><span>${n2(u)} · ${pct(u / b, 0)}</span></div>
           <div class="r"><span class="m">Le corresponde al referente (Mariano), según RESULTADO</span><span>${n2(r)} · ${pct(r / b, 0)}</span></div>
-          <div class="r"><span class="m">Impuestos y gastos</span><span>${n2(b - u - r)} · ${pct((b - u - r) / b, 0)}</span></div>
+          <div class="r"><span class="m">Impuestos y gastos (RESULTADO)</span><span>${n2(ig)} · ${pct(ig / b, 0)}</span></div>
+          ${Math.abs(b - u - r - ig) >= 0.5 ? `<div class="r"><span class="m" style="color:var(--crit-ink)">Las partes repartidas suman ${n2(u + r + ig - b)} de más: un NETO que no resta los gastos (ver Diferencias para revisar)</span><span></span></div>` : ""}
           <div class="r tot"><span>Saldo con el referente según RESULTADO</span><span>${n2(r - pg)}</span></div>
           <p class="xs">${r - pg < 0 ? "Negativo: se le pagó un poco más de lo que figura." : ""} El devengado de la hoja CLIENTES MARIANO (${n2(dv)}) es mayor porque incluye sus ventas cargadas en el libro principal; en agosto, parte se le pagó desde ese libro y no figura en RESULTADO. La hoja CLIENTES MARIANO llega hasta el ${fechaL(D.meta.ultimo_referente || "")}: lo posterior todavía no está calculado.</p></div>` : ""; })()}</div>` : ""}`;
   $("#sel-rep").onchange = e => { S.repMes = e.target.value; rReparto(); };
