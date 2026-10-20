@@ -248,9 +248,9 @@ def construir(ruta):
 
     def chk(cid, titulo, que, filas_c=None, detalle=None, grave=True, unidad=None):
         filas_c, detalle = filas_c or [], detalle or []
-        n = len(detalle) if unidad == "día" else (len(filas_c) or len(detalle))
+        n = len(detalle) if unidad in ("día", "hoja") else (len(filas_c) or len(detalle))
         chequeos.append({"id": cid, "titulo": titulo, "que": que, "filas": ref(filas_c), "detalle": detalle, "n": n,
-                         "unidades": {"día": "días", None: None}.get(unidad) or ("operaciones" if filas_c else "casos"),
+                         "unidades": {"día": "días", "hoja": "hojas", None: None}.get(unidad) or ("operaciones" if filas_c else "casos"),
                          "estado": "revisar" if n else "ok", "grave": grave})
 
     abiertos = [f"{m['larga']} ({'principal' if lib == 'principal' else 'Coco'}): faltan recomprar "
@@ -269,7 +269,8 @@ def construir(ruta):
                 for m in meses for lib, met in m["libros"].items()
                 if met["v2_hoja"] is not None and abs(met["v2_hoja"] - met["ganancia_hoja"]) >= 1]
     chk("sin_formula", "Ganancia de la hoja distinta de la recalculada", "La fila 2 del Excel no coincide con la suma "
-        "de las filas: faltan fórmulas de USDT neto o la comisión no se sumó.", sel("sin_formula_neto"), dif_hoja)
+        "de las filas: faltan fórmulas de USDT neto, la comisión no se sumó o el USDT está en la columna del comprobante. "
+        "Abajo, las filas sin fórmula de USDT neto.", sel("sin_formula_neto"), dif_hoja, unidad="hoja")
     chk("resultado", "RESULTADO distinto de las hojas", "El BRUTO de la hoja RESULTADO se carga a mano. Diferencias "
         "contra la ganancia recalculada y NETO que no resta los gastos.",
         detalle=[f"{a['etiqueta']} ({'principal' if a['libro'] == 'principal' else 'Coco'}, fila {a['fila']}): {a['motivo']}" for a in ajustes])

@@ -302,7 +302,12 @@ function met(m, libs = libros()) {
     precio_venta: pv, precio_compra: pp, dif_precio: pv && pp ? pv - pp : null, dif_pct: pv && pp ? pv / pp - 1 : null,
     sin_recomprar: s("sin_recomprar"), faltan_usdt: s("faltan_usdt"), ganancia: g, margen: g != null && s("vendidos") ? g / s("vendidos") : null,
     estado: cerrado ? "cerrado" : "abierto", incompletas: s("incompletas"), comision: s("comision"), filas_v: s("filas_v"), filas_c: s("filas_c"),
-    dias: Math.max(...ls.map(x => x.dias)), ultima_fecha: ls.map(x => x.ultima_fecha).sort().pop(), ganancia_hoja: s("ganancia_hoja") };
+    dias: diasUnion(m, libs), ultima_fecha: ls.map(x => x.ultima_fecha).sort().pop(), ganancia_hoja: s("ganancia_hoja") };
+}
+function diasUnion(m, libs) {
+  const set = new Set();
+  libs.forEach(l => ["V", "C"].forEach(lado => (D.diario[`${m.clave}|${l}|${lado}`] || []).forEach(r => { if (r[0] !== "s/f") set.add(r[0]); })));
+  return set.size;
 }
 const ultimoCerrado = () => { for (let i = MESES.length - 1; i >= 0; i--) { const x = met(MESES[i]); if (x && x.estado === "cerrado") return i; } return -1; };
 const anteriorCerrado = i => { for (let j = i - 1; j >= 0; j--) { const x = met(MESES[j]); if (x && x.estado === "cerrado") return j; } return -1; };
@@ -609,12 +614,13 @@ function rMes() {
   const lado = S.diaLado, mp = lado === "V" ? mapV : mapC, col = cssv(lado === "V" ? "--venta" : "--compra");
   const cargados = dias.map(d => (mapV.get(d)?.n || 0) > D.meta.dia_cargado || (mapC.get(d)?.n || 0) > D.meta.dia_cargado);
   const vals = dias.map(d => mp.get(d)?.usdt || null);
-  const med = (() => { const v = vals.filter(x => x).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : null; })();
+  const med = (() => { const v = dias.map((d, k) => d === "s/f" ? null : vals[k]).filter(x => x).sort((a, b) => a - b), n = v.length;
+    return n ? (n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2) : null; })();
   barras($("#g-dia"), { cats, series: [{ nombre: lado === "V" ? "Vendido" : "Comprado", color: col, valores: vals }], refLinea: med,
     rotular: cargados.map(c => c ? "•" : ""),
     tipFmt: i => { const d = dias[i], a = mp.get(d); return `<b>${cats[i].l}</b>${a ? `${usdt(a.usdt)}<br>${pesosL(a.ars)}<br>${a.n} operaciones` : "Sin operaciones"}${cargados[i] ? "<br><i>Día con muchas filas: la fecha puede estar arrastrada</i>" : ""}<br><i>Tocá para ver las operaciones</i>`; },
     onClick: i => ir("operaciones", { op: { mes: m.clave, lado, q: dias[i] === "s/f" ? "" : "fecha:" + dias[i], aviso: dias[i] === "s/f" ? "sin_fecha" : "" } }) });
-  $("#nota-dia").textContent = (med ? `La línea punteada es la mediana de los días (${usdt(med)}). ` : "") + (cargados.some(c => c) ? "Los días con • tienen más de " + D.meta.dia_cargado + " operaciones: probablemente la fecha no se actualizó al cargar y quedó la de un día anterior." : "") + (dias[0] === "s/f" ? " «s/f»: operaciones sin fecha al principio de la hoja." : "");
+  $("#nota-dia").textContent = (med ? `La línea punteada es la mediana de los días con fecha (${usdt(med)}). ` : "") + (cargados.some(c => c) ? "Los días con • tienen más de " + D.meta.dia_cargado + " operaciones: probablemente la fecha no se actualizó al cargar y quedó la de un día anterior." : "") + (dias[0] === "s/f" ? " «s/f»: operaciones sin fecha al principio de la hoja." : "");
   const dF = dias.filter(d => d !== "s/f"), catsF = dF.map(d => ({ c: fechaC(d).slice(0, 2), l: fechaL(d) }));
   const pv = dF.map(d => { const a = mapV.get(d); return a && a.uc ? a.ac / a.uc : null; }), pc = dF.map(d => { const a = mapC.get(d); return a && a.uc ? a.ac / a.uc : null; });
   lineas($("#g-pd"), { cats: catsF, alto: 180, fmt: v => "$ " + NF[0].format(v), series: [{ nombre: "Venta", color: cssv("--venta"), valores: pv }, { nombre: "Compra", color: cssv("--compra"), valores: pc }],
@@ -659,7 +665,7 @@ function rReparto() {
     <div class="xs">El reparto sale de la hoja RESULTADO, que se carga a mano. El tablero no cambia esos números: al lado muestra la ganancia recalculada desde las operaciones y las diferencias para revisar.</div>
     <div class="sec"><div class="sec-h"><h2>Saldo para retirar</h2>${btnAyuda("saldo")}</div>
       <div class="kpis">${saldos.map(s => `<div class="kpi"><span class="lab">${esc(s.nombre)}</span><span class="val">${n0(s.saldo)}</span><span class="sub">USDT · le tocó ${n0(s.partes)}, retiró ${n0(s.retiros)}</span>${ajP.length ? `<span class="sub">Con las diferencias corregidas: <b>${n0(s.saldo + ajTot)}</b></span>` : ""}</div>`).join("")}
-      ${sC.map(s => `<div class="kpi"><span class="lab">${s.nombre === "USDT GENERAL" ? "Libro Coco: parte USDT General" : "Libro Coco: referente"}</span><span class="val">${n0(s.saldo)}</span><span class="sub">USDT · ${s.nombre === "USDT GENERAL" ? "acumulado " + n0(s.partes) : `devengado ${n0(s.partes)}, pagado ${n0(s.retiros)}`}</span></div>`).join("")}</div></div>
+      ${sC.map(s => `<div class="kpi"><span class="lab">${s.nombre === "USDT GENERAL" ? "Libro Coco: parte USDT General" : "Libro Coco: saldo con el referente"}</span><span class="val">${n0(s.saldo)}</span><span class="sub">USDT · ${s.nombre === "USDT GENERAL" ? "acumulado " + n0(s.partes) : `según RESULTADO le corresponden ${n0(s.partes)} y se le pagaron ${n0(s.retiros)}`}</span></div>`).join("")}</div></div>
     <div class="grid-2">
       <div class="sec panel"><div class="sec-h"><h2>La cuenta del mes</h2>${btnAyuda("neto")}<span class="sp"></span>
         <select id="sel-rep" aria-label="Mes del reparto">${conBruto.map(x => `<option value="${x.clave}"${x.clave === S.repMes ? " selected" : ""}>${cap(MES_L[+x.clave.slice(5)])} ${x.clave.slice(0, 4)}</option>`).reverse().join("")}</select></div>
@@ -778,7 +784,9 @@ function rOps() {
     <div class="ops">${res.slice(o.pag * porPag, (o.pag + 1) * porPag).map(opCard).join("") || '<p class="muted">No hay operaciones con estos filtros.</p>'}</div>
     ${pags > 1 ? `<div class="pager"><button type="button" id="pg-a"${o.pag ? "" : " disabled"}>Anterior</button><span class="small">Página ${o.pag + 1} de ${pags}</span><button type="button" id="pg-s"${o.pag < pags - 1 ? "" : " disabled"}>Siguiente</button></div>` : ""}`;
   const set = (k, v) => { o[k] = v; o.pag = 0; rOps(); };
-  $("#op-q").addEventListener("change", e => set("q", e.target.value));
+  let tQ = null;
+  $("#op-q").addEventListener("input", e => { clearTimeout(tQ); const v = e.target.value; tQ = setTimeout(() => { set("q", v); const i = $("#op-q"); i.focus(); i.setSelectionRange(v.length, v.length); }, 500); });
+  $("#op-q").addEventListener("change", e => { if (e.target.value !== o.q) set("q", e.target.value); });
   $("#op-q").addEventListener("keydown", e => { if (e.key === "Enter") set("q", e.target.value); });
   $("#op-mes").onchange = e => set("mes", e.target.value); $("#op-lado").onchange = e => set("lado", e.target.value);
   $("#op-canal").onchange = e => set("canal", e.target.value); $("#op-banco").onchange = e => set("banco", e.target.value);
