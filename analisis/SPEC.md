@@ -70,7 +70,7 @@ Notación: *t* = hoja semanal (orden cronológico); *t−1* = la hoja inmediatam
 | Métrica | Definición | Fórmula |
 |---|---|---|
 | Variación del patrimonio `var(t)` | Cuánto cambió el patrimonio contra el domingo anterior | `neto(t) − neto(t−1)`. La primera hoja no tiene |
-| Ganancia según la planilla | La celda "Ganancia Neta" | = `var(t)` desde `2303 - 2903` (en las primeras hojas medía otra cosa; se muestra solo en el detalle de cada semana, en "Para el que arma la planilla") |
+| Ganancia según la planilla | La celda "Ganancia Neta" | = `var(t)` desde `2303 - 2903` (en las primeras hojas medía otra cosa; se muestra solo en el detalle de cada semana, en "Para el que arma la planilla"; las hojas sin "Ganancia Neta" muestran su celda "Ganancia", si la tienen, aclarando que medía otra cosa) |
 | **Retiros de socios** `ret(t)` | Plata que sacaron los socios (dividendos, liquidación de un ex socio). No es pérdida | Columna DIVIDENDOS de la hoja (lo que la fórmula de Egresos resta de ella) **+** retiros cargados en `config.value.retiros` para esa semana (los que no están en DIVIDENDOS: marzo 22.672; 3.573 y 924,16 que la planilla tiene dentro de INTERESES) |
 | **Ajustes a mano** `aj(t)` | Cambios de los valores fijos escritos a mano en el bloque (USDT General, Deuda): se generaron en otro período o son correcciones | `Σ` sobre los renglones fijos (los que la fórmula del Neto suma como constante): `valor(t) − valor(t−1)`. Hoy: +10.900 (13–19/04), −1.000 (11–17/05), +4.021 (25–31/05), +15.855,49 (12–18/10) |
 | **Ganancia de la semana** (la principal) `gan(t)` | Lo que ganó el negocio en la semana | `var(t) + ret(t) − aj(t)` ("sin ajustes") |
@@ -123,8 +123,8 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
   dispara un chequeo.
 - **Pesos en ARS** `ars(t)` = aporte del grupo Pesos × `cot(t)`.
 - **Efecto estimado del dólar** = `ars(t−1) × (1/cot(t) − 1/cot(t−1))`. Es una aproximación (supone que los pesos
-  quedaron quietos toda la semana): se muestra solo en el detalle y en el bloque "Pesos y dólar", nunca se resta de la
-  ganancia.
+  quedaron quietos toda la semana): se muestra en el detalle, en el bloque "Pesos y dólar" y como renglón de la cascada
+  del período; nunca se resta de la ganancia de la semana.
 - **Sensibilidad** = `ars(t)/cot(t) − ars(t)/(cot(t)+10)`: cuánto baja el patrimonio si el dólar sube $ 10. Con
   una suba del 10 %: pesos en USD × (1 − 1/1,1).
 
@@ -138,7 +138,7 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
   Responde "¿cuánto gané yo desde tal fecha?". Se avisa que los % suman 100,01 %.
 - **Capital estimado a la última semana** = capital de la Tenencia + % × ganancia con ajustes de las semanas cuyo mes
   (regla del jueves) es posterior al último mes de la Tenencia (hoy, desde 29 jun–5 jul). No descuenta dividendos
-  pagados después (no hay registrados). Su total difiere del patrimonio en lo que la Tenencia descontó por su cuenta;
+  pagados después (hay uno: 924,16 de 6–12 jul, dividendos de junio dentro de INTERESES). Su total difiere del patrimonio en lo que la Tenencia descontó por su cuenta;
   la diferencia se muestra.
 - **Dividendo según la regla de la Tenencia** = 10 % de la ganancia **sin ajustes** de cada mes posterior al último
   cierre de Tenencia (un mes con pérdida no reparte). Los ajustes a mano de esos meses (ganancia de USDT General de
@@ -175,14 +175,16 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      **Disponible**. Cada una con una sublínea que evita el error más común y su "?".
      - Patrimonio: "+X desde el 01/03 · N veces lo aportado (71.111)" (con otro período, desde el patrimonio de la
        semana anterior al inicio del período); sublínea "La mitad está en proyectos: ver Disponible".
-     - Ganancia de la semana: la **cuenta de la semana** en renglones (antes de gastos → gastos → ganancia → ajustes y
-       retiros → el patrimonio subió). Comparación con la semana típica en palabras ("mejor que / parecida a / peor que
+     - Ganancia de la semana: la **cuenta de la semana** en renglones (antes de gastos → total pagado → ganancia →
+       ajustes y retiros → el patrimonio subió; sin retiros, el último total dice "= lo que subió el patrimonio" y no se
+       repite). Comparación con la semana típica en palabras ("mejor que / parecida a / peor que
        la semana típica"), sin rojo ni verde.
      - Ganancia del mes: total del mes de la foco, "N de M semanas" si está en curso, y "por semana" contra el mes
        anterior por semana.
      - Disponible: monto y % del patrimonio; "Inmovilizado X (%): proyectos X y USDT General y deuda X".
-   - **Franja "Para tener en cuenta"**: el ajuste a mano de la última semana, una franja por semana a revisar (abre la
-     semana) y una sola franja con la cantidad de otros puntos a revisar (lleva a "¿Le creo…?").
+   - **Franja "Para tener en cuenta"**: una franja con las semanas a revisar (un botón por semana que abre su detalle) y
+     otra con la cantidad de otros puntos a revisar (lleva a "¿Le creo…?"). El ajuste a mano de la última semana ya está
+     en la tarjeta de la semana y no se repite.
    - **Lo que ganamos en el período y de dónde salió** (cascada, sigue al período, no depende del interruptor):
      patrimonio al inicio + operación antes de gastos y del dólar − total pagado + efecto estimado del dólar + semanas
      a revisar + ajustes a mano − retiros = patrimonio al final. **Total pagado y dólar son los de todas las semanas
@@ -190,8 +192,10 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      (lo que no está explicado, el mismo número de los avisos); la operación es el resto:
      `ganancia de las semanas normales + total pagado − dólar`. Arriba, una frase: cuánto pasó el patrimonio y cuánto
      dejó la operación sin las semanas a revisar ni los ajustes (= operación − total pagado + dólar), por semana, por
-     mes y como % por mes del **patrimonio promedio** del período (promedio del Neto de sus semanas). **Por mes =
-     semanas normales × 12 ÷ 52** (las mismas semanas que el total).
+     mes y como % por mes del **patrimonio promedio** del período (promedio simple del Neto de sus hojas; la hoja
+     doble cuenta una vez). **Por mes = semanas normales × 12 ÷ 52** (las mismas semanas que el total). Los ajustes se
+     rotulan por renglón ("USDT General +30.776, deuda −1.000"). Debajo, por qué el "antes de gastos" de Gastos es
+     otro número: = operación + semanas a revisar + efecto del dólar.
    - **Patrimonio semana a semana**: línea con área suave, eje en 0, eje X de tiempo real. Rótulos solo en el inicio,
      el final y el mayor salto de una semana (anillo en el punto y "mayor salto: +42,9 k (24–30 ago)" arriba a la
      izquierda, que entra también en el celular). "Ver como tabla" con patrimonio y cambio por semana. Sin íconos de eventos (están en el gráfico de
@@ -215,7 +219,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
    - **Rendimiento y volumen**: por tramo (período y, con 10 hojas o más, últimas 8): ganancia de las semanas
      normales por mes (semanas × 12 ÷ 52) y ese monto como % del patrimonio promedio y de lo disponible promedio de las
      semanas del tramo. Lo operado en el período: suma del "Volumen Prom" de cada hoja (en las hojas de marzo a mayo,
-     que no lo tienen, el renglón "Promedio" = (Debe + Haber) ÷ 2), y por semana. Cada 100 USD operados, **solo en las
+     que no lo tienen, el renglón "Promedio": en general (Debe + Haber) ÷ 2, en algunas hojas un número pegado), y por
+     semana. Cada 100 USD operados, **solo en las
      semanas normales**: antes de gastos y después de gastos (sin ajustes). Cuántas semanas repiten el volumen de la
      anterior.
    - Tocar un mes filtra las barras semanales a ese mes.
@@ -232,21 +237,24 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      calcula rendimiento y se dice qué dato falta).
 
 4. **Gastos**
+   - Tabla por mes con la ganancia en la segunda columna (se ve sin deslizar en el celular) y el promedio por mes de
+     los gastos fijos y varios en la nota.
    - Barras por mes agrupadas, mismo eje: "Antes de gastos" y "Total pagado" (gastos fijos y varios + comisiones +
      intereses + inversión). "Total pagado" es el nombre único de esa suma en todo el tablero.
      La diferencia es la ganancia del mes, rotulada.
    - Tabla por mes con el desglose por tipo. Retiros de socios en una fila aparte ("no es gasto").
 
 5. **Socios**
-   - Primero, **"Para repartir según la regla del 10 %"**: el total como número principal y lo de cada socio. Lo que
-     **depende de semanas a revisar** = Σ por mes de [10 % × máx(0, ganancia del mes) − 10 % × máx(0, ganancia del mes
-     sin las semanas a revisar)], con el total sin ellas (hoy agosto entero: 5.872, porque sin esas semanas agosto
-     pierde y no reparte). Si no hay retiros registrados después de la Tenencia, se dice. La tabla mes · 10 % ·
+   - Primero, **"Para repartir según la regla del 10 %"**: el total como número principal y una tabla por socio con
+     tres renglones según qué tan firme es: **seguro** (meses sin las semanas a revisar), **del ajuste de USDT General**
+     (10 % de los ajustes de esos meses) y **depende de las semanas a revisar** = Σ por mes de [10 % × máx(0, ganancia
+     del mes) − 10 % × máx(0, ganancia del mes sin las semanas a revisar)] (hoy agosto entero: 5.872, porque sin esas
+     semanas agosto pierde y no reparte). Si no hay retiros registrados después de la Tenencia, se dice. La tabla mes · 10 % ·
      ganancia sin ajustes · por socio (con la fila aparte de ajustes, 3.5) queda en "Ver mes por mes".
-   - Después, **"Capital de cada socio"**: barra de tenencia (4 segmentos) y tabla socio · capital estimado · su parte
-     de la ganancia del período · capital al 30/06 · % · aporte, con la aclaración de que "su parte" no es plata para
-     cobrar y de que los % suman 100,01 %. La explicación de por qué el capital estimado no da igual al patrimonio va
-     en un desplegable.
+   - Después, **"Capital de cada socio"**: barra de tenencia (4 segmentos) y tabla socio · capital estimado · ganó en el
+     período · capital al 30/06 · % · aporte, con la aclaración de que "ganó en el período" no es plata para cobrar y de
+     que los % suman 100,01 %. Un desplegable explica por qué el capital estimado no da igual al patrimonio: (Neto al
+     cierre de la Tenencia − capital de la Tenencia) − retiros posteriores − el 0,01 % de más sobre la ganancia.
    - Retiros registrados: fecha, monto, detalle, "a confirmar" cuando corresponde.
 
 6. **Todas las semanas**: tabla (la más nueva arriba): semana con sus marcas al lado · patrimonio · ganancia · antes
@@ -269,7 +277,8 @@ planilla: hoja X, patrimonio en B16; la celda de ganancia dice Y / da error".
 ### 4.3 Interacciones
 
 - Lectura fija arriba de cada gráfico (no tooltip flotante en el celular; tooltip en escritorio con el mismo texto).
-- Tocar/clic una barra o punto: cambia la semana foco; botón "Ver semana" abre el detalle. Teclado: flechas
+- Tocar/clic una barra o punto: cambia la semana foco; botón "Ver semana" abre el detalle. Abrir el detalle (desde una
+  fila, un aviso o "Ver semana") **no** cambia la semana foco del tablero. Teclado: flechas
   recorren semanas, Enter abre, Esc cierra.
 - Cada gráfico tiene "Ver como tabla".
 - `#semana-AAAA-MM-DD` en la URL abre esa semana; las preferencias (filtros) se recuerdan en el navegador si se puede.
@@ -284,13 +293,14 @@ planilla: hoja X, patrimonio en B16; la celda de ganancia dice Y / da error".
 | ? A revisar | Salto sin explicar | `config.value.semanas_a_revisar`, o ganancia por semana a más de 2,5 desvíos robustos de la mediana (MAD × 1,4826) |
 | ⧉ Dos semanas | La hoja abarca 14 días | `d(t) = 14` |
 | ▼ Retiro de socios | Hubo retiros | `ret(t) > 0` |
-| ⚠ Dato dudoso | Cotización igual a la de la hoja anterior, columna sin título, valores que no entran en la fórmula (sin garantías, REALES ni LIBRAS, que tienen su chequeo global), una caja en euros que cambia de criterio (1 a 1 ↔ × euro), celda de ganancia con error, hoja en más de un archivo, nota "NO CONTAR"/"REVISAR" en el bloque | Chequeos automáticos |
+| ⚠ Dato dudoso | Solo lo que **puede cambiar los números**: cotización igual a la de la hoja anterior, valores que no entran en la fórmula (sin garantías, REALES ni LIBRAS, que tienen su chequeo global), una caja en euros que cambia de criterio (1 a 1 ↔ × euro), nota "NO CONTAR"/"REVISAR" en el bloque | Chequeos automáticos |
 | • Gastos grandes | Semana de costos fijos | columnas GASTOS + FIJOS de la semana ≥ `config.value.umbral_gastos_grandes` (5.000) |
 
-Cada marca va con ícono y palabra, nunca solo color. Color de estado (`--warn`) solo para ? y ⚠. Cada ⚠ dice si
-puede cambiar los números (cotización repetida, valores fuera de la fórmula, cambio de criterio, notas) o si es solo
-para corregir la planilla (celda con error, hoja en dos archivos, columna sin título): el control de la semana
-("¿Está bien cargada?") lo dice en esas palabras.
+Cada marca va con ícono y palabra, nunca solo color. Color de estado (`--warn`) solo para ? y ⚠. Lo que es solo para
+corregir la planilla y no cambia los números (celda de ganancia con error, hoja en dos archivos, columna sin título) no
+lleva ⚠: va con ✎ en "Para el que arma la planilla" del detalle de la semana y en "¿Le creo…?". El control de cada
+semana responde "¿Está bien cargada?" con "sí" (los números coinciden con la planilla) o "a medias" (salto sin explicar
+o ⚠).
 
 ---
 
@@ -401,6 +411,16 @@ sobre el patrimonio promedio; cada 100 USD operados antes y después de gastos, 
 salto también en el celular; "Ver como tabla" en patrimonio y evolución; "si el dólar sube 10 %"; socios con el capital
 estimado primero y "su parte" aclarada; "¿Está bien cargada?" con un sí o no claro (el ⚠ dice si puede cambiar los
 números); lo técnico del detalle plegado; aviso de deslizar arriba de la tabla de semanas; nombres de cajas legibles.
+
+**Cambios después de la quinta verificación.** El auditor no encontró montos mal calculados (unos 3.000 números); el
+usuario de prueba respondió P5 "a medias" (no quedaba claro cuánto se reparte de verdad). Se corrigieron: el signo de
+"cada 100 USD operados"; la explicación de los 614 de socios (incluye el retiro de 924 de julio); "Polígono"; el
+glosario del rendimiento; la celda "Ganancia" de las primeras hojas en el detalle técnico; el cambio de una caja que sale
+de la fórmula (Euros −240 en 2–8 mar). Por el usuario de prueba: lo que hay para repartir separado en seguro / del ajuste
+/ depende de semanas a revisar, por socio; "Ganó en el período" en vez de "su parte"; ⚠ solo cuando puede cambiar los
+números; "¿Está bien cargada?" con sí / a medias; abrir el detalle no cambia la semana del tablero; ganancia "del año";
+ajustes desglosados en la cascada y por qué el antes de gastos de Gastos es otro; la ganancia segunda en la tabla de
+Gastos; las tablas se desvanecen a la derecha cuando hay más columnas; los meses del eje empiezan en marzo.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de

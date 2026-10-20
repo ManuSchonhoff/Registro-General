@@ -206,6 +206,7 @@ class Modelo:
                     vol = b[et]["guardado"]
                     break
             gp = b.get("Ganancia Neta", {})
+            g_otra = b.get("Ganancia") if not gp else None
 
             # cajas para el detalle
             lista = []
@@ -243,6 +244,7 @@ class Modelo:
                 "cajas": sorted(lista, key=lambda x: (GRUPOS_PATRIMONIO.index(x["g"]) if x["g"] in GRUPOS_PATRIMONIO else 99, -(abs(x["usd"] or 0)))),
                 "notas": h["notas"], "a_revisar": a_revisar.get(sid),
                 "celda_neto": f"B{b['Neto']['fila']}", "celda_gan": f"B{gp['fila']}" if gp else None,
+                "celda_gan_otra": {"celda": f"B{g_otra['fila']}", "valor": r2(g_otra.get("guardado"))} if g_otra else None,
                 "_fijos": fijos_val,
             }
             self.semanas.append(s)
@@ -295,27 +297,24 @@ class Modelo:
                 m.append({"k": "rev", "t": s["a_revisar"]})
             elif z is not None and abs(z) > umbral:
                 m.append({"k": "rev", "t": f"Ganancia de USD {fmt_usd(s['gan'])}, muy lejos de lo habitual (mediana USD {fmt_usd(med)} por semana) y sin explicación cargada."})
-            dud, afecta = [], False
+            dud, arreglar = [], []
             if i > 0 and cots[i] is not None and cots[i] == cots[i - 1]:
                 dud.append(f"cotización igual a la de la semana anterior ($ {cots[i]:,.0f})".replace(",", "."))
-                afecta = True
             if s.get("gan_planilla_error"):
-                dud.append(f"la celda de ganancia de la planilla da error ({s['gan_planilla_error']}); el tablero la calcula con el patrimonio de las dos semanas, así que el número está bien")
+                arreglar.append(f"la celda de ganancia de la planilla da error ({s['gan_planilla_error']}); el tablero la calcula con el patrimonio de las dos semanas, así que el número está bien")
             if len(getattr(self, "archivos_por_hoja", {}).get(s["hoja"], [])) > 1:
-                dud.append(f"la hoja llegó en {len(self.archivos_por_hoja[s['hoja']])} archivos y se usó el más nuevo")
+                arreglar.append(f"la hoja llegó en {len(self.archivos_por_hoja[s['hoja']])} archivos y se usó el más nuevo")
             if any(c["heredado"] for c in s["cajas"]):
-                dud.append("una columna no tiene título y se le puso el de la hoja anterior (" + ", ".join(c["n"].capitalize() for c in s["cajas"] if c["heredado"]) + "): conviene ponérselo en la planilla")
+                arreglar.append("una columna no tiene título y se le puso el de la hoja anterior (" + ", ".join(c["n"].capitalize().replace("Poligono", "Polígono") for c in s["cajas"] if c["heredado"]) + "): conviene ponérselo en la planilla")
             if s.get("_sin_suma"):
                 dud.append("valores que no entran en la fórmula: " + ", ".join(s["_sin_suma"]))
-                afecta = True
             if s.get("_criterio"):
                 dud.append("; ".join(s["_criterio"]))
-                afecta = True
             if s["notas"]:
                 dud.append("notas en la hoja: " + "; ".join(s["notas"]))
-                afecta = True
             if dud:
-                m.append({"k": "dudoso", "afecta": afecta, "t": "Para revisar: " + "; ".join(dud) + "."})
+                m.append({"k": "dudoso", "t": "Puede cambiar los números: " + "; ".join(dud) + "."})
+            s["planilla"] = [x[0].upper() + x[1:] + "." for x in arreglar]
             if (s["gas_det"]["gastos"] or 0) >= self.cfg.get("umbral_gastos_grandes", 5000):
                 m.append({"k": "gastos", "t": f"Semana de costos fijos: se pagaron USD {fmt_usd(s['gas_det']['gastos'])} de gastos. Conviene mirar el mes completo."})
             s["marcas"] = m
@@ -473,13 +472,11 @@ class Modelo:
             ten_al = (dt.date(a, m % 12 + 1, 1) - dt.timedelta(days=1) if m < 12 else dt.date(a, 12, 31)).isoformat()
         aportes = sum(s["aporte"] for s in self.cfg.get("socios", []))
         avisos = []
-        if ult["aj_det"]:
-            avisos.append({"k": "aj", "semana": ult["id"],
-                           "t": f"La última semana incluye USD {fmt_usd(ult['aj'])} de ajuste a mano (USDT General de meses anteriores). Sin eso dio USD {fmt_usd(ult['gan'])}."})
-        for s in reversed(ss):
-            if any(m["k"] == "rev" for m in s["marcas"]):
-                avisos.append({"k": "rev", "semana": s["id"],
-                               "t": f"{s['txt'][0].upper() + s['txt'][1:]}: {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)} sin explicar. Conviene aclararlo antes de repartir."})
+        rev = [s for s in reversed(ss) if any(m["k"] == "rev" for m in s["marcas"])]
+        if rev:
+            det = " y ".join(f"{s['txt']} {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)}" for s in rev)
+            avisos.append({"k": "rev", "semanas": [s["id"] for s in rev],
+                           "t": f"{'Semana' if len(rev) == 1 else str(len(rev)) + ' semanas'} con saltos sin explicar: {det}. Conviene aclararlas antes de repartir."})
         # el resto de lo que hay que revisar va en una sola franja que lleva a «¿Le creo a estos números?»
         otros = [c["titulo"] for c in self.chequeos if c["nivel"] == "revisar" and not c["titulo"].startswith("Semana ")]
         if otros:
