@@ -164,8 +164,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
   elegir la semana de inicio y la de fin; "Últimos 3 meses" = las hojas que terminan después de la fecha del último
   domingo menos 3 meses; "Últimas 8 semanas" = las últimas 8 hojas; elegir un período vuelve la semana foco a la
   última) y **Ajustes** [Sin ajustes · Con ajustes], con sus rótulos visibles también
-  en el celular. Afectan a gráficos, tarjetas de período y tabla (Socios y Gastos no cambian con el interruptor de
-  ajustes). Por defecto: Todo y Sin ajustes.
+  en el celular. Afectan a gráficos, tarjetas de período y tabla. Socios no cambia con ningún filtro; Gastos
+  cambia con el período pero no con el interruptor de ajustes. Por defecto: Todo y Sin ajustes.
 
 ### 4.2 Secciones
 
@@ -192,8 +192,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
    - **Lo que ganamos en el período y de dónde salió** (cascada, sigue al período, no depende del interruptor):
      patrimonio al inicio + **operación** (ganancia de las semanas normales, ya descontado el total pagado)
      + semanas a revisar (su ganancia, el mismo número de los avisos) + ajustes a mano − retiros = patrimonio al final,
-     con la operación partida en **operación sin el dólar** (= ganancia de las semanas normales − efecto del dólar del
-     período) y **efecto del dólar** (el de todo el período, el mismo de Pesos y dólar). No hay un renglón "antes de
+     con la operación partida en **operación antes del efecto del dólar** (= ganancia de las semanas normales − efecto
+     del dólar del período) y **efecto del dólar** (el de todo el período, el mismo de Pesos y dólar). No hay un renglón "antes de
      gastos" (el único "antes de gastos" del período es el de Gastos). Debajo, una nota: la operación y las semanas a
      revisar ya tienen restado el total pagado del período (el mismo de Gastos). Arriba, una frase: cuánto pasó el patrimonio y cuánto dejó la operación, por
      semana, por mes y como % por mes del **patrimonio promedio** del período (promedio simple del Neto de sus hojas; la hoja
@@ -388,7 +388,7 @@ Cambio, TRX, Garantías, Semana doble, Semana típica, Lo operado (Volumen Prom)
 | D10 | Saltos de los valores fijos de abril y mayo (+10.900, +4.021, −1.000) | Se tratan como ajustes a mano igual que el de octubre | Mismo mecanismo; no hay forma de saber si fueron ganancia de esa semana |
 | D11 | Columna `AH` sin título | Hereda "POLIGONO 20+13" de la hoja anterior y va a Proyectos; queda en "Revisar" | Es la misma columna con el mismo saldo; sacarla rompería el cierre con el Neto |
 | D12 | Serie | Empieza el 23/02–01/03 (primera hoja). La historia anterior del Value CG no se muestra | Hueco de 7 meses, carga a mano y 48,74 de diferencia el 01/03 |
-| D13 | Socios | Capital solo de Tenencia (al 30/06); la parte de cada socio se calcula sobre la ganancia del período, no sobre el Neto | El capital por socio no es Neto × % (riesgo 16) |
+| D13 | Socios | Capital de la Tenencia (al 30/06) + % × ganancia con ajustes desde entonces; lo que se reparte, por la regla del 10 %. No se proyecta como Neto × % ni cambia con los filtros | El capital por socio no es Neto × % (riesgo 16) |
 | D14 | Pendientes | Se suman como los suma la planilla; nota fija de que su signo está a confirmar; el detalle muestra cuánto de la variación vino de pendientes | No hay base para corregirlos (`signo_pendientes_confirmado: false`) |
 | D15 | Ganancias de las primeras hojas | Se recalculan como diferencia de Netos (la celda guardada medía otra cosa) | Una sola definición para toda la serie |
 
@@ -465,6 +465,12 @@ salto también cuando es el último punto; "—" en el mes sin semanas normales;
 la marca "?"; el rótulo del interruptor ("Ajustes a mano (USDT General y deuda)"); "desde el cierre del…"; "Ganancia del
 año, desde marzo"; el gasto por mes como número principal en Gastos; el redondeo de las fichas de socios; qué falta para
 el rendimiento de USDT General; "Elegir…" en el menú.
+
+**Cambios después de la novena verificación.** El auditor no encontró montos mal calculados (unos 10.800 números) y el
+usuario de prueba respondió P1–P8 con "sí". Se corrigieron dos textos: la ayuda de la cascada decía "más el efecto del
+dólar" donde es "menos" (el número estaba bien) y el rótulo de inicio del patrimonio que se pisaba con la leyenda del
+mayor salto en algunos períodos. También: "Operación antes del efecto del dólar", el aviso de semanas a revisar dice que
+de ellas depende parte de los dividendos, y el texto de USDT General ya no nombra archivos.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de

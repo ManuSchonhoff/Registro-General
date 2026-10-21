@@ -481,8 +481,9 @@ function grafPatrimonio(el, Wd) {
   // rótulos: inicio, fin y el mayor salto de una semana
   const a = ss[0], b = ss[ss.length - 1];
   const salto = ss.slice(1).reduce((m, s) => ok(s.var) && (!m || Math.abs(s.var) > Math.abs(m.var)) ? s : m, null);
-  const saltoPegado = salto && ss.indexOf(salto) === 1;
-  svg.append(sv("text", { x: px(a) + 2, y: saltoPegado ? y(a.neto) + 16 : y(a.neto) - 8, class: "rot halo" }, fK(a.neto)));
+  // el rótulo de inicio va debajo del punto si arriba choca con el anillo del salto o con la leyenda (arriba a la izquierda)
+  const abajo = (salto && ss.indexOf(salto) === 1) || (salto && y(a.neto) - 8 < mT + 24 && px(a) < mL + 280);
+  svg.append(sv("text", { x: px(a) + 2, y: abajo ? y(a.neto) + 16 : y(a.neto) - 8, class: "rot halo" }, fK(a.neto)));
   svg.append(sv("text", { x: px(b), y: y(b.neto) - 10, "text-anchor": "end", class: "rot-f" }, fK(b.neto)));
   if (salto) {
     // el rótulo va arriba a la izquierda (zona libre: la línea empieza abajo) y un anillo marca la semana
@@ -927,7 +928,7 @@ function puente() {
   const filas = [{ n: "Patrimonio al " + dm(ini.fin), a: ini.neto, b: ini.neto, v: fN(ini.neto), sinBarra: true }];
   let acc = ini.neto;
   const paso = (n, d, cls) => { filas.push({ n, a: acc, b: acc + d, v: fS(d), cls: cls || (d >= 0 ? "pos" : "") }); acc += d; };
-  paso("Operación (sin el dólar)", ganN - dolar);
+  paso("Operación antes del efecto del dólar", ganN - dolar);
   if (Math.abs(dolar) > 0.5) paso("Efecto del dólar (estimado)", dolar);
   if (rev.length) paso("Semanas a revisar (" + rev.map(s => s.txt.replace(" (2 sem.)", "")).join(" y ") + ")", ganRev, "aj");
   const ajPor = {};
@@ -940,7 +941,7 @@ function puente() {
   const prom = suma(ss.map(s => s.neto)) / ss.length;
   return h("div", { class: "card" }, h("h3", {}, "Lo que ganamos en el período y de dónde salió"),
     ayuda("Separa lo que cambió el patrimonio en el período elegido: la operación, lo que se pagó, el efecto del dólar sobre los pesos, las semanas que hay que revisar (saltos sin explicar), los ajustes cargados a mano y los retiros de los socios. No depende del botón de ajustes.",
-      "Operación sin el dólar = ganancia de las semanas sin marca de revisar (ya con lo pagado restado) más el efecto estimado del dólar del período, que va en su renglón (el mismo de Pesos y dólar). Las semanas a revisar entran con su ganancia, que es lo que no está explicado. Por mes = semanas normales × 12 ÷ 52.", "Calculadora Semanal y retiros registrados."),
+      "Operación antes del efecto del dólar = ganancia de las semanas sin marca de revisar (ya con lo pagado restado) menos el efecto estimado del dólar del período (si el dólar restó, se le devuelve), que va en su propio renglón (el mismo de Pesos y dólar). Las semanas a revisar entran con su ganancia, que es lo que no está explicado. Por mes = semanas normales × 12 ÷ 52.", "Calculadora Semanal y retiros registrados."),
     h("p", { class: "l", style: "margin:0" }, `El patrimonio pasó de ${fU(ini.neto)} a ${fU(fin.neto)} (${fS(fin.neto - ini.neto)}). Sin las semanas a revisar ni los ajustes, la operación dejó `,
       h("b", {}, fU(ganN)), ` después del dólar: ${fU(semN ? ganN / semN : null)} por semana, ${fU(mesesN ? ganN / mesesN : null)} por mes, el ${pctTxt(mesesN ? ganN / mesesN / prom : null)} por mes del patrimonio promedio del período (${fU(prom)}).`),
     barrasH(filas, { sinCero: true }),
@@ -1013,7 +1014,7 @@ function seccionPlata() {
           "Renglón USDT del cálculo de cada hoja. Sus cambios son ajustes a mano.", "Calculadora Semanal."),
         h("div", { class: "v num", style: "font-size:24px" }, fU(s.grupos.usdt_general)),
         h("div", { class: "l" }, `${fPct(s.grupos.usdt_general, s.neto)} del patrimonio.`, movUsdt.length ? [" Se cargaron ", h("b", {}, fSU(cargadoUsdt)), ` en ${plural(movUsdt.length, "vez", "veces")} desde ${movUsdt[0][0].txt}.`] : null),
-        h("div", { class: "l" }, "¿Cuánto rinde? No se puede calcular con la planilla: falta cuánto se puso en USDT General y la fecha de cada liquidación. Hay que pedírselo a quien lleva USDT General y cargarlo en config.json."),
+        h("div", { class: "l" }, "¿Cuánto rinde? No se puede calcular con la planilla: falta cuánto se puso en USDT General y la fecha de cada liquidación. Hay que pedírselo a quien lleva USDT General."),
         movUsdt.length ? h("div", { class: "tw" }, h("table", { class: "t" }, h("thead", {}, h("tr", {}, h("th", {}, "Semana en que se cargó"), h("th", {}, "Cambio"))),
           h("tbody", {}, movUsdt.slice().reverse().map(([x, d]) => h("tr", { class: "fila-click", onclick: () => abrirSemana(IDX[x.id]) }, h("td", {}, x.txt), h("td", {}, fS(d))))))) : null)),
     h("div", { class: "card" }, h("h3", {}, "Disponible, proyectos y USDT General y deuda"),

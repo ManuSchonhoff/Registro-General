@@ -484,7 +484,7 @@ class Modelo:
         if rev:
             det = " y ".join(f"{s['txt']} {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)}" for s in rev)
             avisos.append({"k": "rev", "semanas": [s["id"] for s in rev],
-                           "t": f"{'Semana' if len(rev) == 1 else str(len(rev)) + ' semanas'} con saltos sin explicar: {det}. Conviene aclararlas antes de repartir."})
+                           "t": f"{'Semana' if len(rev) == 1 else str(len(rev)) + ' semanas'} con saltos sin explicar: {det}. Conviene aclararlas: de ellas depende parte de los dividendos (ver Socios)."})
         # el resto de lo que hay que revisar va en una sola franja que abre la lista de «¿Le creo a estos números?»
         todos = [c["titulo"] for c in self.chequeos if c["nivel"] == "revisar"]
         otros = [x for x in todos if not x.startswith("Semana ")]
