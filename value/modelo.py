@@ -491,7 +491,7 @@ class Modelo:
         if todos:
             ej = " y ".join(x[0].lower() + x[1:] for x in otros[:2])
             avisos.append({"k": "dudoso", "semana": None, "ancla": "revisar",
-                           "t": f"En total, {len(todos)} {'punto' if len(todos) == 1 else 'puntos'} para revisar en la planilla"
+                           "t": f"Para el que arma la planilla: {len(todos)} {'punto' if len(todos) == 1 else 'puntos'} para revisar"
                                 + (f": {'las semanas de arriba y ' if len(todos) > len(otros) else ''}{len(otros)} más, por ejemplo {ej}." if otros else ".")})
         return {
             "meta": {

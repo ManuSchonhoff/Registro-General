@@ -76,7 +76,7 @@ Notación: *t* = hoja semanal (orden cronológico); *t−1* = la hoja inmediatam
 | **Ganancia de la semana** (la principal) `gan(t)` | Lo que ganó el negocio en la semana | `var(t) + ret(t) − aj(t)` ("sin ajustes") |
 | Ganancia con ajustes | Lo mismo, incluyendo los ajustes a mano | `var(t) + ret(t)` |
 | **Egresos del negocio** `gas(t)` | Gastos, comisiones pagadas, intereses a inversores e inversión de la semana | `egr(t) − ret_dentro_de_egresos(t)`, desglosado por tipo según el coeficiente de cada columna en la fórmula de Egresos (GASTOS y FIJOS → Gastos; COMISIONES; INTERESES menos lo reclasificado como retiro; INVERSION) |
-| **Antes de gastos** | Lo que dejó la operación antes de pagar gastos, comisiones, intereses e inversión | `gan(t) + gas(t)` (con o sin ajustes según el interruptor) |
+| **Antes de gastos** | Lo que dejó la operación antes de pagar gastos, comisiones, intereses e inversión | `gan(t) + gas(t)`, **siempre sin ajustes a mano** (el interruptor solo suma los ajustes a la ganancia después de gastos) |
 | **Por semana** | Para comparar semanas de distinto largo | valor ÷ (`d(t)` ÷ 7). Solo cambia la hoja doble |
 | **Semana típica** | Referencia para decir si una semana estuvo arriba o abajo de lo habitual | Mediana de la misma medida que se muestra (ganancia o antes de gastos, con o sin ajustes, por semana) de las **8 hojas anteriores** a cada semana (con al menos 3). La tarjeta compara la semana foco contra la suya; el gráfico semanal la dibuja como línea escalonada. Es una sola definición |
 
@@ -103,7 +103,7 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
 |---|---|---|
 | Proyectos (al costo) | POLIGONO, POLIGONO 20+13, ALMAFUERTE, columna sin título que heredó uno de estos nombres | Inmovilizado |
 | Pesos | PESOS, TRANSFER, CHEQUES, RECAUDACION BX, bx, DEUDA PESOS | Disponible |
-| Dólares billete | CARA CHICA, CAMBIO, MALOS, USD, USD BsAs | Disponible |
+| Dólares billete | CARA CHICA, CAMBIO, MALOS, USD, USD BsAs, DEUDA USD | Disponible |
 | Cripto | USDT (caja), TRX, USDT General (columna) | Disponible |
 | Exterior y euros | LLC, Grabify y variantes, PayPal Ruso, CITY BANK, WISE US, PAYONEER, WISE, EUROS, REALES, LIBRAS | Disponible |
 | Participación USDT General | renglón "USDT" del bloque (valor fijo a mano) | Inmovilizado (USDT General y deuda) |
@@ -134,8 +134,9 @@ de la caja al Neto (3.1) se suma en su grupo. Los renglones fijos van a su propi
   Alejo 15,62 % y 11.111,11).
 - **Capital al último cierre de Tenencia** (30/06): se lee de la hoja Tenencia (última fila con capital por socio). Se
   muestra con su fecha; **no** se proyecta como Neto × %.
-- **Parte de la ganancia del período** = ganancia del período (según el interruptor de ajustes) × % del socio.
-  Responde "¿cuánto gané yo desde tal fecha?". Se avisa que los % suman 100,01 %.
+- **Lo ganado por cada socio** = % del socio × ganancia con ajustes desde la Tenencia (es lo que suma al capital
+  estimado). La "parte de la ganancia del período elegido" por socio ya no se muestra: el usuario de prueba la confundía
+  con lo que se cobra. La sección Socios no cambia con los filtros.
 - **Capital estimado a la última semana** = capital de la Tenencia + % × ganancia con ajustes de las semanas cuyo mes
   (regla del jueves) es posterior al último mes de la Tenencia (hoy, desde 29 jun–5 jul). No descuenta dividendos
   pagados después (hay uno: 924,16 de 6–12 jul, dividendos de junio dentro de INTERESES). Su total difiere del patrimonio en lo que la Tenencia descontó por su cuenta;
@@ -163,7 +164,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
   elegir la semana de inicio y la de fin; "Últimos 3 meses" = las hojas que terminan después de la fecha del último
   domingo menos 3 meses; "Últimas 8 semanas" = las últimas 8 hojas; elegir un período vuelve la semana foco a la
   última) y **Ajustes** [Sin ajustes · Con ajustes], con sus rótulos visibles también
-  en el celular. Afectan a gráficos, tarjetas de período, socios y tabla. Por defecto: Todo y Sin ajustes.
+  en el celular. Afectan a gráficos, tarjetas de período y tabla (Socios y Gastos no cambian con el interruptor de
+  ajustes). Por defecto: Todo y Sin ajustes.
 
 ### 4.2 Secciones
 
@@ -188,11 +190,12 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      otra con el total de puntos para revisar en la planilla (el mismo número que la lista de "¿Le creo…?", que abre). El ajuste a mano de la última semana ya está
      en la tarjeta de la semana y no se repite.
    - **Lo que ganamos en el período y de dónde salió** (cascada, sigue al período, no depende del interruptor):
-     patrimonio al inicio + **operación** (ganancia de las semanas normales, ya descontados el total pagado y el dólar)
-     + semanas a revisar (su ganancia, el mismo número de los avisos) + ajustes a mano − retiros = patrimonio al final.
-     No hay un renglón "antes de gastos" (el único "antes de gastos" del período es el de Gastos). Debajo, una nota: la
-     operación y las semanas a revisar ya tienen restado el total pagado del período y el efecto del dólar (los mismos
-     números que Gastos y Pesos y dólar). Arriba, una frase: cuánto pasó el patrimonio y cuánto dejó la operación, por
+     patrimonio al inicio + **operación** (ganancia de las semanas normales, ya descontado el total pagado)
+     + semanas a revisar (su ganancia, el mismo número de los avisos) + ajustes a mano − retiros = patrimonio al final,
+     con la operación partida en **operación sin el dólar** (= ganancia de las semanas normales − efecto del dólar del
+     período) y **efecto del dólar** (el de todo el período, el mismo de Pesos y dólar). No hay un renglón "antes de
+     gastos" (el único "antes de gastos" del período es el de Gastos). Debajo, una nota: la operación y las semanas a
+     revisar ya tienen restado el total pagado del período (el mismo de Gastos). Arriba, una frase: cuánto pasó el patrimonio y cuánto dejó la operación, por
      semana, por mes y como % por mes del **patrimonio promedio** del período (promedio simple del Neto de sus hojas; la hoja
      doble cuenta una vez). **Por mes = semanas normales × 12 ÷ 52** (las mismas semanas que el total). Los ajustes se
      rotulan por renglón ("USDT General +30.776, deuda −1.000").
@@ -323,12 +326,12 @@ base (el código los completa con los números):
 
 - **Patrimonio neto.** Qué es: lo que vale Cambio General al cierre del domingo, todo pasado a dólares: cajas (con
   sus pendientes), proyectos al costo, la parte de USDT General y lo que nos deben. No es todo plata disponible. Cómo se
-  calcula: pesos ÷ cotización de la semana, euros × 1,25. De dónde sale: Calculadora, "Neto" (B16); en el Value CG se
+  calcula: pesos ÷ cotización de la semana, euros × 1,25. De dónde sale: Calculadora, "Neto" (la celda cambia según la hoja; el detalle de cada semana la muestra); en el Value CG se
   llama CAPITAL.
 - **Ganancia de la semana.** Qué es: cuánto creció el patrimonio contra el domingo anterior, sumando lo que retiraron
   los socios (no es una pérdida) y sin los ajustes a mano. No es plata que entró: también la mueven el dólar y los
   pendientes. Cómo se calcula: patrimonio − patrimonio anterior + retiros − ajustes. De dónde sale: Calculadora
-  ("Ganancia Neta", B17) y los retiros cargados en la configuración.
+  ("Ganancia Neta", celda según la hoja) y los retiros cargados en la configuración.
 - **Antes de gastos.** Lo que dejó la operación antes de pagar gastos, comisiones, intereses a inversores e inversión.
   En la planilla: "Ganancia Bruta" (sin los dividendos).
 - **Ajustes a mano.** Cambios en los valores fijos del bloque (USDT General y Deuda). Ejemplo: +15.855 de USDT General
@@ -452,6 +455,16 @@ período; el primer mes de una sola hoja no se rotula; el tramo del rendimiento 
 misma unidad en la hoja doble y "lo típico antes de gastos"; Gastos siempre sin ajustes; elegir un período vuelve a la
 última semana; período y ajustes también en el menú ≡; el aviso de puntos a revisar con el mismo número que la lista, que
 abre; la ayuda "?" como hoja abajo en el celular; los gráficos dicen que se pueden tocar.
+
+**Cambios después de la octava verificación.** El auditor no encontró montos mal calculados (unos 24.000 números); el
+usuario de prueba respondió P1–P8 salvo P4, "a medias" porque el dólar no tenía renglón propio en la cascada y porque,
+con "Con ajustes", el "antes de gastos" del gráfico (19.370) no era el de la cuenta de la semana (3.515). Se
+corrigieron: el dólar con renglón propio (operación sin el dólar 146.813 − 12.318 = 134.495); "antes de gastos" siempre
+sin ajustes; la tabla de evolución desde la semana base; el rótulo de inicio que no se pisa con el anillo y el mayor
+salto también cuando es el último punto; "—" en el mes sin semanas normales; la ayuda con "i" para no confundirla con
+la marca "?"; el rótulo del interruptor ("Ajustes a mano (USDT General y deuda)"); "desde el cierre del…"; "Ganancia del
+año, desde marzo"; el gasto por mes como número principal en Gastos; el redondeo de las fichas de socios; qué falta para
+el rendimiento de USDT General; "Elegir…" en el menú.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de
