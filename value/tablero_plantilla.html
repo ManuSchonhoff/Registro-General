@@ -118,6 +118,8 @@ details.ayuda[open] > summary { background: var(--ink); color: var(--surface); b
 details.ayuda > div { position: absolute; right: 0; top: 34px; z-index: 6; width: min(320px, calc(100vw - 48px)); padding: 12px; border-radius: 10px;
   background: var(--surface); border: 1px solid var(--axis); box-shadow: 0 8px 24px var(--sombra); font-size: 13px; color: var(--ink-2); display: grid; gap: 6px; }
 details.ayuda > div b { color: var(--ink); }
+@media (max-width: 599px) { details.ayuda > div { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); top: auto;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 60vh; overflow-y: auto; z-index: 30; } }
 
 .avisos { display: grid; gap: 6px; }
 .aviso { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; background: var(--warn-bg); font-size: 13px; color: var(--ink); border: 0; text-align: left; width: 100%; }
@@ -426,7 +428,7 @@ function marcasMes(svg, ss, et, y, x0, x1) {
   const minGap = 24, cand = [];
   let prev = null;
   for (const s of ss) { if (s.mes !== prev) { cand.push({ px: et.ini(s), m: s.mes }); prev = s.mes; } }
-  if (cand.length > 1 && cand[1].px - cand[0].px < 50) cand.shift();
+  if (cand.length > 1 && (cand[1].px - cand[0].px < 50 || ss.filter(s => s.mes === cand[0].m).length === 1)) cand.shift();
   let ultX = -1e9;
   for (const c of cand) {
     if (c.px - ultX < minGap || c.px > x1 - 10) continue;
@@ -458,8 +460,9 @@ function interactivo(svg, ss, et, alMover, alElegir) {
 function moverFoco(d) { const n = Math.min(Math.max(ST.foco + d, 0), W.length - 1); if (n !== ST.foco) { ST.foco = n; render(true); } }
 
 // ------------------------------------------------------------------------------------------------ gráfico: patrimonio
+const RANGO_BASE = () => W.slice(Math.max(0, ST.desde - 1), ST.hasta + 1);
 function grafPatrimonio(el, Wd) {
-  const ss = RANGO();
+  const ss = RANGO_BASE();
   const H = Wd < 600 ? 190 : 230, mL = 44, mR = 12, mT = 14, mB = 24;
   const vals = ss.map(s => s.neto);
   const sc = escala(0, Math.max(...vals) * 1.06, 4);
@@ -617,7 +620,7 @@ function grafGanancia(el, Wd) {
       poner(lec, h("span", { class: "k" }, s.txt), h("b", {}, fU(x.total)),
         s.dias === 14 ? h("span", {}, `por semana (total ${fU(x.total * 2)})`) : null,
         h("span", {}, (ST.base === "antes" ? "después de gastos " + fU(porSem(gan(s), s)) : "total pagado " + fU(s.gas))), marcas,
-        h("button", { type: "button", onclick: () => abrirSemana(IDX[s.id]) }, "Ver semana"));
+        h("button", { type: "button", onclick: () => abrirSemana(IDX[s.id]) }, "Ver semana"), h("span", { class: "k" }, "· tocá una barra para abrir esa semana"));
     };
     interactivo(svg, ss, et, lecturaDe, i => abrirSemana(IDX[ss[i].id]));
   }
@@ -627,7 +630,7 @@ function grafGanancia(el, Wd) {
 
 // ------------------------------------------------------------------------------------------------ gráfico: disponible / proyectos / fijos
 function grafEvolucion(el, Wd) {
-  const ss = RANGO();
+  const ss = RANGO_BASE();
   const H = Wd < 600 ? 190 : 220, mL = 44, mR = 12, mT = 14, mB = 34;
   const series = [
     { k: "disponible", n: "Disponible", c: "var(--s1)", v: s => s.disponible },
@@ -708,7 +711,7 @@ function grafGastos(el, Wd, meses) {
   svg.addEventListener("pointermove", ev => pintar(idx(local(ev))));
   svg.addEventListener("pointerleave", () => pintar(null));
   pintar(null);
-  el.append(lec, svg, h("div", { class: "ley" }, h("span", {}, h("span", { class: "sw", style: "background:var(--s1)" }), ST.aj ? "Antes de gastos, con ajustes a mano (incluye USDT General cargado de golpe)" : "Lo que dejó la operación (antes de gastos)"),
+  el.append(lec, svg, h("div", { class: "ley" }, h("span", {}, h("span", { class: "sw", style: "background:var(--s1)" }), "Lo que dejó la operación (antes de gastos)"),
     h("span", {}, h("span", { class: "sw", style: "background:var(--s2)" }), "Total pagado: gastos, comisiones, intereses e inversión")));
 }
 
@@ -826,7 +829,7 @@ function resumen() {
       h("div", { class: "l" }, h("b", {}, fPct(s.disponible, s.neto)), " del patrimonio"),
       h("div", { class: "l" }, "Inmovilizado ", h("b", {}, fU(s.grupos.proyectos + s.fijos)), ` (${fPct(s.grupos.proyectos + s.fijos, s.neto)}): proyectos ${fU(s.grupos.proyectos)} y USDT General y deuda ${fU(s.fijos)}.`)));
   const max = 6;
-  const irA = a => a.semana ? () => abrirSemana(IDX[a.semana]) : a.ancla ? () => irSeccion(a.ancla) : null;
+  const irA = a => a.semana ? () => abrirSemana(IDX[a.semana]) : a.ancla === "revisar" ? () => { const d = document.getElementById("det-revisar"); if (d) { d.open = true; d.scrollIntoView({ behavior: sinMov() ? "auto" : "smooth" }); } } : a.ancla ? () => irSeccion(a.ancla) : null;
   const itemAviso = a => a.semanas ? h("div", { class: "aviso", role: "listitem" }, h("span", { class: "ic", "aria-hidden": "true" }, ICO[a.k] || "!"),
       h("span", {}, a.t, " ", h("span", { class: "chips" }, a.semanas.map(id => h("button", { type: "button", class: "chip-s", onclick: () => abrirSemana(IDX[id]) }, "Ver " + W[IDX[id]].txt.replace(" (2 sem.)", ""))))))
     : h(irA(a) ? "button" : "div", Object.assign({ class: "aviso" + (a.k === "aj" ? " info" : ""), role: "listitem" }, irA(a) ? { type: "button", onclick: irA(a) } : {}),
@@ -835,7 +838,7 @@ function resumen() {
   if (D.avisos.length > max) avisos.append(h("button", { type: "button", class: "link", onclick: ev => { ev.target.replaceWith(...D.avisos.slice(max).map(itemAviso)); } }, `Ver ${D.avisos.length - max} aviso${D.avisos.length - max > 1 ? "s" : ""} más`));
   const linea = h("div", { class: "card" }, h("h3", {}, "Patrimonio semana a semana"),
     ayuda("El patrimonio neto al cierre de cada domingo. El eje empieza en 0, así el crecimiento se ve en su tamaño real.", "Renglón «Neto» de cada hoja de la Calculadora.", "Calculadora Semanal, una hoja por semana."),
-    lienzo(grafPatrimonio), verComoTabla([["Semana", "Patrimonio", "Cambio"], RANGO().slice().reverse().map(x => [x.txt, fN(x.neto), ok(x.var) ? fS(x.var) : ""])]));
+    lienzo(grafPatrimonio), verComoTabla([["Semana", "Patrimonio", "Cambio del patrimonio"], RANGO_BASE().slice().reverse().map(x => [x.txt, fN(x.neto), ok(x.var) ? fS(x.var) : ""])]));
   const ult = W[W.length - 1];
   const mirando = ST.foco !== W.length - 1 ? h("div", { class: "aviso info" }, h("span", { class: "ic", "aria-hidden": "true" }, "◷"),
     h("span", {}, h("b", {}, `Estás mirando la semana ${s.txt}`), ` (dólar $${NB}${miles(s.cot || 0)}): las tarjetas, la composición y el detalle son de esa semana.`),
@@ -951,7 +954,7 @@ function rendimiento() {
       ok(porMes) ? pctTxt(porMes / prom) : "—", ok(porMes) && promDisp > 0 ? pctTxt(porMes / promDisp) : "—"];
   };
   const filas = [tramo("Período elegido", ss)];
-  if (ss.length >= 10) filas.push(tramo("Últimas 8 semanas", ss.slice(-8)));
+  if (ss.length >= 10) filas.push(tramo(`Últimas ${plural(suma(ss.slice(-8).map(s => s.dias / 7)), "semana", "semanas")}`, ss.slice(-8)));
   const conVol = ss.filter(s => ok(s.volumen) && s.volumen > 0), volN = conVol.filter(s => !tieneMarca(s, "rev"));
   const vol = suma(conVol.map(s => s.volumen)), semVol = suma(conVol.map(s => s.dias / 7));
   const volNor = suma(volN.map(s => s.volumen)), antesNor = suma(volN.map(s => s.antes)), ganNor = suma(volN.map(s => s.gan));
@@ -1022,7 +1025,7 @@ function mesesRango() {
     const m = MESES[id];
     const det = { gastos: 0, comisiones: 0, intereses: 0, inversion: 0, otros: 0 };
     for (const s of l) for (const k in det) det[k] += s.gas_det[k] || 0;
-    return { id, l, parcial: !m.completo || l.length < m.hojas.length, antes: suma(l.map(antes)), gas: suma(l.map(s => s.gas)), det, ret: suma(l.map(s => s.ret)), ingresos: suma(l.map(s => s.ingresos || 0)) };
+    return { id, l, parcial: !m.completo || l.length < m.hojas.length, antes: suma(l.map(s => s.antes)), gas: suma(l.map(s => s.gas)), det, ret: suma(l.map(s => s.ret)), ingresos: suma(l.map(s => s.ingresos || 0)) };
   });
 }
 function seccionGastos() {
@@ -1040,15 +1043,15 @@ function seccionGastos() {
   if (ultC) {
     const d = ultC.antes - ultC.gas;
     const sinRev = ultC.l.filter(s => !tieneMarca(s, "rev"));
-    const dLimpio = suma(sinRev.map(s => (ST.aj ? s.antes_con : s.antes) - s.gas));
+    const dLimpio = suma(sinRev.map(s => s.antes - s.gas));
     cubre = h("p", { class: "l", style: "margin:0" }, h("b", {}, `En ${mesNombre(ultC.id)} la operación ${d >= 0 ? "cubrió" : "no cubrió"} los costos`),
       `: dejó ${fU(ultC.antes)} antes de gastos y se pagaron ${fU(ultC.gas)} (${fSU(d)}).`,
       ultC.l.some(s => tieneMarca(s, "rev")) ? ` Sin las semanas a revisar: ${fSU(dLimpio)}.` : "");
   }
-  return seccion("gastos", "Gastos", "¿La operación cubre los costos? Por mes, porque los costos fijos se pagan juntos una semana de cada mes.",
+  return seccion("gastos", "Gastos", "¿La operación cubre los costos? Por mes, porque los costos fijos se pagan juntos una semana de cada mes. Siempre sin ajustes a mano: la ganancia de USDT General cargada de golpe no es de la operación.",
     h("div", { class: "card" }, h("h3", {}, "Antes de gastos y total pagado, por mes"),
       ayuda("Lo que dejó la operación antes de pagar (azul) y lo que se pagó en gastos, comisiones, intereses a inversores e inversión (naranja). La diferencia es la ganancia del mes. Los retiros de socios no son gastos. «?» marca los meses con semanas a revisar.",
-        "Antes de gastos = ganancia + total pagado" + (ST.aj ? " (con ajustes a mano)." : " (sin ajustes a mano).") + " Los intereses ya no incluyen los dividendos que estaban cargados en esa columna.", "Calculadora Semanal: columnas de gastos, comisiones, intereses e inversión."),
+        "Antes de gastos = ganancia sin ajustes a mano + total pagado (no cambia con el botón de ajustes). Los intereses ya no incluyen los dividendos que estaban cargados en esa columna.", "Calculadora Semanal: columnas de gastos, comisiones, intereses e inversión."),
       cubre,
       lienzo((el, w) => grafGastos(el, w, ms)),
       tablaFija(cols, ms.map(m => fila(mesTxt(m), m.antes, m.gas, m.det, m.ret)), fila("Período", tot.antes, tot.gas, totDet, suma(ms.map(m => m.ret)))),
@@ -1100,28 +1103,27 @@ function seccionSocios() {
   const tarjetaDiv = pend.length ? h("div", { class: "card" }, h("h3", {}, "Para repartir según la regla del " + miles(regla * 100) + "%"),
       ayuda(`La hoja Tenencia reparte como dividendo el ${miles(regla * 100)}% de la ganancia de cada mes. Estos meses no tienen el reparto cargado: es lo que daría la regla, no lo que se pagó. Se calcula sobre la ganancia sin ajustes; la ganancia de USDT General cargada de golpe va en su propia fila porque es de meses anteriores. Un mes con pérdida no reparte.`,
         `${miles(regla * 100)}% de la ganancia del mes, por el % de cada socio.`, "Hoja Tenencia (regla) y Calculadora Semanal (ganancia)."),
-      h("div", { class: "v num" }, fU(totBase * regla)),
-      h("div", { class: "l" }, `De ${pend.length === 1 ? mesNombre(pend[0].id) : ML[Number(pend[0].id.slice(5)) - 1] + " a " + mesNombre(pend[pend.length - 1].id)}, que no tienen el reparto cargado en la Tenencia. Por socio y según qué tan firme es:`),
+      h("div", { class: "l" }, "Para repartir ya"),
+      h("div", { class: "v num" }, fU(seguro + ajusteDiv)),
+      h("div", { class: "l" }, `El 10% de lo que se ganó de ${pend.length === 1 ? mesNombre(pend[0].id) : ML[Number(pend[0].id.slice(5)) - 1] + " a " + mesNombre(pend[pend.length - 1].id)} (meses sin el reparto cargado en la Tenencia)` + (ajusteDiv > 0.5 ? `, contando la ganancia de USDT General cargada de golpe (${fU(ajusteDiv)} de esto)` : "") + (conRev.length ? `, sin las semanas a revisar de ${conRev.map(m => ML[Number(m.id.slice(5)) - 1]).join(" y ")}.` : ".")),
       (() => {
-        const partes = [["seguro", seguro], ["del ajuste", ajusteDiv], ["depende de " + conRev.map(m => ML[Number(m.id.slice(5)) - 1]).join(" y "), revMonto * regla]].filter(([, v]) => Math.abs(v) > 0.5);
-        const ficha = (n, f, cls) => h("div", { class: "ficha" + (cls ? " " + cls : "") }, h("span", {}, n), h("b", {}, fN(totBase * regla * f)),
-          h("small", {}, partes.map(([k, v]) => `${k} ${fN(v * f)}`).join(" · ")));
+        const ficha = (n, f, cls) => h("div", { class: "ficha" + (cls ? " " + cls : "") }, h("span", {}, n), h("b", {}, fN((seguro + ajusteDiv) * f)),
+          revMonto > 0.5 ? h("small", {}, `y ${fN(revMonto * regla * f)} más si se aclara ${conRev.map(m => ML[Number(m.id.slice(5)) - 1]).join(" y ")}`) : null);
         return h("div", { class: "fichas" }, S.lista.map(so => ficha(so.nombre, so.pct / 100)), ficha("Total", 1, "tot"));
       })(),
-      h("p", { class: "nota" }, "Seguro: la ganancia de esos meses sin las semanas a revisar. Del ajuste: el 10% de la ganancia de USDT General de meses anteriores, cargada de golpe." + (conRev.length ? " Depende: lo que agregan las semanas a revisar; si no se aclaran, no habría que repartirlo." : "")),
+      revMonto > 0.5 ? h("p", { class: "l", style: "margin:0" }, h("span", { class: "tag w" }, "?"), ` Si se aclaran las semanas a revisar de ${conRev.map(m => ML[Number(m.id.slice(5)) - 1]).join(" y ")}, se suman ${fU(revMonto * regla)}: en total ${fU(totBase * regla)}.`) : null,
       h("div", { class: "l" }, D.chequeos.some(c => c.titulo.startsWith("No hay retiros")) ? h("b", {}, "Según la planilla, no se pagó: no hay retiros de socios registrados después de " + W.filter(s => s.ret > 0.005).slice(-1)[0]?.txt + ". Si se pagó algo por fuera, hay que cargarlo.") : ""),
       ...divDetalle) : null;
   return seccion("socios", "Socios", `Capital según la hoja Tenencia del Value CG${tenAl ? ", cargada hasta el " + dm(tenAl) : ""}. Lo posterior es una estimación sobre la ganancia.`,
     tarjetaDiv,
-    h("div", { class: "card" }, h("h3", {}, "Capital de cada socio"),
+    h("div", { class: "card" }, h("h3", {}, "Capital de cada socio (no es plata para cobrar)"),
       ayuda("Capital de cada socio según la Tenencia y su parte de la ganancia. El capital estimado suma al de la Tenencia la parte de la ganancia de los meses siguientes (con ajustes, porque la ganancia de USDT General también es de la sociedad); no descuenta dividendos que se hayan pagado después.",
         "Capital al día = capital de la Tenencia + % del socio × ganancia con ajustes desde el mes siguiente a la Tenencia.", "Hoja Tenencia del Value CG y Calculadora Semanal."),
-      h("div", { class: "l" }, `Capital al ${tenAl ? dm(tenAl) : "—"} según la hoja Tenencia (el total es la suma de los socios), más lo que ganó cada uno después, da el capital estimado al ${dm(ult.fin)}. Participación: ` + S.lista.map(so => `${so.nombre} ${miles(so.pct, 2)}%`).join(" · ") + "."),
-      tablaFija(["Socio", `Al ${tenAl ? dm(tenAl) : "—"}`, `+ Ganó desde ${desdeTen.length ? dm(desdeTen[0].ini) : "—"}`, `= Al ${dm(ult.fin)}`],
-        S.lista.map(so => [so.nombre, fN(so.capital), fS(ganDesdeTen * so.pct / 100), fN(so.capital + ganDesdeTen * so.pct / 100)]),
-        ["Total", fN(capTen), fS(ganDesdeTen * S.suma_pct / 100), fN(capEst)]),
-      h("p", { class: "nota" }, `«Ganó desde…» es su parte de la ganancia de la sociedad desde la Tenencia (${fU(ganDesdeTen)}, con ajustes; como los % suman ${miles(S.suma_pct, 2)}%, las partes suman ${fN(ganDesdeTen * S.suma_pct / 100)}): queda en el capital, no es plata para cobrar. Lo que se cobra es lo de «Para repartir». El capital estimado no descuenta dividendos pagados después de la Tenencia. Aportes: ${S.lista.map(so => `${so.nombre} ${fN(so.aporte)}`).join(" · ")}.`),
-      ss.length ? h("p", { class: "nota" }, `De la ganancia del período elegido (${fU(ganPer)}${ST.aj ? ", con ajustes" : ", sin ajustes"}) a cada uno le corresponde: ${S.lista.map(so => `${so.nombre} ${fN(ganPer * so.pct / 100)}`).join(" · ")}. Los % de la Tenencia suman ${miles(S.suma_pct, 2)}%, por eso los totales se pasan un poco.`) : null,
+      h("div", { class: "l" }, `Capital estimado al ${dm(ult.fin)}: el de la hoja Tenencia al ${tenAl ? dm(tenAl) : "—"} más lo que ganó cada uno después. Participación: ` + S.lista.map(so => `${so.nombre} ${miles(so.pct, 2)}%`).join(" · ") + "."),
+      h("div", { class: "fichas" }, S.lista.map(so => h("div", { class: "ficha" }, h("span", {}, so.nombre), h("b", {}, fN(so.capital + ganDesdeTen * so.pct / 100)),
+          h("small", {}, `${fN(so.capital)} al ${tenAl ? dm(tenAl) : "—"} ${fS(ganDesdeTen * so.pct / 100)} ganado desde ${desdeTen.length ? desdeTen[0].txt.replace(" (2 sem.)", "") : "—"}`))),
+        h("div", { class: "ficha tot" }, h("span", {}, "Total"), h("b", {}, fN(capEst)), h("small", {}, `${fN(capTen)} al ${tenAl ? dm(tenAl) : "—"} (suma de los socios) ${fS(ganDesdeTen * S.suma_pct / 100)} ganado`))),
+      h("p", { class: "nota" }, `Lo ganado es la parte de cada socio de la ganancia de la sociedad desde la Tenencia (${fU(ganDesdeTen)}, con ajustes y con las semanas a revisar; como los % suman ${miles(S.suma_pct, 2)}%, las partes suman ${fN(ganDesdeTen * S.suma_pct / 100)}). Queda en el capital: lo que se cobra es lo de «Para repartir». El capital estimado no descuenta dividendos pagados después de la Tenencia. Aportes: ${S.lista.map(so => `${so.nombre} ${fN(so.aporte)}`).join(" · ")}.`),
       h("details", { class: "vt" }, h("summary", {}, "¿Por qué el capital estimado no da igual al patrimonio?"),
         h("p", { class: "nota" }, `El capital estimado total (${fU(capEst)}) difiere del patrimonio (${fU(ult.neto)}) en ${fU(ult.neto - capEst)}. Sale de tres cosas: la Tenencia (suma de los socios) da ${fU(capTen)} contra un patrimonio de ${fU(netoTen)} al cierre de ${ML[Number(mesTen.slice(5)) - 1]} (${fS(netoTen - capTen)}: dividendos y ajustes que descontó por su cuenta); después se retiraron ${fU(retPost)}, que bajan el patrimonio pero no el capital estimado (${fS(-retPost)}); y los % suman ${miles(S.suma_pct, 2)}%, lo que agrega ${fU(pctExtra)} al capital (${fS(-pctExtra)}).`))),
     h("div", { class: "card" }, h("h3", {}, "Retiros registrados"),
@@ -1203,7 +1205,7 @@ function seccionCreo() {
       h("span", {}, h("b", {}, `¿La última semana (${ult.txt}) está bien cargada? `), controlTxt(ult)[2].replace(" (ver abajo).", ".").replace("(en «Para el que arma la planilla»)", "(tocá Ver)") + (control.some(m => m.k === "aj") ? " Tiene un ajuste a mano." : "")),
       control.length ? h("button", { type: "button", class: "link ir", onclick: () => abrirSemana(W.length - 1) }, "Ver") : null),
     h("div", { class: "chq" }, principales.filter(c => c.nivel === "ok").map(item)),
-    principales.some(c => c.nivel === "revisar") ? h("details", { class: "vt" }, h("summary", {}, `Lo que hay que revisar en la planilla (${principales.filter(c => c.nivel === "revisar").length})`),
+    principales.some(c => c.nivel === "revisar") ? h("details", { class: "vt", id: "det-revisar" }, h("summary", {}, `Lo que hay que revisar en la planilla (${principales.filter(c => c.nivel === "revisar").length})`),
       h("div", { class: "chq" }, principales.filter(c => c.nivel === "revisar").map(item))) : null,
     tecnicos.length ? h("details", { class: "vt" }, h("summary", {}, `Detalle técnico para el que arma la planilla (${tecnicos.length})`), h("div", { class: "chq" }, tecnicos.map(item))) : null,
     h("details", { class: "vt" }, h("summary", {}, "Cómo se calcula"),
@@ -1262,8 +1264,9 @@ function abrirSemana(i, ir) {
     h("div", {}, h("span", {}, "Total pagado"), h("b", {}, fK(s.gas)))));
   if (ok(s.antes)) {
     const tA = tipicaDe(i, x => x.antes);
-    const porque = [`La operación dejó ${fU(porSem(s.antes, s))} antes de gastos${s.dias === 14 ? " por semana" : ""}` + (tA ? ` (lo típico: ${fU(tA.v)})` : ""),
-      s.gas_det.gastos >= (D.config.umbral_gastos_grandes || 5000) ? `fue semana de costos fijos (se pagaron ${fU(s.gas)})` : `se pagaron ${fU(s.gas)}`];
+    const xSem = s.dias === 14 ? " por semana" : "";
+    const porque = [`La operación dejó ${fU(porSem(s.antes, s))}${xSem} antes de gastos` + (tA ? ` (lo típico antes de gastos: ${fU(tA.v)})` : ""),
+      s.gas_det.gastos >= (D.config.umbral_gastos_grandes || 5000) ? `fue semana de costos fijos (se pagaron ${fU(porSem(s.gas, s))}${xSem})` : `se pagaron ${fU(porSem(s.gas, s))}${xSem}`];
     if (Math.abs(s.efecto || 0) >= 1000) porque.push(`el dólar movió ${fSU(s.efecto)} los pesos`);
     if (Math.abs(s.aj) > 0.5) porque.push(`se cargaron ${fSU(s.aj)} a mano`);
     c.append(h("p", { class: "l", style: "margin:0" }, h("b", {}, "Por qué: "), porque.join("; ") + "."));
@@ -1351,7 +1354,14 @@ function abrirPeriodo() {
 const SECCIONES = [["resumen", "Resumen", "Resumen"], ["ganancia", "Ganancia", "Ganancia"], ["plata", "¿Dónde está la plata?", "Plata"], ["gastos", "Gastos", "Gastos"], ["socios", "Socios", "Socios"], ["semanas", "Todas las semanas", "Semanas"], ["creo", "¿Le creo a estos números?", "¿Le creo?"]];
 const irSeccion = id => document.getElementById(id).scrollIntoView({ behavior: sinMov() ? "auto" : "smooth" });
 function abrirSecciones() {
-  abrirCapa("Ir a una sección", null, h("div", { class: "secc" }, SECCIONES.map(([id, t]) => h("button", { type: "button", onclick: () => { cerrarCapa(); irSeccion(id); } }, t))));
+  const elegir = fn => () => { const y = window.scrollY; fn(); cerrarCapa(); render(); requestAnimationFrame(() => window.scrollTo(0, y)); };
+  const pres = [["todo", "Todo"], ["3m", "Últimos 3 meses"], ["8s", "Últimas 8 semanas"]];
+  abrirCapa("Ir a una sección", null, h("div", { style: "display:grid;gap:14px" },
+    h("div", { class: "fila-sel" }, "Período ", h("div", { class: "seg", role: "group", "aria-label": "Período" },
+      pres.map(([v, n]) => h("button", { type: "button", "aria-pressed": String(ST.periodo === v), onclick: elegir(() => { ST.periodo = v; guardar("periodo", v); ST.foco = W.length - 1; aplicarPeriodo(); }) }, n)))),
+    h("div", { class: "fila-sel" }, "Ganancia ", h("div", { class: "seg", role: "group", "aria-label": "Ajustes a mano" },
+      [[false, "Sin ajustes"], [true, "Con ajustes"]].map(([v, n]) => h("button", { type: "button", "aria-pressed": String(ST.aj === v), onclick: elegir(() => { ST.aj = v; guardar("aj", v); }) }, n)))),
+    h("div", { class: "secc" }, SECCIONES.map(([id, t]) => h("button", { type: "button", onclick: () => { cerrarCapa(); irSeccion(id); } }, t)))));
 }
 function abrirAyuda() {
   abrirCapa("Cómo leer este tablero", null, h("div", { style: "display:grid;gap:10px;font-size:14px" },
@@ -1368,7 +1378,7 @@ function filtros() {
   const f = h("div", { class: "top-2", id: "filtros" },
     h("span", { class: "lbl" }, "Período"),
     h("div", { class: "seg", role: "group", "aria-label": "Período" },
-      pres.map(([v, t, c]) => h("button", { type: "button", "aria-pressed": String(ST.periodo === v), onclick: () => { ST.periodo = v; guardar("periodo", v); aplicarPeriodo(); render(true); } }, h("span", { class: "largo" }, t), h("span", { class: "corto" }, c))),
+      pres.map(([v, t, c]) => h("button", { type: "button", "aria-pressed": String(ST.periodo === v), onclick: () => { ST.periodo = v; guardar("periodo", v); ST.foco = W.length - 1; aplicarPeriodo(); render(true); } }, h("span", { class: "largo" }, t), h("span", { class: "corto" }, c))),
       h("button", { type: "button", "aria-pressed": String(ST.periodo === "elegido"), onclick: abrirPeriodo }, ST.periodo === "elegido" ? `${W[ST.desde].txt} → ${W[ST.hasta].txt}` : "Elegir…")),
     h("span", { class: "lbl" }, "Ganancia"),
     seg("s-aj", [[false, "Sin ajustes"], [true, "Con ajustes"]], ST.aj, v => { ST.aj = v; guardar("aj", v); render(true); }, "Ajustes a mano"));

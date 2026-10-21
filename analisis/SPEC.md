@@ -154,14 +154,15 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
 
 ### 4.1 Encabezado y filtros (fijos)
 
-- Botón **≡** que abre la lista de secciones (el encabezado queda fijo, así se llega a cualquier sección desde
+- Botón **≡** que abre el período, los ajustes y la lista de secciones (el encabezado queda fijo, así se llega a cualquier sección desde
   cualquier lugar, también en el celular).
 - **Título** "Value · Cambio General" y **chip de semana foco** ("12–18 oct ▾"): abre la lista de semanas (la más nueva
   arriba, con sus marcas). Elegir una cambia la foco (tarjetas, composición, detalle).
 - **Línea de estado:** "Cierre del domingo 18/10 · Dólar $ 1.535 · Euro USD 1,25 · Tenencia al 30/06".
 - **Filtros globales** (una fila): **Período** [Todo · Últimos 3 meses · Últimas 8 semanas · Desde… ] (el "Desde" deja
   elegir la semana de inicio y la de fin; "Últimos 3 meses" = las hojas que terminan después de la fecha del último
-  domingo menos 3 meses; "Últimas 8 semanas" = las últimas 8 hojas) y **Ajustes** [Sin ajustes · Con ajustes], con sus rótulos visibles también
+  domingo menos 3 meses; "Últimas 8 semanas" = las últimas 8 hojas; elegir un período vuelve la semana foco a la
+  última) y **Ajustes** [Sin ajustes · Con ajustes], con sus rótulos visibles también
   en el celular. Afectan a gráficos, tarjetas de período, socios y tabla. Por defecto: Todo y Sin ajustes.
 
 ### 4.2 Secciones
@@ -184,7 +185,7 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
        anterior por semana.
      - Disponible: monto y % del patrimonio; "Inmovilizado X (%): proyectos X y USDT General y deuda X".
    - **Franja "Para tener en cuenta"**: una franja con las semanas a revisar (un botón por semana que abre su detalle) y
-     otra con la cantidad de otros puntos a revisar (lleva a "¿Le creo…?"). El ajuste a mano de la última semana ya está
+     otra con el total de puntos para revisar en la planilla (el mismo número que la lista de "¿Le creo…?", que abre). El ajuste a mano de la última semana ya está
      en la tarjeta de la semana y no se repite.
    - **Lo que ganamos en el período y de dónde salió** (cascada, sigue al período, no depende del interruptor):
      patrimonio al inicio + **operación** (ganancia de las semanas normales, ya descontados el total pagado y el dólar)
@@ -196,7 +197,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      doble cuenta una vez). **Por mes = semanas normales × 12 ÷ 52** (las mismas semanas que el total). Los ajustes se
      rotulan por renglón ("USDT General +30.776, deuda −1.000").
    - **Patrimonio semana a semana**: línea con área suave, eje en 0, eje X de tiempo real. Rótulos solo en el inicio,
-     el final y el mayor salto de una semana (anillo en el punto y "mayor salto: +42,9 k (24–30 ago)" arriba a la
+     el final y el mayor salto de una semana. Arranca en la semana base del período (la anterior a su primera
+     semana, la misma del "desde el…" de la tarjeta y de la cascada); lo mismo el gráfico de evolución. (Anillo en el punto y "mayor salto: +42,9 k (24–30 ago)" arriba a la
      izquierda, que entra también en el celular). "Ver como tabla" con patrimonio y cambio por semana. Sin íconos de eventos (están en el gráfico de
      ganancia). Lectura fija arriba del gráfico (semana, patrimonio, variación). Tocar = cambiar foco; "Ver semana"
      abre el detalle.
@@ -211,7 +213,7 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
    - Encabezado de la sección: "Ganancia del año (desde 2–8 mar; enero y febrero no están)" con el período "Todo", o
      "Ganancia del período (…)": total, por semana, semanas, cuánto es de semanas a revisar (en la medida elegida) y
      cuánto da por semana sin ellas.
-   - Tocar una barra o un punto abre el detalle de esa semana; en la vista por mes, fija la lectura del mes (que dice
+   - Tocar una barra o un punto abre el detalle de esa semana (la lectura lo dice); en la vista por mes, fija la lectura del mes (que dice
      cuánto da el mes sin las semanas a revisar; la tabla por mes tiene esa columna).
    - En el gráfico solo van las marcas ? y ◆; ▼, ⧉ y ⚠ están en la tabla de semanas.
    - La cascada del período está en el Resumen.
@@ -220,7 +222,8 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      que haya en el período) y el resto; si no, el período contra todas las semanas anteriores. Cada tramo se nombra por
      sus semanas reales. Con el período "Todo" y la última semana como foco, los dos primeros tramos son los del
      veredicto del Resumen.
-   - **Rendimiento y volumen**: por tramo (período y, con 10 hojas o más, últimas 8): ganancia de las semanas
+   - **Rendimiento y volumen**: por tramo (período y, con 10 hojas o más, las últimas 8 hojas, nombradas por sus
+     semanas reales): ganancia de las semanas
      normales por mes (semanas × 12 ÷ 52) y ese monto como % del patrimonio promedio y de lo disponible promedio de las
      semanas del tramo. Lo operado en el período: suma del "Volumen Prom" de cada hoja (en las hojas de marzo a mayo,
      que no lo tienen, el renglón "Promedio": en general (Debe + Haber) ÷ 2, en algunas hojas un número pegado), y por
@@ -240,7 +243,7 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
      total cargado y semanas en que se cargó; la planilla no tiene lo invertido ni fechas de liquidación, así que no se
      calcula rendimiento y se dice qué dato falta).
 
-4. **Gastos**
+4. **Gastos** (siempre sin ajustes a mano: es la operación contra los costos; no cambia con el botón)
    - Tabla por mes con la ganancia en la segunda columna (se ve sin deslizar en el celular) y el promedio por mes de
      los gastos fijos y varios en la nota.
    - Barras por mes agrupadas, mismo eje: "Antes de gastos" y "Total pagado" (gastos fijos y varios + comisiones +
@@ -249,17 +252,18 @@ consulta. Encabezado fijo con el nombre, la semana foco y una fila de chips que 
    - Tabla por mes con el desglose por tipo. Retiros de socios en una fila aparte ("no es gasto").
 
 5. **Socios**
-   - Primero, **"Para repartir según la regla del 10 %"**: el total como número principal y una ficha por socio (entra
-     en el celular sin deslizar) con su total y tres partes según qué tan firme es: **seguro** (meses sin las semanas a revisar), **del ajuste de USDT General**
+   - Primero, **"Para repartir según la regla del 10 %"**: el número principal es **"Para repartir ya"** = seguro + del
+     ajuste de USDT General, con una ficha por socio (entra en el celular sin deslizar) y "y X más si se aclara agosto";
+     debajo, el total si se aclaran las semanas a revisar. Las tres partes: **seguro** (meses sin las semanas a revisar), **del ajuste de USDT General**
      (10 % de los ajustes de esos meses) y **depende de las semanas a revisar** = Σ por mes de [10 % × máx(0, ganancia
      del mes) − 10 % × máx(0, ganancia del mes sin las semanas a revisar)] (hoy agosto entero: 5.872, porque sin esas
-     semanas agosto pierde y no reparte). Dice si se pagó según la planilla (retiros registrados después del último
-     retiro: hoy no hay ninguno después de 6–12 jul). La tabla mes · 10 % ·
+     semanas agosto pierde y no reparte). Dice si se pagó según la planilla: no hay retiros de socios registrados
+     después del cierre de la Tenencia salvo los que se listan (hoy, solo 924 en 6–12 jul, dividendos de junio). La tabla mes · 10 % ·
      ganancia sin ajustes · por socio (con la fila aparte de ajustes, 3.5) queda en "Ver mes por mes".
-   - Después, **"Capital de cada socio"**: tabla que cierra a la vista: socio · al 30/06 (Tenencia, el total es la
-     suma de los socios) · + ganó desde la Tenencia (con ajustes) · = capital estimado al último domingo. Notas: que lo
-     ganado no es plata para cobrar, los aportes, la parte de cada uno de la ganancia del período elegido y que los %
-     suman 100,01 %. Un desplegable explica por qué el capital estimado no da igual al patrimonio: (Neto al
+   - Después, **"Capital de cada socio (no es plata para cobrar)"**: una ficha por socio que cierra a la vista: capital
+     estimado al último domingo = capital al 30/06 (Tenencia; el total es la suma de los 4 socios, con sus centavos) +
+     ganado desde la Tenencia (con ajustes y con las semanas a revisar). Notas: que lo ganado queda en el capital, los
+     aportes y que los % suman 100,01 %. Un desplegable explica por qué el capital estimado no da igual al patrimonio: (Neto al
      cierre de la Tenencia − capital de la Tenencia) − retiros posteriores − el 0,01 % de más sobre la ganancia.
    - Retiros registrados: fecha, monto, detalle, "a confirmar" cuando corresponde.
 
@@ -439,6 +443,15 @@ planilla, no se pagó"; "Cómo venimos" con un número principal; agosto sin las
 el detalle y no cambia la semana del tablero; el chip "Semana ▾"; ⚠ por el cambio del euro 1,20 → 1,25 (+414); el eje
 de evolución sin "feb"; "Por qué" en el detalle; ¿Le creo? con lo de la planilla plegado; títulos repetidos en la tabla
 de semanas en el celular.
+
+**Cambios después de la séptima verificación.** El auditor no encontró montos mal calculados (unos 15.800 números); el
+usuario de prueba respondió P1–P8 salvo P5, "a medias" porque no había un número único de cuánto se reparte ya. Se
+corrigieron: "Para repartir ya" (3.777) como número principal, con lo que depende de agosto aparte; el capital en fichas
+que cierran a la vista y aclaran que incluyen las semanas a revisar; patrimonio y evolución arrancan en la semana base del
+período; el primer mes de una sola hoja no se rotula; el tramo del rendimiento por sus semanas reales; "Por qué" en la
+misma unidad en la hoja doble y "lo típico antes de gastos"; Gastos siempre sin ajustes; elegir un período vuelve a la
+última semana; período y ajustes también en el menú ≡; el aviso de puntos a revisar con el mismo número que la lista, que
+abre; la ayuda "?" como hoja abajo en el celular; los gráficos dicen que se pueden tocar.
 
 **Preguntas para el dueño** (cambiarían números del tablero): qué es la columna `AH` y los +37.500 del 05–11/10; fecha
 de cada liquidación de USDT General y si se cobraron a alguna caja; qué explica +42.940 (24–30/08) y el pendiente de

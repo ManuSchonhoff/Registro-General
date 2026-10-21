@@ -485,12 +485,14 @@ class Modelo:
             det = " y ".join(f"{s['txt']} {'+' if (s['var'] or 0) > 0 else ''}{fmt_usd(s['var'] or 0)}" for s in rev)
             avisos.append({"k": "rev", "semanas": [s["id"] for s in rev],
                            "t": f"{'Semana' if len(rev) == 1 else str(len(rev)) + ' semanas'} con saltos sin explicar: {det}. Conviene aclararlas antes de repartir."})
-        # el resto de lo que hay que revisar va en una sola franja que lleva a «¿Le creo a estos números?»
-        otros = [c["titulo"] for c in self.chequeos if c["nivel"] == "revisar" and not c["titulo"].startswith("Semana ")]
-        if otros:
+        # el resto de lo que hay que revisar va en una sola franja que abre la lista de «¿Le creo a estos números?»
+        todos = [c["titulo"] for c in self.chequeos if c["nivel"] == "revisar"]
+        otros = [x for x in todos if not x.startswith("Semana ")]
+        if todos:
             ej = " y ".join(x[0].lower() + x[1:] for x in otros[:2])
-            avisos.append({"k": "dudoso", "semana": None, "ancla": "creo",
-                           "t": f"Además, {len(otros)} {'punto' if len(otros) == 1 else 'puntos'} para revisar en los datos, por ejemplo: {ej}."})
+            avisos.append({"k": "dudoso", "semana": None, "ancla": "revisar",
+                           "t": f"En total, {len(todos)} {'punto' if len(todos) == 1 else 'puntos'} para revisar en la planilla"
+                                + (f": {'las semanas de arriba y ' if len(todos) > len(otros) else ''}{len(otros)} más, por ejemplo {ej}." if otros else ".")})
         return {
             "meta": {
                 "generado": generado, "corte": corte or ult["fin"], "ultima": ult["id"], "hojas": len(ss),
