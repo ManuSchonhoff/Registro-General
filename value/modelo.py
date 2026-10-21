@@ -124,6 +124,7 @@ class Modelo:
         prev_nombres = {}
         prev_cajas_usd = {}
         prev_coef = {}
+        prev_eur, prev_eur_tot = None, 0.0
         for h in self.hojas:
             cols = self._cajas(h, prev_nombres)
             b = h["bloque"]
@@ -259,6 +260,13 @@ class Modelo:
                     como = "1 a 1 como dólar" if uno else "como euro (× " + f"{c['coef']:.2f}".replace(".", ",") + ")"
                     d = c["total"] * (c["coef"] - cp)
                     criterio.append(f"{c['n'].capitalize()} pasa a contarse {como}: {'+' if d > 0 else ''}{fmt_usd(d)} que no son movimiento de plata")
+            # cambio de la cotización del euro: revalúa los euros que había (no es movimiento de plata)
+            eur_tot = sum(c["total"] for c in cols.values() if c["moneda"] == "EUR" and c["coef"] and abs(c["coef"] - 1) > 1e-9)
+            if prev_eur and h["eur_usd"] and abs(h["eur_usd"] - prev_eur) > 1e-9 and abs(prev_eur_tot) > 0.005:
+                d = prev_eur_tot * (h["eur_usd"] - prev_eur)
+                criterio.append(f"el euro pasa de {prev_eur:.2f} a {h['eur_usd']:.2f}".replace(".", ",")
+                                + f": {'+' if d > 0 else ''}{fmt_usd(d)} sobre los euros de la semana anterior, que no son movimiento de plata")
+            prev_eur, prev_eur_tot = h["eur_usd"], eur_tot
             if criterio:
                 s["_criterio"] = criterio
             prev_coef = {c["n"]: c["coef"] for c in cols.values() if c["coef"] is not None and (c["eur_1a1"] or c["moneda"] == "EUR")}
