@@ -21,7 +21,7 @@ import json
 import os
 import sys
 
-from value.leer import leer_carpeta, leer_tenencia
+from value.leer import leer_carpeta, leer_tenencia, nombre_hoja
 from value.modelo import Modelo
 from value.tablero import generar
 
@@ -61,7 +61,7 @@ def main():
     m.archivos_por_hoja = {}
     for p, (wf, _) in libros.items():
         for ws in wf.worksheets:
-            m.archivos_por_hoja.setdefault(ws.title, []).append(os.path.basename(p))
+            m.archivos_por_hoja.setdefault(nombre_hoja(ws.title), []).append(os.path.basename(p))
     m.armar()
     corte = a.fecha or m.semanas[-1]["fin"]
     generado = dt.datetime.now().strftime("%Y-%m-%d %H:%M")

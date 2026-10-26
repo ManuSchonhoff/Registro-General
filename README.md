@@ -106,8 +106,8 @@ python3 value.py --guardar-url <URL> # recuerda la URL del Artifact publicado
 
 - **Datos:** los Excel van en `datos/value/` (no en `datos/`, que es del Registro), con la fecha adelante
   (`AAAA-MM-DD_<nombre>.xlsx`). Puede ser la Calculadora completa o una hoja suelta: cada hoja semanal sale del archivo
-  más nuevo (por nombre) que la trae. El Value CG va en la misma carpeta: de su hoja Tenencia sale el capital de cada
-  socio.
+  más nuevo (por nombre) que la trae; el prefijo «Copia de» de una hoja copiada se ignora. El Value CG va en la misma
+  carpeta: de su hoja Tenencia sale el capital de cada socio.
 - **Salidas:** `salidas/value/<fecha>/tablero_value.html` (abrir en el navegador), `tablero_value_datos.json` (todos
   los números) y la ruta fija `salidas/value/tablero_value_artifact.html` para republicar el mismo Artifact. La URL
   queda en `salidas/value/estado_publicacion.json`.

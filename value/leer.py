@@ -15,6 +15,12 @@ import openpyxl
 from openpyxl.utils import column_index_from_string, get_column_letter
 
 SEMANAL = re.compile(r"^(\d{2})(\d{2}) - (\d{2})(\d{2})(.*)$")
+COPIA = re.compile(r"^copia de\s+", re.I)
+
+
+def nombre_hoja(titulo):
+    """Nombre de la hoja sin el prefijo «Copia de» que agrega Google Sheets al copiar una hoja suelta."""
+    return COPIA.sub("", titulo).strip()
 REF = r"\$?([A-Z]{1,3})\$?(\d+)"
 TOKEN = re.compile(rf"\s*(?:(?P<rango>{REF}:{REF})|(?P<ref>{REF})|(?P<num>\d+(?:\.\d+)?)|(?P<fn>[A-Z]+)\(|(?P<op>[-+*/(),]))")
 MONEDAS = ("USD", "ARS", "EUR", "REAL")
@@ -228,7 +234,7 @@ def _num(v):
 
 def leer_hoja(wsf, wsv, origen, anio):
     """Lee una hoja semanal. Devuelve un dict con cajas, bloque, aportes por caja y chequeos."""
-    ini, fin, sufijo = fechas_hoja(wsf.title, anio)
+    ini, fin, sufijo = fechas_hoja(nombre_hoja(wsf.title), anio)
     fs = fila_suma(wsf)
     fm = fila_moneda(wsf)
     h = Hoja(wsf, wsv, fs)
@@ -355,7 +361,7 @@ def leer_hoja(wsf, wsv, origen, anio):
             chequeos.append("las constantes por renglón no suman las del Neto")
 
     return {
-        "hoja": wsf.title, "origen": os.path.basename(origen), "inicio": ini, "fin": fin, "sufijo": sufijo,
+        "hoja": nombre_hoja(wsf.title), "origen": os.path.basename(origen), "inicio": ini, "fin": fin, "sufijo": sufijo,
         "dias": (fin - ini).days + 1, "fila_suma": fs, "fila_moneda": fm, "cotizacion": cot, "eur_usd": eur,
         "cajas": cajas, "bloque": bloque, "aportes_neto": aportes, "coef_neto": coef_neto,
         "egresos_por_celda": egresos_por_celda, "por_fila": por_fila, "constantes": constantes, "notas": notas,
@@ -374,8 +380,8 @@ def leer_carpeta(carpeta, anio=2026):
         wv = openpyxl.load_workbook(p, data_only=True)
         libros[p] = (wf, wv)
         for ws in wf.worksheets:
-            if SEMANAL.match(ws.title):
-                elegidas[ws.title] = (p, ws, wv[ws.title])
+            if SEMANAL.match(nombre_hoja(ws.title)):
+                elegidas[nombre_hoja(ws.title)] = (p, ws, wv[ws.title])
     hojas = [leer_hoja(ws, wsv, p, anio) for p, ws, wsv in elegidas.values()]
     hojas.sort(key=lambda h: h["inicio"])
     return hojas, archivos, libros
