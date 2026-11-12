@@ -34,3 +34,11 @@ Texto en el chat, en este orden:
 
 No mezclar métodos de ganancia ni mostrar puentes largos: si una cifra no cierra con la del dueño, decirlo en
 una línea.
+
+## Cómo mostrar la ganancia del USDT (pedido del dueño, 12/11/2026)
+
+- Decirlo en precios, no en "descuentos": "USDT comprado a 1,035 USD y vendido a ~1,05 USD (x% de margen)". La
+  cotización negativa de la planilla (−3,5) significa que se paga 3,5% **arriba** de la par.
+- Calcularlo bien: los pesos por transferencia que entregan las contrapartes (USDT General, Scheffer) se valúan
+  al costo real de la transferencia de esa semana (TC de compra por transferencia), no al TC del billete.
+  Mostrar el circuito USDT + transferencia como un solo resultado, no la parte del USDT sola.
